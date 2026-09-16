@@ -22,18 +22,18 @@ root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 cp -R source "$root/source"
-PATH="$PWD/../fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=local-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install "$root/source" --json >"$root/result.json"
-bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || !r.inspection.installed || r.source.name !== "fixture-local") process.exit(1)' "$root/result.json"
+PATH="$PWD/../fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=local-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install "$root/source" --json >"$root/result.json" || { status=$?; cat "$root/result.json" >&2; exit "$status"; }
+bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || !r.inspection.installed || r.source.name !== "fixture-local") throw new Error(JSON.stringify(r))' "$root/result.json"
 cmp "$root/source/payload.txt" "$root/codex/plugins/cache/personal/fixture-local/1.0.0/payload.txt"
-EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); if (!rows.length || rows.some((r) => r.command !== "codex" || r.sentinel !== "local-install" || r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME)) process.exit(1)' "$root/children.log"
+EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); const invalid = rows.filter((r) => r.command !== "codex" || r.sentinel !== "local-install" || r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME); if (!rows.length || invalid.length) throw new Error(JSON.stringify({invalid,expectedHome:process.env.EXPECTED_HOME,expectedCodexHome:process.env.EXPECTED_CODEX_HOME}))' "$root/children.log"
 
 # should install an exact npm release without using a public registry
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
-PATH="$PWD/../fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=npm-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install 'npm:@fixture/example@^1.0.0' --json >"$root/result.json"
-bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || r.source.type !== "npm" || r.source.version !== "1.2.3" || r.source.name !== "fixture-plugin" || r.inspection.payload !== "verified") process.exit(1)' "$root/result.json"
-EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); const npm = rows.filter((r) => r.command === "npm"); if (!npm.length || npm.some((r) => r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome === process.env.EXPECTED_CODEX_HOME) || rows.some((r) => r.sentinel !== "npm-install")) process.exit(1)' "$root/children.log"
+PATH="$PWD/../fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=npm-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install 'npm:@fixture/example@^1.0.0' --json >"$root/result.json" || { status=$?; cat "$root/result.json" >&2; exit "$status"; }
+bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || r.source.type !== "npm" || r.source.version !== "1.2.3" || r.source.name !== "fixture-plugin" || r.inspection.payload !== "verified") throw new Error(JSON.stringify(r))' "$root/result.json"
+EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); const npm = rows.filter((r) => r.command === "npm"); if (!npm.length || npm.some((r) => r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome === process.env.EXPECTED_CODEX_HOME) || rows.some((r) => r.sentinel !== "npm-install")) throw new Error(JSON.stringify({rows,expectedHome:process.env.EXPECTED_HOME,expectedCodexHome:process.env.EXPECTED_CODEX_HOME}))' "$root/children.log"
 
 # should preserve a native child exit code without writing a catalog
 root=$(mktemp -d)
