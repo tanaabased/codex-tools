@@ -37,3 +37,17 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Validation extraction provenance
+
+Agentbox lib/plugin-validation.js and test/plugin-validation.spec.js at the
+revision above supply the standalone resource, metadata, and companion checks
+and regression baseline. Me and Canon validation modules supply the callable
+prompt-reference, workflow-script, and Markdown checks. Canon's extraction and
+Markdown-target helpers are reused. Full coverage mapping is in validation.md.
+
+The unchanged official Python validator and identifier helper are from OpenAI
+Codex 0.153.4, revision 3d2ee51ca2d5db578f328aa75e20aa22c0197c9a.
+OpenAI Codex, Copyright 2025 OpenAI. Apache-2.0.
+Upstream license, notice, source identity, and checksums accompany these files
+in vendor/openai (dist/vendor/openai in the distribution).

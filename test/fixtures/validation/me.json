@@ -1,0 +1,32 @@
+{
+  "name": "piroplugin",
+  "version": "1.0.0-beta.11",
+  "description": "Piroproximate AI replicators.",
+  "author": {
+    "name": "@pirog",
+    "email": "mike@tanaab.dev",
+    "url": "https://github.com/pirog"
+  },
+  "homepage": "https://boot.pirog.me",
+  "repository": "https://github.com/pirog/me",
+  "license": "MIT",
+  "keywords": ["pirog", "ai", "skills", "codex"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Piroplugin",
+    "shortDescription": "Piroproximate AI replicators",
+    "longDescription": "Codex AI things designed to approximate various degrees of @pirog.",
+    "developerName": "@pirog",
+    "category": "pirobased",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Rework this content as though it were written by @pirog.",
+      "Use $piro-skill-author to create a new skill that mimics how @pirog writes JavaScript functions."
+    ],
+    "brandColor": "#db2777",
+    "composerIcon": "./assets/composer-icon.svg",
+    "logo": "./assets/icon-large.png",
+    "websiteURL": "https://github.com/pirog/me"
+  }
+}

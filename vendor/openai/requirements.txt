@@ -1,0 +1,2 @@
+# Integration requirement; not an upstream source file. Python >=3.10 is required.
+PyYAML>=6,<7

@@ -1,5 +1,7 @@
 const strings = new Map([
   ['repo-root', 'repoRoot'],
+  ['python', 'python'],
+  ['repository-checks', 'repositoryChecksPath'],
   ['cache-path', 'cachePathOverride'],
   ['codex-home', 'codexHome'],
   ['marketplace', 'marketplace'],
@@ -45,7 +47,7 @@ export function parseArgs(argv, env = process.env) {
   }
   for (const [flag, key] of strings) {
     const value = env['CODEX_TOOLS_' + flag.replaceAll('-', '_').toUpperCase()];
-    if (!explicit.has(key) && value) options[key] = value;
+    if (key !== 'repositoryChecksPath' && !explicit.has(key) && value) options[key] = value;
   }
   for (const [flag, key] of booleans) {
     if (['help', 'version'].includes(key) || explicit.has(key)) continue;
@@ -63,10 +65,19 @@ export function parseArgs(argv, env = process.env) {
   }
   options.codexHome ??= env.CODEX_HOME;
   const command = positionals.join(' ');
-  const allowed = ['cache check', 'cache sync', 'status', 'doctor'];
+  const allowed = ['cache check', 'cache sync', 'status', 'doctor', 'validate'];
   if (command && !allowed.includes(command)) throw new Error('Unknown command: ' + command);
   if (!command && !options.help && !options.version && argv.length)
     throw new Error('A command is required.');
+  if (command !== 'validate' && (explicit.has('python') || explicit.has('repositoryChecksPath')))
+    throw new Error('--python and --repository-checks are only valid for validate.');
+  if (
+    command === 'validate' &&
+    ['cachePathOverride', 'codexHome', 'marketplace', 'missingTarget', 'absentCheck'].some((key) =>
+      explicit.has(key),
+    )
+  )
+    throw new Error('Cache options are not valid for validate.');
   if (options.dryRun && command !== 'cache sync')
     throw new Error('--dry-run is only valid for cache sync.');
   if (options.missingTarget && !['require-installed', 'create'].includes(options.missingTarget))

@@ -18,5 +18,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - run: |
+          python -m venv .temp/validation-venv
+          .temp/validation-venv/bin/python -m pip install -r vendor/openai/requirements.txt
+          echo "CODEX_TOOLS_PYTHON=$PWD/.temp/validation-venv/bin/python" >> "$GITHUB_ENV"
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run test

@@ -1,6 +1,6 @@
 # Codex Tools
 
-One Bun ESM package for local Codex plugin cache checks, synchronization, and diagnostics.
+One Bun ESM package for local Codex plugin cache checks, synchronization, diagnostics, and plugin validation.
 Requires Bun 1.3.14 or newer. Release publication and plugin packaging are separate work.
 
 ## Development
@@ -8,6 +8,9 @@ Requires Bun 1.3.14 or newer. Release publication and plugin packaging are separ
 ```sh
 bun install --frozen-lockfile --ignore-scripts
 bun run dev --help
+python3 -m venv .temp/validation-venv
+.temp/validation-venv/bin/python -m pip install -r vendor/openai/requirements.txt
+export CODEX_TOOLS_PYTHON="$PWD/.temp/validation-venv/bin/python"
 bun run lint
 bun run test
 bun run build
@@ -25,6 +28,7 @@ against the built executable. Local Leia runs require an explicit request.
 ## Commands
 
 ```sh
+codex-tools validate --repo-root /path/to/plugin --json
 codex-tools status --repo-root /path/to/plugin --codex-home /path/to/codex --json
 codex-tools cache check --repo-root /path/to/plugin --marketplace my-market
 codex-tools cache sync --repo-root /path/to/plugin --dry-run
@@ -35,17 +39,19 @@ codex-tools cache sync --repo-root /path/to/plugin
 flags and environment variables. Explicit flags beat environment variables, which beat
 repository settings and defaults. Unknown/repeated flags, missing values, invalid
 commands, and extra arguments fail before filesystem effects. JSON stdout contains one
-undecorated value; diagnostics and debug go to stderr.
+undecorated value; debug goes to stderr. Validation captures child diagnostics in its report.
+See [validation](validation.md) for Python/PyYAML setup, pinned contract coverage, and
+explicit repository integration. Validation requires no cache or package.json.
 
-| Exit | Meaning                                                                               |
-| ---- | ------------------------------------------------------------------------------------- |
-| 0    | Current, synchronized, valid dry run, help/version, or explicitly neutral absence     |
-| 1    | Drift, unavailable/incompatible installation, ambiguous target, or failed convergence |
-| 2    | Invalid arguments, source/configuration errors, or filesystem failure                 |
+| Exit | Meaning                                                                                                   |
+| ---- | --------------------------------------------------------------------------------------------------------- |
+| 0    | Current, synchronized, valid plugin/dry run, help/version, or explicitly neutral absence                  |
+| 1    | Drift, unavailable/incompatible installation, ambiguous target, failed convergence, or validation failure |
+| 2    | Invalid arguments, source/configuration errors, missing validation dependencies, or filesystem failure    |
 
 ## Consumer configuration
 
-The source must contain `package.json` with a version and `.codex-plugin/plugin.json`
+For cache commands, the source must contain `package.json` with a version and `.codex-plugin/plugin.json`
 with a name. Plugin manifest version is the exact compatibility identity; package
 version is the fallback when the source manifest omits it. These are distinct from
 the cache directory's name.
@@ -105,7 +111,7 @@ the same normalized result used by JSON output. Options include `repoRoot`,
 `cachePathOverride`, `codexHome`, `marketplace`, `managedPaths`, `excludeNames`,
 `missingTarget`, `absentCheck`, and `dryRun`. Low-level tree functions are also
 exported; wrappers should use `runOperation` to retain installation checks.
-Consumer entrypoint migrations and the validator command remain separate work.
+Consumer entrypoint migrations remain separate work.
 
 ## Extraction evidence
 

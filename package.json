@@ -1,7 +1,7 @@
 {
   "name": "@tanaab/codex-tools",
   "version": "0.1.0",
-  "description": "Local Codex plugin cache synchronization and diagnostics.",
+  "description": "Local Codex plugin cache synchronization, diagnostics, and validation.",
   "type": "module",
   "license": "MIT",
   "author": "Tanaab",
@@ -23,7 +23,8 @@
     "dist",
     "LICENSE",
     "NOTICE",
-    "README.md"
+    "README.md",
+    "validation.md"
   ],
   "publishConfig": {
     "access": "public"
