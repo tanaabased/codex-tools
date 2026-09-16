@@ -15,7 +15,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const cli = fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
+const cli =
+  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
 interface SmokeResult {
   ok: boolean;
   status: string;

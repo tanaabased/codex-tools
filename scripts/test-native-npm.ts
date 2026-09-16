@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const cli = fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
+const cli =
+  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
 const root = await realpath(await mkdtemp(path.join(tmpdir(), 'codex-tools-npm-native-')));
 const pkg = '@fixture/package-name';
 const plugin = 'native-npm-probe';

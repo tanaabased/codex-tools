@@ -10,7 +10,13 @@ import {
   resolvedVersion,
 } from '../utils/npm-selector.ts';
 import type { NpmSelection } from '../utils/npm-selector.ts';
-import { assertSupportedCodexVersion, readNativeResult, runNative } from './codex-native.ts';
+import {
+  assertSupportedCodexVersion,
+  readNativePluginInspection,
+  readNativeResult,
+  runNative,
+  supportedCodexFamily,
+} from './codex-native.ts';
 import type { NativeOptions, NativeResult, NativeRunner } from './codex-native.ts';
 import { inside, object, resolveMarketplace, snapshot, validateSource } from './install-context.ts';
 import type { MarketplaceContext, NpmProvenance } from './install-context.ts';
@@ -232,7 +238,9 @@ export async function installNpmPlugin(
       }),
       {
         unsupportedMessage:
-          'Supported native contract is Codex 0.153.x; found an unsupported Codex version.',
+          'Supported native contract is Codex ' +
+          supportedCodexFamily +
+          '; found an unsupported Codex version.',
       },
     );
     const npmVersion = await npm(['--version'], npmOptions);
@@ -320,23 +328,18 @@ export async function installNpmPlugin(
       }
     }
     if (installed.exitCode !== 0) result.exitCode = installed.exitCode || 2;
-    const dataValue = readNativeResult(installed, {
-      failureMessage: npmFailure(installed, 'Native package inspection'),
-      invalidJsonMessage: 'Native package inspection returned invalid JSON.',
-    });
-    if (!object(dataValue)) {
-      throw new Error('Native inspection returned an unexpected package identity or path.');
-    }
-    const data = dataValue;
+    const data = readNativePluginInspection(
+      readNativeResult(installed, {
+        failureMessage: npmFailure(installed, 'Native package inspection'),
+        invalidJsonMessage: 'Native package inspection returned invalid JSON.',
+      }),
+    );
     if (
-      typeof data.version !== 'string' ||
-      !data.version ||
       ['.', '..'].includes(data.version) ||
       /[/\\]/.test(data.version) ||
       [...data.version].some((char) => char.charCodeAt(0) < 32) ||
       data.name !== name ||
       data.pluginId !== name + '@inspection' ||
-      typeof data.installedPath !== 'string' ||
       !inside(stageCodex, data.installedPath) ||
       (await realpath(data.installedPath)) !== data.installedPath
     )

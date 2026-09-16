@@ -1,0 +1,43 @@
+name: Native Codex Verification
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-codex:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Install the supported Codex contract
+        shell: bash
+        run: |
+          codex_version="$(bun -e "import { supportedCodexVersion } from './lib/codex-native.ts'; process.stdout.write(supportedCodexVersion)")"
+          npm install --global "@openai/codex@$codex_version"
+          test "$(codex --version)" = "codex-cli $codex_version"
+      - name: Verify and install the prepared package
+        shell: bash
+        run: |
+          package_dir="$RUNNER_TEMP/codex-tools-package"
+          consumer_dir="$RUNNER_TEMP/codex-tools-consumer"
+          mkdir -p "$package_dir" "$consumer_dir"
+          bun run build
+          bun scripts/test-package.ts "--pack-destination=$package_dir"
+          npm install --prefix "$consumer_dir" --ignore-scripts --no-audit --no-fund "$package_dir/"*.tgz
+      - name: Run isolated native probes
+        shell: bash
+        run: |
+          export CODEX_TOOLS_CLI="$RUNNER_TEMP/codex-tools-consumer/node_modules/.bin/codex-tools"
+          bun scripts/test-native-install.ts
+          bun scripts/test-native-npm.ts
