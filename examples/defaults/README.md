@@ -8,6 +8,7 @@ selection flags or their environment equivalents.
 ```bash
 # should inspect the current source and default codex home
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 target="$root/home/.codex/plugins/cache/personal/default-example/1.0.0"
 mkdir -p "$target"

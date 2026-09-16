@@ -8,6 +8,7 @@ Codex Tools orchestration; the isolated native-verification workflow owns real C
 ```bash
 # should plan a local install without spawning codex or writing state
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 cp -R source "$root/source"
@@ -19,6 +20,7 @@ test ! -e "$root/home/.agents"
 
 # should install a local plugin and pass the selected environment to codex
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 cp -R source "$root/source"
@@ -29,6 +31,7 @@ EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows 
 
 # should install an exact npm release without using a public registry
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 PATH="$PWD/../fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=npm-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install 'npm:@fixture/example@^1.0.0' --json >"$root/result.json" || { status=$?; cat "$root/result.json" >&2; exit "$status"; }
@@ -37,6 +40,7 @@ EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows 
 
 # should preserve a native child exit code without writing a catalog
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 cp -R source "$root/source"

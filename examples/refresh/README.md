@@ -8,6 +8,7 @@ commands. Real native compatibility remains the isolated native-verification wor
 ```bash
 # should refresh a local payload through a new cachebuster version
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 cp -R source "$root/source"
@@ -22,6 +23,7 @@ EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows 
 
 # should retain the installed npm release when registry selection moves
 root=$(mktemp -d)
+root=$(cd "$root" && pwd -P)
 trap 'rm -rf "$root"' EXIT
 mkdir "$root/home"
 common_path="$PWD/../fixtures/bin:$PATH"
