@@ -8,6 +8,7 @@ Requires Bun 1.3.14 or newer. Release publication and plugin packaging are separ
 ```sh
 bun install --frozen-lockfile --ignore-scripts
 bun run dev --help
+bun run typecheck
 bun run lint
 bun run test
 bun run build
@@ -16,13 +17,15 @@ bun run test:package
 
 The declared executable is `dist/codex-tools`; build before packing. Package smoke inspects
 `npm pack --dry-run`, creates a disposable local tarball, and runs its executable and
-exports outside the checkout. Nothing is published. The shipped CLI runs on Bun; cache
+exports outside the checkout. Nothing is published. Strict TypeScript covers the CLI,
+library, helpers, internal tooling, and tests. The shipped CLI runs on Bun; cache
 commands do not invoke Codex. Local install and refresh require Codex 0.153.x, while their
 npm variants also require npm. The package check uses Node, npm, and tar. There is no
-TypeScript layer.
+separate JavaScript source layer.
 
-PR checks run lint/format, unit and package tests, and the Leia scenarios in `examples/`
-against the built executable. Local Leia runs require an explicit request.
+PR checks run strict type checking, lint/format, unit and package tests, and the Leia
+scenarios in `examples/` against the built executable. Local Leia runs require an explicit
+request.
 
 ## Commands
 
@@ -275,8 +278,10 @@ set `absentCheck: "neutral"`; missing/invalid installations then pass checks but
 still fail sync. Cache commands never install, register, or enable a plugin.
 Arbitrary Git/URL acquisition remains outside the installer.
 
-Consumer wrappers can import `runOperation(command, options)`, `resolveContext`,
-or `runCLI(argv, {env, stdout, stderr})` from `@tanaab/codex-tools`.
+The supported runtime API is deliberately small: `collectEntries`, `inspectTrees`,
+`syncEntries`, `inspectInstallation`, `resolveContext`, `runOperation`, `runCLI`,
+`diffEntries`, `installPlugin`, and `refreshPlugin`. Consumer wrappers can import these
+from `@tanaab/codex-tools`; all other modules are internal.
 `runCLI` returns an exit code without setting process state; `runOperation` returns
 the same normalized result used by JSON output. Options include `repoRoot`,
 `cachePathOverride`, `codexHome`, `marketplace`, `managedPaths`, `excludeNames`,
@@ -285,4 +290,7 @@ exported; wrappers should use `runOperation` to retain installation checks.
 Install and refresh also accept `marketplacePath` and `npmSelector` (mutually exclusive
 with `repoRoot`); both reject cache-only options.
 `refreshPlugin(options, runtime)` is exported for wrappers that need native refresh.
+The TypeScript source exports the corresponding option, result, diagnostic, native-process,
+tree, and structured-failure types from `lib/index.ts`; declaration/distribution formats
+remain a separate delivery concern.
 Consumer entrypoint migrations remain separate work.

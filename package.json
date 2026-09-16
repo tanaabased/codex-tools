@@ -33,16 +33,17 @@
     "bun": ">=1.3.14"
   },
   "scripts": {
-    "dev": "bun bin/codex-tools.js",
-    "build": "bun scripts/build.js",
+    "dev": "bun bin/codex-tools.ts",
+    "build": "bun scripts/build.ts",
     "lint:eslint": "bun --bun eslint .",
     "format:check": "bun --bun prettier . --check --ignore-unknown",
     "format:write": "bun --bun prettier . --write --ignore-unknown",
     "lint": "bun run lint:eslint && bun run format:check",
-    "test": "bun --bun ./node_modules/mocha/bin/mocha.js 'test/*.spec.js'",
-    "test:package": "bun run build && bun scripts/test-package.js",
-    "test:native": "bun run build && bun scripts/test-native-install.js",
-    "test:native:npm": "bun run build && bun scripts/test-native-npm.js"
+    "typecheck": "tsc --noEmit",
+    "test": "bun --bun ./node_modules/mocha/bin/mocha.js 'test/*.spec.ts'",
+    "test:package": "bun run build && bun scripts/test-package.ts",
+    "test:native": "bun run build && bun scripts/test-native-install.ts",
+    "test:native:npm": "bun run build && bun scripts/test-native-npm.ts"
   },
   "dependencies": {
     "ansis": "^4.2.0",
@@ -51,11 +52,17 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/bun": "1.3.14",
+    "@types/mocha": "^10.0.10",
+    "@types/npm-package-arg": "^6.1.4",
+    "@types/semver": "^7.7.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "mocha": "11.8.0",
     "prettier": "^3.9.6",
-    "@lando/leia": "2.0.0-beta.1"
+    "@lando/leia": "2.0.0-beta.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.57.1"
   }
 }

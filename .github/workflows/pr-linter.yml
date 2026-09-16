@@ -13,3 +13,4 @@ jobs:
           bun-version-file: .bun-version
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run lint
+      - run: bun run typecheck
