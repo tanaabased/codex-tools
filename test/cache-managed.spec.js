@@ -6,6 +6,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   symlink,
   utimes,
@@ -38,7 +39,7 @@ const collectManagedEntries = (root, _entries, statPath) =>
   collectEntries(root, { managedPaths, statPath });
 
 async function createRoots() {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'piro-codexsync-cache-'));
+  const tempRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'piro-codexsync-cache-')));
   const sourceRoot = path.join(tempRoot, 'source');
   const targetRoot = path.join(tempRoot, 'target');
   await Promise.all([mkdir(sourceRoot), mkdir(targetRoot)]);

@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict';
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { runOperation } from '../lib/operations.js';
@@ -16,7 +25,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     await writeJson(path.join(target, '.codex-plugin/plugin.json'), value);
   }
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), 'codex-tools-operations-'));
+    root = await realpath(await mkdtemp(path.join(tmpdir(), 'codex-tools-operations-')));
     repoRoot = path.join(root, 'source');
     codexHome = path.join(root, 'codex');
     cachePath = path.join(codexHome, 'plugins/cache/custom/sample/arbitrary-cachebuster');
@@ -46,6 +55,29 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     await install(cachePath, value);
     assert.equal((await resolveContext(options)).inspection.installed, true);
   });
+  for (const marketplace of ['custom', 'wrong']) {
+    it(
+      'resolves an explicit cache through a home alias with marketplace ' + marketplace,
+      async () => {
+        await install();
+        const alias = path.join(root, 'codex-alias');
+        await symlink(codexHome, alias);
+        const selected = {
+          ...options,
+          codexHome: alias,
+          cachePathOverride: path.join(alias, path.relative(codexHome, cachePath)),
+          marketplace,
+        };
+        const context = await resolveContext(selected);
+        assert.equal(context.cachePath, cachePath);
+        assert.equal(context.inspection.installed, marketplace === 'custom');
+        if (marketplace === 'wrong') {
+          assert.equal((await runOperation('sync', selected)).status, 'unresolved');
+          await assert.rejects(lstat(path.join(cachePath, 'managed.txt')), { code: 'ENOENT' });
+        }
+      },
+    );
+  }
   it('reports local registration and disabled state independently of cache identity', async () => {
     await install();
     await writeFile(
@@ -179,6 +211,18 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     await symlink(outside, cachePath);
     assert.equal(
       (await runOperation('sync', { ...options, cachePathOverride: cachePath })).status,
+      'unresolved',
+    );
+    const alias = path.join(root, 'codex-alias');
+    await symlink(codexHome, alias);
+    assert.equal(
+      (
+        await runOperation('sync', {
+          ...options,
+          codexHome: alias,
+          cachePathOverride: path.join(alias, path.relative(codexHome, cachePath)),
+        })
+      ).status,
       'unresolved',
     );
     await assert.rejects(lstat(path.join(outside, 'managed.txt')), { code: 'ENOENT' });
