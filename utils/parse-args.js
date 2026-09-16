@@ -1,3 +1,5 @@
+import { parseNpmSelector } from './npm-selector.js';
+
 const strings = new Map([
   ['repo-root', 'repoRoot'],
   ['cache-path', 'cachePathOverride'],
@@ -65,10 +67,15 @@ export function parseArgs(argv, env = process.env) {
   options.codexHome ??= env.CODEX_HOME;
   let command = positionals.join(' ');
   if (['install', 'refresh'].includes(positionals[0])) {
-    if (positionals.length > 2) throw new Error(positionals[0] + ' accepts one plugin path.');
+    if (positionals.length > 2)
+      throw new Error(positionals[0] + ' accepts one plugin path or npm selector.');
     if (positionals[1] && explicit.has('repoRoot'))
       throw new Error('Select a positional plugin path or --repo-root, not both.');
-    if (positionals[1]) options.repoRoot = positionals[1];
+    if (positionals[1]?.startsWith('npm:')) {
+      parseNpmSelector(positionals[1]);
+      options.npmSelector = positionals[1];
+      delete options.repoRoot;
+    } else if (positionals[1]) options.repoRoot = positionals[1];
     command = positionals[0];
   }
   if (options.marketplacePath && !['install', 'refresh'].includes(command))
