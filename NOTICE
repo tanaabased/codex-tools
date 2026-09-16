@@ -6,6 +6,8 @@ Canon a3e7a5023b189cabfebb22dc5fc1bbe84860546b:
 Me 24b5a7c1b97657b62687d7d2d6a383c2ac3a32ad:
   https://github.com/pirog/me
   Managed collector, metadata-error handling, unchanged-file and payload tests.
+  boot.sh source-link identity/preservation safeguards and personal catalog behavior
+  adapted for local installation; bootstrap and Stow orchestration are not imported.
 Agentbox 6aa9422ce72553fa90dd16ea9417ecc848c17e40:
   https://github.com/tanaabased/agentbox
   Installation inspection, check/sync semantics, adapted installation tests.
