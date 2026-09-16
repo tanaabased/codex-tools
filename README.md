@@ -16,8 +16,10 @@ bun run test:package
 
 The declared executable is `dist/codex-tools`; build before packing. Package smoke inspects
 `npm pack --dry-run`, creates a disposable local tarball, and runs its executable and
-exports outside the checkout. Nothing is published. Node/npm are needed only for that
-package check and Leia, not for the shipped CLI. There is no TypeScript layer.
+exports outside the checkout. Nothing is published. The shipped CLI runs on Bun; cache
+commands do not invoke Codex. Local install and refresh require Codex 0.153.x, while their
+npm variants also require npm. The package check uses Node, npm, and tar. There is no
+TypeScript layer.
 
 PR checks run lint/format, unit and package tests, and the Leia scenarios in `examples/`
 against the built executable. Local Leia runs require an explicit request.
@@ -284,58 +286,3 @@ Install and refresh also accept `marketplacePath` and `npmSelector` (mutually ex
 with `repoRoot`); both reject cache-only options.
 `refreshPlugin(options, runtime)` is exported for wrappers that need native refresh.
 Consumer entrypoint migrations remain separate work.
-
-## Extraction evidence
-
-- Canon's snapshot/diff/sync engine and overlap/link tests are adapted in `lib/cache.js`,
-  `utils/diff-entries.js`, and `test/cache-canon.spec.js`.
-- Me's scoped collection, ENOENT-only handling, unchanged-file behavior, and runtime-input
-  tests are retained in the shared engine and `test/cache-managed.spec.js`.
-- Agentbox's installation inspection and neutral-check/strict-sync semantics are adapted
-  in `lib/context.js`, `lib/operations.js`, and `test/operations.spec.js`.
-- Repository-specific paths, marketplace constants, version-directory assumptions,
-  and duplicated parsers/reporters are replaced by consumer settings and one CLI boundary.
-  `test/cli.spec.js` checks actual output and exit status; `test/cache-safety.spec.js`
-  covers scoped-parent links, exclusions, and dry-run effects.
-
-The current canonical ESLint and Bun CLI templates matched the issue's pinned versions
-when extracted. The scaffold follows Merge's one-package baseline; the CLI separates
-entrypoint, parser, help, and presentation as in the pinned Leia implementation.
-Source commits and license notices are recorded in `NOTICE`.
-
-### Installation reconciliation
-
-- Reused Me's `ensure_plugin_link_for_checkout` and `resolve_symlink_dir_target`
-  safeguards: resolve link identity, preserve matching mappings, refuse unrelated links
-  and regular-file collisions. The pinned functions still matched current source at
-  implementation; the current catalog additionally contains an npm entry, which is
-  preserved rather than converted. `test/install.spec.js` adapts those preservation
-  expectations without running Me's machine bootstrap.
-- Retained C1's cache engine, compatibility settings, and tests unchanged. Installation
-  is a separate orchestration boundary in `lib/install.js` and `lib/install-context.js`.
-- Inspected the shipped Plugin Creator `create_basic_plugin.py` and
-  `read_marketplace_name.py`: retained their catalog shape and default entry policies;
-  replaced whole-entry overwrite with append-or-preserve reconciliation. No Python
-  scaffolder, bootstrap, Stow orchestration, or hardcoded consumer identity is imported.
-- Me's stale-link cleanup and absolute-link normalization are deliberately not installation
-  operations: a name/source collision requires an explicit decision, and a matching
-  absolute link is already usable. Native Codex owns cache installation and enablement.
-
-### Refresh reconciliation
-
-- Reused C3's source/catalog/mapping validation and bounded native executor; reused C1's
-  collector and snapshot diff for payload verification. `lib/refresh.js` owns the new
-  orchestration; install's idempotent path and the cache engine/parity tests are retained.
-- Compared the three issue-linked `codexsync-sync.js` files against current upstream:
-  each still matches its pinned blob. Direct copying remains `cache sync`; it is not
-  repurposed as native refresh. No consumer wrappers or parity semantics were removed.
-- Reconciled the shipped Plugin Creator `installing-and-updating.md`,
-  `update_plugin_cachebuster.py`, and `read_marketplace_name.py`. Their version-prefix,
-  single-suffix, local-mapping, cachebust-and-add, and new-task rules are retained.
-  The Python helpers are not runtime dependencies: C3 already validates marketplace
-  names, and the version rule is adapted in Bun. Same-second collision avoidance,
-  atomic source edits, and readback replace the helper's unchecked write-and-add boundary.
-- `test/refresh.spec.js` covers successive/stale refreshes, no-write previews, unsafe
-  mappings, disabled/unsupported installations, concurrent changes, native failure,
-  and misleading successful exits. `scripts/test-native-install.js` verifies the actual
-  native contract in disposable homes. Inspected helper fingerprints are in `NOTICE`.
