@@ -1,6 +1,6 @@
 # Codex Tools
 
-One Bun ESM package for local Codex plugin installation, cache checks, synchronization, and diagnostics.
+One Bun ESM package for local Codex plugin installation, refresh, cache checks, synchronization, and diagnostics.
 Requires Bun 1.3.14 or newer. Release publication and plugin packaging are separate work.
 
 ## Development
@@ -27,6 +27,8 @@ against the built executable. Local Leia runs require an explicit request.
 ```sh
 codex-tools install /path/to/plugin --dry-run --json
 codex-tools install /path/to/plugin
+codex-tools refresh /path/to/plugin --dry-run --json
+codex-tools refresh /path/to/plugin
 codex-tools status --repo-root /path/to/plugin --codex-home /path/to/codex --json
 codex-tools cache check --repo-root /path/to/plugin --marketplace my-market
 codex-tools cache sync --repo-root /path/to/plugin --dry-run
@@ -88,8 +90,8 @@ Dry run starts no native process and writes nothing. Its `plan` lists directory
 creation, mapping, catalog contents, registration, native argv, and the conditional
 install. Execution checks for intervening changes. A same-source/version installation
 is read back and left unchanged, including a disabled state. A different installed
-version is reported for explicit native removal/reinstallation; this command is not
-refresh. Native operations are bounded to 30 seconds each and use argument arrays.
+version is reported for `refresh`; install itself does not refresh existing payloads.
+Native operations are bounded to 30 seconds each and use argument arrays.
 
 JSON reports `completed`, `remaining`, child stdout/stderr/exit status, and installation
 readback. A partial failure keeps completed setup so a repeat command can resume;
@@ -99,8 +101,55 @@ means Codex reports the selected source installed; `enabled` is separate, and ne
 authentication nor activation in an active task is inferred. Unknown stays unknown.
 
 Run the bounded, credential-free native check explicitly with `bun run test:native`.
-It uses disposable `HOME` and `CODEX_HOME`, checks cached skill bytes and repeat-install
-immutability, and removes its fixtures. It does not use the operator's Codex home.
+It uses disposable `HOME` and `CODEX_HOME`, checks cached skill bytes, repeat-install
+immutability, successive/stale refreshes, source-mapping rejection, unrelated-state
+preservation, and recovery after a real native cache-write failure. It removes its
+fixtures and does not use the operator's Codex home.
+
+## Local refresh
+
+`refresh [plugin-path]` defaults to the current directory. It requires an existing
+installation and a matching local marketplace entry; it does not create mappings,
+register marketplaces, repair collisions, or acquire remote sources. Personal discovery
+is the default; `--marketplace` and `--marketplace-path` select an existing registered
+local marketplace as for install. Missing, ambiguous, mismatched, or nonlocal state
+fails before source edits. A stale installed version is allowed.
+
+For Codex **0.153.x** (tested with **0.153.4**), refresh atomically rewrites the source
+manifest version, then delegates to `codex plugin add` without removing the old
+installation or copying into its cache. It follows the shipped Plugin Creator helper:
+preserve everything before the first `+`, replace the suffix with
+`+codex.<YYYYMMDDhhmmss>` in UTC, and leave release numbers alone. To avoid same-second
+collisions, advance the timestamp by seconds until it differs from the source version
+and existing cache directories. Manifest formatting becomes two-space JSON plus a
+newline. Review this source edit before committing the plugin itself.
+
+Dry run writes nothing and starts no native process. It reports the proposed manifest
+before/after versions, native argv, and pending checks; it is not proof of an installed
+or enabled plugin. Execution checks native identity and enablement before editing.
+Native `add` enables disabled plugins, so refresh refuses disabled installations;
+enable the plugin explicitly in Codex first. Native copying skips symlinks, so refresh
+also refuses payload symlinks rather than claim a complete install. The source mapping
+itself may be a symlink. Cache parent directories must not be symlinks.
+
+Verification compares installed identity and the expected cache path, then files,
+bytes, modes, directories, and extra entries against a stable source snapshot. It reuses
+the whole-tree collector's `.git`, `node_modules`, and `.DS_Store` exclusions; cache
+consumer selection settings do not narrow native refresh verification. It checks that
+the selected catalog/mapping, Codex configuration values, and other installed records
+in the selected marketplace remain unchanged. Concurrent source/state changes or
+incomplete readback produce `incomplete`, not success.
+
+JSON includes `manifestEdit`, `effects`, `inspection.phase`, payload verification,
+`completed`/`remaining`, and native child results. On failure, an applied cachebuster
+stays in the source; a failed native reinstall may also have changed state. There is no
+automatic rollback or deletion of old cache versions. Inspect the reported effects,
+resolve the error, and rerun. Native failures retain their child exit code.
+
+`refreshed` means verified **on disk**, not activated in an existing task. Start a new
+Codex task to pick up refreshed skills and tools; restart Codex if they remain unavailable.
+Authentication and existing-task pickup remain unknown. Use `cache sync` separately
+when direct copying, including its scoped payload and link semantics, is wanted.
 
 ## Consumer configuration
 
@@ -164,7 +213,8 @@ the same normalized result used by JSON output. Options include `repoRoot`,
 `cachePathOverride`, `codexHome`, `marketplace`, `managedPaths`, `excludeNames`,
 `missingTarget`, `absentCheck`, and `dryRun`. Low-level tree functions are also
 exported; wrappers should use `runOperation` to retain installation checks.
-Install also accepts `marketplacePath`; cache-only options are rejected for install.
+Install and refresh also accept `marketplacePath`; both reject cache-only options.
+`refreshPlugin(options, runtime)` is exported for wrappers that need native refresh.
 Consumer entrypoint migrations remain separate work.
 
 ## Extraction evidence
@@ -202,3 +252,22 @@ Source commits and license notices are recorded in `NOTICE`.
 - Me's stale-link cleanup and absolute-link normalization are deliberately not installation
   operations: a name/source collision requires an explicit decision, and a matching
   absolute link is already usable. Native Codex owns cache installation and enablement.
+
+### Refresh reconciliation
+
+- Reused C3's source/catalog/mapping validation and bounded native executor; reused C1's
+  collector and snapshot diff for payload verification. `lib/refresh.js` owns the new
+  orchestration; install's idempotent path and the cache engine/parity tests are retained.
+- Compared the three issue-linked `codexsync-sync.js` files against current upstream:
+  each still matches its pinned blob. Direct copying remains `cache sync`; it is not
+  repurposed as native refresh. No consumer wrappers or parity semantics were removed.
+- Reconciled the shipped Plugin Creator `installing-and-updating.md`,
+  `update_plugin_cachebuster.py`, and `read_marketplace_name.py`. Their version-prefix,
+  single-suffix, local-mapping, cachebust-and-add, and new-task rules are retained.
+  The Python helpers are not runtime dependencies: C3 already validates marketplace
+  names, and the version rule is adapted in Bun. Same-second collision avoidance,
+  atomic source edits, and readback replace the helper's unchecked write-and-add boundary.
+- `test/refresh.spec.js` covers successive/stale refreshes, no-write previews, unsafe
+  mappings, disabled/unsupported installations, concurrent changes, native failure,
+  and misleading successful exits. `scripts/test-native-install.js` verifies the actual
+  native contract in disposable homes. Inspected helper fingerprints are in `NOTICE`.

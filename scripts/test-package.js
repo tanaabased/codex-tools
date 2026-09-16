@@ -51,6 +51,7 @@ try {
   }
   const api = await import(path.join(root, 'package/dist/index.js'));
   assert.equal(typeof api.runOperation, 'function');
+  assert.equal(typeof api.refreshPlugin, 'function');
   process.stdout.write(
     'Package allowlist, Bun shebang, executable help/version, and wrapper exports passed outside checkout.\n',
   );

@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,16 +43,23 @@ try {
     TMPDIR: root,
     NO_COLOR: '1',
   };
-  const invoke = (...extra) => {
-    const child = spawnSync(cli, ['install', source, '--json', ...extra], {
+  const invokeCommand = (command, extra = [], expectedExit = 0) => {
+    const child = spawnSync(cli, [command, source, '--json', ...extra], {
       cwd: home,
       env,
       encoding: 'utf8',
       timeout: 45000,
     });
-    assert.equal(child.status, 0, child.stderr || child.stdout || child.error?.message);
+    if (expectedExit === null) assert.notEqual(child.status, 0, child.stdout);
+    else
+      assert.equal(
+        child.status,
+        expectedExit,
+        child.stderr || child.stdout || child.error?.message,
+      );
     return JSON.parse(child.stdout);
   };
+  const invoke = (...extra) => invokeCommand('install', extra);
   const preview = invoke('--dry-run');
   assert.equal(preview.status, 'planned');
   assert.equal(preview.native.length, 0);
@@ -78,8 +95,68 @@ try {
   const selectedRepeat = invoke('--marketplace', 'selected');
   assert.equal(selectedRepeat.inspection.installed, true);
   assert.ok(!selectedRepeat.plan.some((step) => step.operation === 'register-marketplace'));
+  const configFile = path.join(codexHome, 'config.toml');
+  const configBeforeRefresh = await readFile(configFile, 'utf8');
+  const catalogBeforeRefresh = await readFile(catalogFile, 'utf8');
+  const selectedCache = path.join(codexHome, 'plugins/cache/selected/codex-tools-smoke/1.0.0');
+  const selectedBytes = await readFile(path.join(selectedCache, 'skills/probe/SKILL.md'), 'utf8');
+  const manifestFile = path.join(source, '.codex-plugin/plugin.json');
+  const manifestBefore = await readFile(manifestFile, 'utf8');
+  const refreshPreview = invokeCommand('refresh', ['--dry-run']);
+  assert.equal(refreshPreview.manifestEdit.applied, false);
+  assert.equal(refreshPreview.native.length, 0);
+  assert.equal(await readFile(manifestFile, 'utf8'), manifestBefore);
+  let refreshed;
+  for (const payload of ['second native payload', 'third native payload']) {
+    await writeFile(path.join(source, 'skills/probe/SKILL.md'), payload);
+    refreshed = invokeCommand('refresh');
+    assert.equal(refreshed.status, 'refreshed');
+    assert.equal(refreshed.inspection.payload, 'verified');
+    assert.equal(refreshed.inspection.activation, 'unknown');
+    assert.equal(
+      await readFile(path.join(refreshed.cachePath, 'skills/probe/SKILL.md'), 'utf8'),
+      payload,
+    );
+    assert.match(refreshed.manifestEdit.after, /^1\.0\.0\+codex\.\d{14}$/);
+  }
+  assert.equal(await readFile(configFile, 'utf8'), configBeforeRefresh);
+  assert.equal(await readFile(catalogFile, 'utf8'), catalogBeforeRefresh);
+  assert.equal(
+    await readFile(path.join(selectedCache, 'skills/probe/SKILL.md'), 'utf8'),
+    selectedBytes,
+  );
+  // A stale source version must still be refreshed through the selected local mapping.
+  const changedManifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+  changedManifest.version = '2.0.0-beta.1+local';
+  await writeFile(manifestFile, JSON.stringify(changedManifest));
+  refreshed = invokeCommand('refresh', ['--marketplace', 'selected']);
+  assert.match(refreshed.manifestEdit.after, /^2\.0\.0-beta\.1\+codex\.\d{14}$/);
+  const mapping = path.join(home, 'plugins/codex-tools-smoke');
+  await rm(mapping);
+  await symlink(home, mapping);
+  const mismatch = invokeCommand('refresh', [], 2);
+  assert.match(mismatch.error, /source mapping/);
+  await rm(mapping);
+  await symlink(source, mapping);
+  // A real native cache write failure must retain the source edit and child error.
+  const cacheRoot = path.join(codexHome, 'plugins/cache/personal/codex-tools-smoke');
+  await chmod(cacheRoot, 0o555);
+  try {
+    const failed = invokeCommand('refresh', [], null);
+    assert.equal(failed.status, 'incomplete');
+    assert.equal(failed.manifestEdit.applied, true);
+    assert.equal(failed.effects.reinstallAttempted, true);
+    assert.ok(failed.nativeError.exitCode > 0);
+    assert.equal(
+      JSON.parse(await readFile(manifestFile, 'utf8')).version,
+      failed.manifestEdit.after,
+    );
+  } finally {
+    await chmod(cacheRoot, 0o755);
+  }
+  assert.equal(invokeCommand('refresh').ok, true);
   process.stdout.write(
-    'Codex 0.153.x native smoke passed: fresh home, external source, payload readback, repeat install, and explicit marketplace.\n',
+    'Codex 0.153.x native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
   );
 } finally {
   await rm(root, { recursive: true, force: true });
