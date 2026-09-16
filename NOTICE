@@ -22,6 +22,14 @@ Canon, Agentbox, Merge: Copyright (c) 2026 Tanaab Maneuvering Systems LLC
 Me: Copyright (c) 2025 Lando Alliance
 MIT permission and warranty terms for these adaptations are in LICENSE.
 
+Plugin Creator helpers inspected from the shipped Codex skills on 2026-09-16:
+  references/installing-and-updating.md: local cachebust-and-add and new-task contract.
+  scripts/update_plugin_cachebuster.py SHA-256:
+    6a630dfbdc2bca6952580da9c2c7ece08030926819ccd81d9deb518c24c1b0ed
+  scripts/read_marketplace_name.py SHA-256:
+    ba24e6d91eed6f778bde022a967be335c6253983b5ecd1c5e30c8483385887fd
+  Version prefix/suffix behavior adapted in Bun; Python helpers are not bundled.
+
 The built artifacts bundle Ansis (https://github.com/webdiscus/ansis):
 
 ISC License

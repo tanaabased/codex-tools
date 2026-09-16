@@ -64,21 +64,21 @@ export function parseArgs(argv, env = process.env) {
   }
   options.codexHome ??= env.CODEX_HOME;
   let command = positionals.join(' ');
-  if (positionals[0] === 'install') {
-    if (positionals.length > 2) throw new Error('install accepts one plugin path.');
+  if (['install', 'refresh'].includes(positionals[0])) {
+    if (positionals.length > 2) throw new Error(positionals[0] + ' accepts one plugin path.');
     if (positionals[1] && explicit.has('repoRoot'))
       throw new Error('Select a positional plugin path or --repo-root, not both.');
     if (positionals[1]) options.repoRoot = positionals[1];
-    command = 'install';
+    command = positionals[0];
   }
-  if (options.marketplacePath && command !== 'install')
-    throw new Error('--marketplace-path is only valid for install.');
-  const allowed = ['cache check', 'cache sync', 'status', 'doctor', 'install'];
+  if (options.marketplacePath && !['install', 'refresh'].includes(command))
+    throw new Error('--marketplace-path is only valid for install or refresh.');
+  const allowed = ['cache check', 'cache sync', 'status', 'doctor', 'install', 'refresh'];
   if (command && !allowed.includes(command)) throw new Error('Unknown command: ' + command);
   if (!command && !options.help && !options.version && argv.length)
     throw new Error('A command is required.');
-  if (options.dryRun && !['cache sync', 'install'].includes(command))
-    throw new Error('--dry-run is only valid for cache sync or install.');
+  if (options.dryRun && !['cache sync', 'install', 'refresh'].includes(command))
+    throw new Error('--dry-run is only valid for cache sync, install, or refresh.');
   if (options.missingTarget && !['require-installed', 'create'].includes(options.missingTarget))
     throw new Error('Invalid --missing-target value.');
   if (options.absentCheck && !['fail', 'neutral'].includes(options.absentCheck))
