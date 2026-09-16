@@ -1,13 +1,15 @@
 # Codex Tools
 
-One Bun ESM package for local and npm Codex plugin installation, refresh, cache checks, synchronization, and diagnostics.
-Requires Bun 1.3.14 or newer. Release publication and plugin packaging are separate work.
+One Bun-developed TypeScript package for local and npm Codex plugin installation, refresh,
+cache checks, synchronization, and diagnostics. The published CLI and library require Node
+`^24.15.0 || >=26.0.0`; source development uses Bun 1.3.14. Release publication and plugin
+packaging are separate work.
 
 ## Development
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts
-bun run dev --help
+bun run codex-tools --help
 bun run typecheck
 bun run lint
 bun run test
@@ -15,13 +17,15 @@ bun run build
 bun run test:package
 ```
 
-The declared executable is `dist/codex-tools`; build before packing. Package smoke inspects
-`npm pack --dry-run`, creates a disposable local tarball, and runs its executable and
-exports outside the checkout. Nothing is published. Strict TypeScript covers the CLI,
-library, helpers, internal tooling, and tests. The shipped CLI runs on Bun; cache
-commands do not invoke Codex. Local install and refresh require Codex 0.153.x, while their
-npm variants also require npm. The package check uses Node, npm, and tar. There is no
-separate JavaScript source layer.
+`bun run codex-tools` invokes the TypeScript source directly and does not require Node.
+The declared npm executable is the Node-targeted `dist/codex-tools`; build before packing.
+The same source builds typed ESM and CommonJS library artifacts. Package smoke inspects
+`npm pack --dry-run`, creates a disposable local tarball, and exercises its Node executable,
+both module formats, and the direct Bun source command outside the checkout. Nothing is
+published. Strict TypeScript covers the CLI, library, helpers, internal tooling, and tests.
+Cache commands do not invoke Codex. Local install and refresh require Codex 0.153.x, while
+their npm variants also require npm. The package check uses Node, Bun, npm, and tar. There
+is no separate JavaScript source layer.
 
 PR checks run strict type checking, lint/format, unit and package tests, and the Leia
 scenarios in `examples/` against the built executable. Local Leia runs require an explicit
@@ -291,6 +295,6 @@ Install and refresh also accept `marketplacePath` and `npmSelector` (mutually ex
 with `repoRoot`); both reject cache-only options.
 `refreshPlugin(options, runtime)` is exported for wrappers that need native refresh.
 The TypeScript source exports the corresponding option, result, diagnostic, native-process,
-tree, and structured-failure types from `lib/index.ts`; declaration/distribution formats
-remain a separate delivery concern.
+tree, and structured-failure types from `lib/index.ts`; the package supplies matching ESM
+and CommonJS declarations.
 Consumer entrypoint migrations remain separate work.

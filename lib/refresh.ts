@@ -1,9 +1,9 @@
-import { TOML } from 'bun';
 import { randomUUID } from 'node:crypto';
 import { chmod, lstat, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { asError } from '../utils/errors.ts';
+import parseToml from '../utils/parse-toml.ts';
 import { collectEntries } from './cache.ts';
 import { assertSupportedCodexVersion, readNativeResult, runNative } from './codex-native.ts';
 import type { NativeResult } from './codex-native.ts';
@@ -225,8 +225,8 @@ export async function refreshPlugin(
       throw new Error('Marketplace or source mapping changed during refresh.');
     const configMatches = result.effects.reinstallAttempted
       ? isDeepStrictEqual(
-          TOML.parse(current.configSnapshot?.text ?? ''),
-          TOML.parse(context.configSnapshot?.text ?? ''),
+          parseToml(current.configSnapshot?.text ?? ''),
+          parseToml(context.configSnapshot?.text ?? ''),
         )
       : isDeepStrictEqual(current.configSnapshot, context.configSnapshot);
     if (!configMatches)

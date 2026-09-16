@@ -1,9 +1,9 @@
-import { TOML } from 'bun';
 import { link, lstat, mkdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { asError } from '../utils/errors.ts';
+import parseToml from '../utils/parse-toml.ts';
 import type {
   InstallDependencies,
   InstallationResult,
@@ -209,8 +209,8 @@ export async function performInstall(
   async function recordNativeConfig(registering = false): Promise<void> {
     const updated = await snapshot(context.configFile);
     if (source.npm) {
-      const beforeValue = TOML.parse(expectedConfig?.text ?? '') as unknown;
-      const afterValue = TOML.parse(updated?.text ?? '') as unknown;
+      const beforeValue = parseToml(expectedConfig?.text ?? '');
+      const afterValue = parseToml(updated?.text ?? '');
       if (!object(beforeValue) || !object(afterValue)) {
         throw new Error('Unsupported Codex configuration.');
       }
