@@ -11,7 +11,12 @@ import type {
   OperationStep,
 } from './install-types.ts';
 import { collectEntries } from './cache.ts';
-import { assertSupportedCodexVersion, readNativeResult, runNative } from './codex-native.ts';
+import {
+  assertSupportedCodexVersion,
+  readNativeResult,
+  readNativeRows,
+  runNative,
+} from './codex-native.ts';
 import type { NativeResult } from './codex-native.ts';
 import {
   inside,
@@ -32,15 +37,6 @@ interface NativeInstalled extends UnknownRecord {
   version?: unknown;
   authPolicy?: unknown;
   source?: unknown;
-}
-
-function nativeRows(value: unknown, field: 'installed' | 'marketplaces'): UnknownRecord[] {
-  if (!object(value) || !Array.isArray(value[field]) || value[field].some((row) => !object(row))) {
-    throw new Error(
-      `Unsupported native ${field === 'installed' ? 'installation' : 'marketplace'} readback.`,
-    );
-  }
-  return value[field];
 }
 
 function operationArgv(operation: OperationStep): string[] {
@@ -193,7 +189,7 @@ export async function performInstall(
     return readNativeResult(await child(argv), { json: false });
   }
   async function markets(argv: readonly string[], required: boolean): Promise<void> {
-    const rows = nativeRows(await call(argv), 'marketplaces');
+    const rows = readNativeRows(await call(argv), 'marketplaces');
     const matches = rows.filter((market) => market.name === catalog.name);
     if (matches.length > 1 || (required && matches.length !== 1))
       throw new Error('Selected marketplace is missing or ambiguous in Codex.');
@@ -255,10 +251,7 @@ export async function performInstall(
     argv: readonly string[],
     final = false,
   ): Promise<NativeInstalled | undefined> {
-    const rows = nativeRows(await call(argv), 'installed');
-    if (rows.some((row) => typeof row.pluginId !== 'string')) {
-      throw new Error('Unsupported native installation readback.');
-    }
+    const rows = readNativeRows(await call(argv), 'installed');
     const installedRows = rows as NativeInstalled[];
     const matches = installedRows.filter((plugin) => plugin.pluginId === pluginId);
     if (matches.length > 1) throw new Error('Ambiguous native installation readback.');

@@ -5,7 +5,12 @@ import { isDeepStrictEqual } from 'node:util';
 import { asError } from '../utils/errors.ts';
 import parseToml from '../utils/parse-toml.ts';
 import { collectEntries } from './cache.ts';
-import { assertSupportedCodexVersion, readNativeResult, runNative } from './codex-native.ts';
+import {
+  assertSupportedCodexVersion,
+  readNativeResult,
+  readNativeRows,
+  runNative,
+} from './codex-native.ts';
 import type { NativeResult } from './codex-native.ts';
 import { inside, object, optional, resolveInstall, snapshot } from './install-context.ts';
 import type { UnknownRecord } from './install-context.ts';
@@ -34,15 +39,6 @@ interface NativeInstalled extends UnknownRecord {
 function operationArgv(operation: OperationStep): string[] {
   if (!Array.isArray(operation.argv)) throw new Error('Refresh plan is missing command arguments.');
   return operation.argv;
-}
-
-function rows(value: unknown, field: 'installed' | 'marketplaces'): UnknownRecord[] {
-  if (!object(value) || !Array.isArray(value[field]) || value[field].some((row) => !object(row))) {
-    throw new Error(
-      `Unsupported native ${field === 'installed' ? 'installation' : 'marketplace'} readback.`,
-    );
-  }
-  return value[field];
 }
 
 // Plugin Creator's prefix-before-+ and single +codex.<UTC timestamp> convention.
@@ -238,11 +234,7 @@ export async function refreshPlugin(
       throw new Error('Source changed during refresh; rerun with a stable source.');
   }
   async function readback(argv: readonly string[], refreshed: boolean): Promise<void> {
-    const nativeRows = rows(await call(argv), 'installed');
-    if (nativeRows.some((row) => typeof row.pluginId !== 'string')) {
-      throw new Error('Unsupported native installation readback.');
-    }
-    const installedRows = nativeRows as NativeInstalled[];
+    const installedRows = readNativeRows(await call(argv), 'installed') as NativeInstalled[];
     const matches = installedRows.filter((row) => row.pluginId === pluginId);
     const found = matches[0];
     if (matches.length !== 1 || found?.installed !== true)
@@ -288,7 +280,7 @@ export async function refreshPlugin(
           );
           break;
         case 'inspect-marketplaces': {
-          const marketplaces = rows(await call(operationArgv(operation)), 'marketplaces');
+          const marketplaces = readNativeRows(await call(operationArgv(operation)), 'marketplaces');
           const matches = marketplaces.filter((row) => row.name === catalog.name);
           const match = matches[0];
           if (

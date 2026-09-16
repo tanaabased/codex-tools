@@ -2,7 +2,20 @@ import { spawn } from 'node:child_process';
 
 import { asError } from '../utils/errors.ts';
 
-const supportedVersion = /^codex-cli 0\.153\.\d+$/;
+export const supportedCodexVersion = '0.153.4';
+export const supportedCodexFamily = supportedCodexVersion.replace(/\.\d+$/, '.x');
+const supportedVersion = new RegExp(
+  '^codex-cli ' + supportedCodexFamily.replaceAll('.', '\\.').replace('x', '\\d+') + '$',
+);
+
+export type NativeRecord = Record<string, unknown>;
+
+export interface NativePluginInspection {
+  name: string;
+  pluginId: string;
+  version: string;
+  installedPath: string;
+}
 
 export interface NativeResult {
   argv: readonly string[];
@@ -105,6 +118,61 @@ export function readNativeResult(
   }
 }
 
+/** Reads the list envelopes returned by the supported native Codex contract. */
+export function readNativeRows(
+  value: unknown,
+  field: 'installed' | 'marketplaces',
+): NativeRecord[] {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !Array.isArray((value as NativeRecord)[field])
+  ) {
+    throw new Error(
+      `Unsupported native ${field === 'installed' ? 'installation' : 'marketplace'} readback.`,
+    );
+  }
+  const rows = (value as NativeRecord)[field] as unknown[];
+  const identity = field === 'installed' ? 'pluginId' : 'name';
+  if (
+    rows.some(
+      (row) =>
+        typeof row !== 'object' ||
+        row === null ||
+        typeof (row as NativeRecord)[identity] !== 'string',
+    )
+  ) {
+    throw new Error(
+      `Unsupported native ${field === 'installed' ? 'installation' : 'marketplace'} readback.`,
+    );
+  }
+  return rows as NativeRecord[];
+}
+
+/** Reads the plugin identity returned by native npm acquisition. */
+export function readNativePluginInspection(value: unknown): NativePluginInspection {
+  if (typeof value !== 'object' || value === null)
+    throw new Error('Native inspection returned an unexpected package identity or path.');
+  const data = value as NativeRecord;
+  if (
+    typeof data.name !== 'string' ||
+    !data.name ||
+    typeof data.pluginId !== 'string' ||
+    !data.pluginId ||
+    typeof data.version !== 'string' ||
+    !data.version ||
+    typeof data.installedPath !== 'string' ||
+    !data.installedPath
+  )
+    throw new Error('Native inspection returned an unexpected package identity or path.');
+  return {
+    name: data.name,
+    pluginId: data.pluginId,
+    version: data.version,
+    installedPath: data.installedPath,
+  };
+}
+
 /** Enforces the native response contract supported by this package version. */
 export function assertSupportedCodexVersion(
   version: string,
@@ -112,7 +180,8 @@ export function assertSupportedCodexVersion(
 ): string {
   if (!supportedVersion.test(version))
     throw new Error(
-      unsupportedMessage ?? 'Supported native contract is Codex 0.153.x; found ' + version,
+      unsupportedMessage ??
+        'Supported native contract is Codex ' + supportedCodexFamily + '; found ' + version,
     );
   return version;
 }
