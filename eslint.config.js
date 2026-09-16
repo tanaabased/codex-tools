@@ -4,6 +4,7 @@ import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import prettierConfig from 'eslint-config-prettier';
+import tseslint from 'typescript-eslint';
 
 const restrictedBuiltinImports = builtinModules
   .filter((name) => name !== 'bun' && !name.startsWith('_') && !name.startsWith('node:'))
@@ -26,9 +27,10 @@ export default defineConfig([
     '**/.vitepress/dist/**',
   ]),
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   prettierConfig,
   {
-    files: ['**/*.{js,mjs}'],
+    files: ['**/*.{js,mjs,ts}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -40,7 +42,7 @@ export default defineConfig([
     rules: {
       'no-console': 'warn',
       'no-debugger': 'error',
-      'no-duplicate-imports': 'error',
+      'no-duplicate-imports': ['error', { allowSeparateTypeImports: true }],
       'no-restricted-imports': [
         'error',
         {
@@ -79,9 +81,12 @@ export default defineConfig([
     },
   },
   {
-    files: ['test/**/*.{js,mjs,cjs}', '**/*.{spec,test}.{js,mjs,cjs}'],
+    files: ['test/**/*.{js,mjs,cjs,ts}', '**/*.{spec,test}.{js,mjs,cjs,ts}'],
     languageOptions: {
       globals: globals.mocha,
+    },
+    rules: {
+      '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
 ]);
