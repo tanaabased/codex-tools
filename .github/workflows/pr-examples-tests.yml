@@ -34,4 +34,5 @@ jobs:
       - name: Run Leia scenario
         run: |
           mkdir -p examples/.tmp
-          TMPDIR="$PWD/examples/.tmp" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --shell bash
+          tmpdir=$(cd examples/.tmp && pwd -P)
+          TMPDIR="$tmpdir" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --shell bash
