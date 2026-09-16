@@ -1,4 +1,3 @@
-import { TOML } from 'bun';
 import type { Stats } from 'node:fs';
 import { lstat, readFile, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -6,6 +5,7 @@ import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import { asError, hasErrorCode } from '../utils/errors.ts';
+import parseToml from '../utils/parse-toml.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
 
 export type UnknownRecord = Record<string, unknown>;
@@ -305,7 +305,7 @@ export async function resolveMarketplace(
   }
   const configFile = path.join(codexHome, 'config.toml');
   const configSnapshot = await snapshot(configFile);
-  const configValue = TOML.parse(configSnapshot?.text ?? '') as unknown;
+  const configValue = parseToml(configSnapshot?.text ?? '');
   if (!object(configValue)) throw new Error('Invalid marketplaces configuration.');
   const marketplaces = configValue.marketplaces ?? {};
   if (!object(marketplaces)) throw new Error('Invalid marketplaces configuration.');

@@ -1,9 +1,9 @@
-import { TOML } from 'bun';
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { asError, hasErrorCode } from '../utils/errors.ts';
+import parseToml from '../utils/parse-toml.ts';
 import type { AbsentCheck, CodexToolsOptions, MissingTarget } from '../utils/parse-args.ts';
 import { selection } from '../utils/selection.ts';
 
@@ -239,9 +239,7 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
   let codexConfig: UnknownRecord = {};
   let configObserved = false;
   try {
-    const parsed = TOML.parse(
-      await readFile(path.join(codexHome, 'config.toml'), 'utf8'),
-    ) as unknown;
+    const parsed = parseToml(await readFile(path.join(codexHome, 'config.toml'), 'utf8'));
     if (!object(parsed)) throw new Error('Unsupported Codex configuration.');
     codexConfig = parsed;
     configObserved = true;

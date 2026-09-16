@@ -16,8 +16,20 @@
   "bin": {
     "codex-tools": "dist/codex-tools"
   },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/lib/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "import": {
+        "types": "./dist/esm/lib/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/lib/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    }
   },
   "files": [
     "dist",
@@ -30,10 +42,11 @@
   },
   "packageManager": "bun@1.3.14",
   "engines": {
-    "bun": ">=1.3.14"
+    "node": "^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "bun bin/codex-tools.ts",
+    "codex-tools": "bun run bin/codex-tools.ts",
     "build": "bun scripts/build.ts",
     "lint:eslint": "bun --bun eslint .",
     "format:check": "bun --bun prettier . --check --ignore-unknown",
@@ -46,12 +59,15 @@
     "test:native:npm": "bun run build && bun scripts/test-native-npm.ts"
   },
   "dependencies": {
+    "@types/node": "^24.0.0",
     "ansis": "^4.2.0",
     "npm-package-arg": "^14.0.0",
-    "semver": "^7.8.5"
+    "semver": "^7.8.5",
+    "smol-toml": "^1.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@lando/leia": "2.0.0-beta.1",
     "@types/bun": "1.3.14",
     "@types/mocha": "^10.0.10",
     "@types/npm-package-arg": "^6.1.4",
@@ -61,7 +77,6 @@
     "globals": "^17.12.0",
     "mocha": "11.8.0",
     "prettier": "^3.9.6",
-    "@lando/leia": "2.0.0-beta.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1"
   }
