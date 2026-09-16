@@ -6,10 +6,19 @@ permissions:
 jobs:
   examples:
     runs-on: macos-26
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
-        example: [options, sync]
+        example:
+          - defaults
+          - inputs
+          - install
+          - refresh
+          - status
+          - cache
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -25,4 +34,4 @@ jobs:
       - name: Run Leia scenario
         run: |
           mkdir -p examples/.tmp
-          TMPDIR="$PWD/examples/.tmp" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --stdin
+          TMPDIR="$PWD/examples/.tmp" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --shell bash

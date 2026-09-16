@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const argv = process.argv.slice(2);
+const logFile = process.env.CODEX_TOOLS_FIXTURE_LOG;
+if (logFile) {
+  fs.mkdirSync(path.dirname(logFile), { recursive: true });
+  fs.appendFileSync(
+    logFile,
+    JSON.stringify({
+      command: 'npm',
+      argv,
+      home: process.env.HOME ?? null,
+      codexHome: process.env.CODEX_HOME ?? null,
+      sentinel: process.env.CODEX_TOOLS_CHILD_SENTINEL ?? null,
+    }) + '\n',
+  );
+}
+
+if (process.env.FAKE_NPM_EXIT) {
+  process.stderr.write('E404 synthetic npm failure\n');
+  process.exit(Number(process.env.FAKE_NPM_EXIT));
+}
+
+if (argv[0] === '--version') process.stdout.write('11.19.0\n');
+else if (argv[0] === 'config' && argv[1] === 'get')
+  process.stdout.write('https://registry.example.test/\n');
+else if (argv[0] === 'view')
+  process.stdout.write(JSON.stringify(process.env.FAKE_NPM_RELEASE ?? '1.2.3') + '\n');
+else {
+  process.stderr.write('unexpected fake npm command\n');
+  process.exit(2);
+}

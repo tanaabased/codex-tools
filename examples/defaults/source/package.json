@@ -1,0 +1,11 @@
+{
+  "name": "default-example",
+  "version": "1.0.0",
+  "codexTools": {
+    "managedPaths": [
+      ".codex-plugin",
+      "package.json",
+      "payload.txt"
+    ]
+  }
+}
