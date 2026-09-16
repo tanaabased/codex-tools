@@ -49,11 +49,29 @@ try {
     assert.ok(result.stdout.includes(expected), result.stdout);
     assert.equal(result.stderr, '');
   }
+  for (const output of [[], ['--json']]) {
+    const result = spawnSync(
+      executable,
+      ['install', 'npm:@fixture/plugin@^1.0.0', '--dry-run', ...output],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...env, HOME: root, CODEX_HOME: path.join(root, 'codex'), NO_COLOR: '1' },
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    if (output.length) {
+      const data = JSON.parse(result.stdout);
+      assert.equal(data.source.valid, null);
+      assert.equal(data.source.package, '@fixture/plugin');
+      assert.deepEqual(data.native, []);
+    } else assert.match(result.stdout, /status: planned/);
+  }
   const api = await import(path.join(root, 'package/dist/index.js'));
   assert.equal(typeof api.runOperation, 'function');
   assert.equal(typeof api.refreshPlugin, 'function');
   process.stdout.write(
-    'Package allowlist, Bun shebang, executable help/version, and wrapper exports passed outside checkout.\n',
+    'Package allowlist, Bun shebang, executable help/version, npm JSON/text dry runs, and wrapper exports passed outside checkout.\n',
   );
 } finally {
   await rm(root, { recursive: true, force: true });
