@@ -1,0 +1,28 @@
+name: Example Tests
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  examples:
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [options, sync]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run build
+      - name: Put built CLI on PATH
+        run: echo "$PWD/dist" >> "$GITHUB_PATH"
+      - name: Run Leia scenario
+        run: |
+          mkdir -p examples/.tmp
+          TMPDIR="$PWD/examples/.tmp" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --stdin

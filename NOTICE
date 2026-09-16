@@ -1,0 +1,39 @@
+Codex Tools extraction provenance
+
+Canon a3e7a5023b189cabfebb22dc5fc1bbe84860546b:
+  https://github.com/tanaabased/canon
+  Cache engine, diff helpers, overlap/link tests, canonical lint and CLI templates.
+Me 24b5a7c1b97657b62687d7d2d6a383c2ac3a32ad:
+  https://github.com/pirog/me
+  Managed collector, metadata-error handling, unchanged-file and payload tests.
+Agentbox 6aa9422ce72553fa90dd16ea9417ecc848c17e40:
+  https://github.com/tanaabased/agentbox
+  Installation inspection, check/sync semantics, adapted installation tests.
+Merge a1d00b4194c7d9f6e15417f6b27b2bb7c4df6eb4:
+  https://github.com/tanaabased/merge
+  Package and tooling baseline reference.
+Leia a1bf130d1dcde52004d8b8cd60db89b8ceca8bb1:
+  https://github.com/lando/leia
+  Thin entrypoint, parser, help, and presentation boundary reference.
+
+Canon, Agentbox, Merge: Copyright (c) 2026 Tanaab Maneuvering Systems LLC
+Me: Copyright (c) 2025 Lando Alliance
+MIT permission and warranty terms for these adaptations are in LICENSE.
+
+The built artifacts bundle Ansis (https://github.com/webdiscus/ansis):
+
+ISC License
+
+Copyright (c) 2026, webdiscus
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
