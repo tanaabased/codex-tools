@@ -1,7 +1,7 @@
 {
   "name": "@tanaab/codex-tools",
   "version": "0.1.0",
-  "description": "Local Codex plugin cache synchronization and diagnostics.",
+  "description": "Local Codex plugin installation, cache synchronization, and diagnostics.",
   "type": "module",
   "license": "MIT",
   "author": "Tanaab",
@@ -40,7 +40,8 @@
     "format:write": "bun --bun prettier . --write --ignore-unknown",
     "lint": "bun run lint:eslint && bun run format:check",
     "test": "bun --bun ./node_modules/mocha/bin/mocha.js 'test/*.spec.js'",
-    "test:package": "bun run build && bun scripts/test-package.js"
+    "test:package": "bun run build && bun scripts/test-package.js",
+    "test:native": "bun run build && bun scripts/test-native-install.js"
   },
   "dependencies": {
     "ansis": "^4.2.0"
