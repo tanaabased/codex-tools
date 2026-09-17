@@ -32,7 +32,10 @@
     }
   },
   "files": [
+    ".codex-plugin",
+    "assets",
     "dist",
+    "skills",
     "API.md",
     "CLI.md",
     "CONTRIBUTING.md",

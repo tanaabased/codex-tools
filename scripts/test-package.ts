@@ -74,6 +74,9 @@ try {
   ]);
   const allowed = new Set([
     'package.json',
+    '.codex-plugin/plugin.json',
+    'assets/composer-icon.svg',
+    'assets/icon-large.png',
     'API.md',
     'CLI.md',
     'CONTRIBUTING.md',
@@ -83,6 +86,14 @@ try {
     'dist/codex-tools',
     'dist/esm/index.js',
     'dist/cjs/index.cjs',
+    'skills/codex-tools-maintenance/SKILL.md',
+    'skills/codex-tools-maintenance/agents/openai.yaml',
+    'skills/codex-tools-maintenance/assets/icon-large.png',
+    'skills/codex-tools-maintenance/assets/icon-small.svg',
+    'skills/codex-tools-setup/SKILL.md',
+    'skills/codex-tools-setup/agents/openai.yaml',
+    'skills/codex-tools-setup/assets/icon-large.png',
+    'skills/codex-tools-setup/assets/icon-small.svg',
     ...declarations,
   ]);
   assert.deepEqual(new Set(inspected.files.map((file) => file.path)), allowed);
@@ -134,6 +145,28 @@ try {
     apiExample,
     'README.md and API.md must publish the same checked API example.',
   );
+  const plugin = JSON.parse(
+    await readFile(path.join(installed, '.codex-plugin/plugin.json'), 'utf8'),
+  ) as {
+    name: string;
+    version: string;
+    skills: string;
+    interface: { composerIcon: string; logo: string };
+  };
+  assert.equal(plugin.name, 'codex-tools');
+  assert.equal(plugin.version, packageJson.version);
+  assert.equal(plugin.skills, './skills/');
+  for (const asset of [plugin.interface.composerIcon, plugin.interface.logo])
+    await lstat(path.join(installed, asset));
+  for (const skill of ['codex-tools-setup', 'codex-tools-maintenance']) {
+    const skillRoot = path.join(installed, 'skills', skill);
+    const instructions = await readFile(path.join(skillRoot, 'SKILL.md'), 'utf8');
+    const agent = await readFile(path.join(skillRoot, 'agents/openai.yaml'), 'utf8');
+    assert.ok(instructions.includes(`name: tanaab-${skill}`));
+    assert.ok(instructions.includes('<plugin-root>/dist/codex-tools'));
+    assert.ok(agent.includes("icon_small: './assets/icon-small.svg'"));
+    assert.ok(agent.includes("icon_large: './assets/icon-large.png'"));
+  }
   for (const absent of ['bin', 'lib', 'scripts', 'test', 'utils'])
     await assert.rejects(lstat(path.join(installed, absent)), { code: 'ENOENT' });
   const executable = path.join(installed, 'dist/codex-tools');
@@ -141,12 +174,14 @@ try {
   assert.notEqual((await lstat(executable)).mode & 0o111, 0);
 
   const metadata = JSON.parse(await readFile(path.join(installed, 'package.json'), 'utf8')) as {
+    version: string;
     engines: Record<string, string>;
     main: string;
     module: string;
     types: string;
     exports: Record<string, unknown>;
   };
+  assert.equal(metadata.version, plugin.version);
   assert.deepEqual(metadata.engines, { node: '^24.15.0 || >=26.0.0' });
   assert.equal(metadata.main, './dist/cjs/index.cjs');
   assert.equal(metadata.module, './dist/esm/index.js');
@@ -332,6 +367,27 @@ assert.equal(await readFile(path.join(target, 'unmanaged.txt'), 'utf8'), 'preser
   await writeFile(path.join(cliSource, '.codex-plugin/plugin.json'), manifest);
   await writeFile(path.join(cliSource, 'managed.txt'), 'source');
   await writeFile(path.join(cliTarget, 'unmanaged.txt'), 'preserve');
+  const setupExecutable = path.resolve(
+    installed,
+    'skills/codex-tools-setup',
+    '../..',
+    'dist/codex-tools',
+  );
+  assert.equal(setupExecutable, executable);
+  const setupPreview = spawnSync(setupExecutable, ['install', cliSource, '--dry-run', '--json'], {
+    cwd: consumer,
+    encoding: 'utf8',
+    env: { ...nodeOnlyEnv, HOME: cliRoot, CODEX_HOME: path.join(cliRoot, 'codex') },
+  });
+  assert.equal(setupPreview.status, 0, setupPreview.stderr || setupPreview.stdout);
+  assert.equal(JSON.parse(setupPreview.stdout).status, 'planned');
+  const maintenanceExecutable = path.resolve(
+    installed,
+    'skills/codex-tools-maintenance',
+    '../..',
+    'dist/codex-tools',
+  );
+  assert.equal(maintenanceExecutable, executable);
   const common = [
     '--repo-root',
     cliSource,
@@ -342,7 +398,7 @@ assert.equal(await readFile(path.join(target, 'unmanaged.txt'), 'utf8'), 'preser
     '--json',
   ];
   const invoke = (operation: readonly string[], extra: readonly string[] = []) =>
-    spawnSync(executable, [...operation, ...common, ...extra], {
+    spawnSync(maintenanceExecutable, [...operation, ...common, ...extra], {
       cwd: consumer,
       encoding: 'utf8',
       env: { ...nodeOnlyEnv, HOME: cliRoot, CODEX_HOME: path.join(cliRoot, 'codex') },
@@ -363,7 +419,7 @@ assert.equal(await readFile(path.join(target, 'unmanaged.txt'), 'utf8'), 'preser
     await writeFile(path.join(target, 'managed.txt'), 'old');
   }
   const ambiguous = spawnSync(
-    executable,
+    maintenanceExecutable,
     ['cache', 'sync', '--repo-root', cliSource, '--codex-home', ambiguousHome, '--json'],
     { cwd: consumer, encoding: 'utf8', env: { ...nodeOnlyEnv, HOME: cliRoot } },
   );
@@ -392,7 +448,7 @@ assert.equal(await readFile(path.join(target, 'unmanaged.txt'), 'utf8'), 'preser
     'Release the same tarball that passed consumer verification.',
   );
   process.stdout.write(
-    `Verified ${tarball}: exact contents, Node-only CLI, runtime and TypeScript ESM/CommonJS consumers, installed safety contracts, and direct Bun source command.\n`,
+    `Verified ${tarball}: exact plugin contents, skill-resolved Node CLI, runtime and TypeScript ESM/CommonJS consumers, installed safety contracts, and direct Bun source command.\n`,
   );
 } finally {
   await rm(root, { recursive: true, force: true });

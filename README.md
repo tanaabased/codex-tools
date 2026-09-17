@@ -16,6 +16,18 @@ npm install --global @tanaab/codex-tools
 codex-tools --help
 ```
 
+The CLI is the bootstrap. Use it to preview and install the same package as a Codex plugin:
+
+```sh
+codex-tools install npm:@tanaab/codex-tools --dry-run --json
+codex-tools install npm:@tanaab/codex-tools
+```
+
+Start a fresh Codex task after installation. `$tanaab-codex-tools-setup` guides safe plugin
+installation, while `$tanaab-codex-tools-maintenance` inspects installations and handles explicit
+refresh or cache-reconciliation requests. Both skills invoke the packaged runtime from the
+installed plugin rather than relying on the global command.
+
 From a source checkout, install the pinned Bun dependencies and run the TypeScript entrypoint:
 
 ```sh

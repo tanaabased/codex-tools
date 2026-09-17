@@ -67,6 +67,16 @@ codex-tools install 'npm:@scope/plugin@^1.2.0' --dry-run --json
 codex-tools install npm:plugin@stable --marketplace team
 ```
 
+After installing the Codex Tools CLI globally, the same package provides its setup and maintenance
+skills as an npm-backed Codex plugin:
+
+```sh
+codex-tools install npm:@tanaab/codex-tools --dry-run --json
+codex-tools install npm:@tanaab/codex-tools
+```
+
+Open a fresh Codex task after installation so the packaged skills are discovered.
+
 npm aliases, Git or URL dependencies, filesystem acquisition, empty selectors, and malformed
 selectors are rejected. Registry URLs must use HTTPS and contain no embedded credentials, query,
 or fragment. Keep credentials in npm user configuration or npm environment settings; project-only
