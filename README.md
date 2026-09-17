@@ -4,7 +4,7 @@ Install, inspect, refresh, and reconcile Codex plugins without trampling unrelat
 Codex Tools provides a Node CLI and a typed JavaScript API; the source is developed with Bun.
 
 The distributed package requires Node `^24.15.0 || >=26.0.0`. Local plugin installation and
-refresh support the Codex `0.153.x` CLI contract. Package publication and plugin publication are
+refresh support the Codex `0.154.x` CLI contract. Package publication and plugin publication are
 separate operations.
 
 ## Install

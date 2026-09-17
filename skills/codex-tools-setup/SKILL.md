@@ -46,7 +46,7 @@ native readback proves without claiming authentication or activation that it can
 - Resolve the plugin root as two directories above this `SKILL.md`. Invoke the absolute bundled
   executable at `<plugin-root>/dist/codex-tools` directly; never substitute a checkout path or a
   global `codex-tools` executable.
-- Require Node and a Codex `0.153.x` CLI. Require npm only for an `npm:` selector.
+- Require Node and a Codex `0.154.x` CLI. Require npm only for an `npm:` selector.
 - Identify one source: an absolute or explicitly resolved local plugin path, or an npm selector such
   as `npm:@scope/plugin@1.2.3`.
 - Preserve the caller's `HOME`, `CODEX_HOME`, npm configuration, and requested marketplace options.

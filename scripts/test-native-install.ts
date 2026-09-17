@@ -336,7 +336,7 @@ try {
     );
   }
   process.stdout.write(
-    'Codex 0.153.x native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
+    'Codex 0.154.x native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
   );
 } finally {
   await rm(root, { recursive: true, force: true });

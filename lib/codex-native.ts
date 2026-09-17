@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 
 import { asError } from '../utils/errors.ts';
 
-export const supportedCodexVersion = '0.153.4';
+export const supportedCodexVersion = '0.154.0';
 export const supportedCodexFamily = supportedCodexVersion.replace(/\.\d+$/, '.x');
 const supportedVersion = new RegExp(
   '^codex-cli ' + supportedCodexFamily.replaceAll('.', '\\.').replace('x', '\\d+') + '$',

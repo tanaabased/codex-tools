@@ -313,7 +313,7 @@ export async function installNpmPlugin(
       stageOptions,
     );
     if (installed.exitCode !== 0 && !pinned) {
-      // Codex 0.153.x exposes a manifest-name mismatch before installation. This is
+      // Codex 0.154.x exposes a manifest-name mismatch before installation. This is
       // only a discovery hint; the acquired manifest below is the identity authority.
       const discovered = installed.stderr.match(
         /plugin\.json name `([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)` does not match marketplace plugin name `codex-tools-identity-probe`/,

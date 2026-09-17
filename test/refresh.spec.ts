@@ -154,7 +154,7 @@ describe('native local refresh', () => {
     calls = [];
     hook = null;
     failure = null;
-    version = 'codex-cli 0.153.4';
+    version = 'codex-cli 0.154.0';
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -274,7 +274,7 @@ describe('native local refresh', () => {
       if (kind === 'mismatched') installed[0]!.source!.path = home;
       if (kind === 'nonlocal') installed[0]!.source!.source = 'git';
       if (kind === 'disabled') installed[0]!.enabled = false;
-      if (kind === 'unsupported version') version = 'codex-cli 0.154.0';
+      if (kind === 'unsupported version') version = 'codex-cli 0.155.0';
       if (kind === 'malformed JSON')
         hook = async (argv) => (argv[1] === 'list' ? { stdout: '{' } : null);
       const before = await readFile(manifestFile, 'utf8');

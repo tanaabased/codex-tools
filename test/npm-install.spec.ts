@@ -79,7 +79,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.ok(childEnv.HOME);
     calls.push(['codex', ...argv]);
     if (argv[0] === '--version')
-      return { argv, exitCode: 0, stdout: 'codex-cli 0.153.4', stderr: '' };
+      return { argv, exitCode: 0, stdout: 'codex-cli 0.154.0', stderr: '' };
     const staging = childEnv.CODEX_HOME !== codexHome;
     const file = staging
       ? path.join(childEnv.HOME, '.agents/plugins/marketplace.json')

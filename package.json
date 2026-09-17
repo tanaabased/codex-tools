@@ -68,11 +68,7 @@
     "test:native:npm": "bun run build && bun scripts/test-native-npm.ts"
   },
   "dependencies": {
-    "@types/node": "^24.0.0",
-    "ansis": "^4.2.0",
-    "npm-package-arg": "^14.0.0",
-    "semver": "^7.8.5",
-    "smol-toml": "^1.4.2"
+    "@types/node": "^24.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -81,11 +77,15 @@
     "@types/mocha": "^10.0.10",
     "@types/npm-package-arg": "^6.1.4",
     "@types/semver": "^7.7.1",
+    "ansis": "^4.2.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "mocha": "11.8.0",
+    "npm-package-arg": "^14.0.0",
     "prettier": "^3.9.6",
+    "semver": "^7.8.5",
+    "smol-toml": "^1.4.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1"
   }
