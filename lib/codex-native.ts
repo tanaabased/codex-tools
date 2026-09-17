@@ -17,6 +17,7 @@ export interface NativePluginInspection {
   installedPath: string;
 }
 
+/** Captured result from one bounded native Codex or npm subprocess. */
 export interface NativeResult {
   argv: readonly string[];
   exitCode: number;
@@ -26,6 +27,7 @@ export interface NativeResult {
   error?: string;
 }
 
+/** Environment, working directory, executable, and deadline for a native command. */
 export interface NativeOptions {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
@@ -33,6 +35,7 @@ export interface NativeOptions {
   timeoutMs?: number;
 }
 
+/** Injectable asynchronous native-command boundary used by install and refresh. */
 export type NativeRunner = (
   argv: readonly string[],
   options?: NativeOptions,

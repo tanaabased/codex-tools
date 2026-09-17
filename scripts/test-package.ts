@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import packageJson from '../package.json';
+import { checkDocumentationLinks, documentationExample } from './documentation.ts';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
@@ -73,6 +74,9 @@ try {
   ]);
   const allowed = new Set([
     'package.json',
+    'API.md',
+    'CLI.md',
+    'CONTRIBUTING.md',
     'README.md',
     'LICENSE',
     'NOTICE',
@@ -120,6 +124,16 @@ try {
   const installed = path.join(consumer, 'node_modules/@tanaab/codex-tools');
   assert.equal((await lstat(installed)).isSymbolicLink(), false);
   assert.equal(await realpath(installed), installed);
+  await checkDocumentationLinks(installed, ['README.md', 'CLI.md', 'API.md', 'CONTRIBUTING.md']);
+  const apiExample = documentationExample(
+    await readFile(path.join(installed, 'API.md'), 'utf8'),
+    'api',
+  );
+  assert.equal(
+    documentationExample(await readFile(path.join(installed, 'README.md'), 'utf8'), 'api'),
+    apiExample,
+    'README.md and API.md must publish the same checked API example.',
+  );
   for (const absent of ['bin', 'lib', 'scripts', 'test', 'utils'])
     await assert.rejects(lstat(path.join(installed, absent)), { code: 'ENOENT' });
   const executable = path.join(installed, 'dist/codex-tools');
@@ -219,14 +233,7 @@ try {
     assert.equal(result.status, 0, result.stderr || result.stdout);
   }
 
-  await writeFile(
-    path.join(consumer, 'types.mts'),
-    `import { runOperation, type CacheOperationResult, type CodexToolsOptions } from '@tanaab/codex-tools';
-const options: CodexToolsOptions = { repoRoot: '/source', cachePathOverride: '/cache' };
-const result: Promise<CacheOperationResult> = runOperation('check', options);
-void result;
-`,
-  );
+  await writeFile(path.join(consumer, 'types.mts'), apiExample);
   await writeFile(
     path.join(consumer, 'types.cts'),
     `import tools = require('@tanaab/codex-tools');

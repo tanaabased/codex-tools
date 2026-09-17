@@ -13,9 +13,15 @@ export interface SymlinkEntry {
   target: string;
 }
 
-export type TreeEntry = FileEntry | DirectoryEntry | SymlinkEntry;
+/** Normalized managed-tree entry used for comparison and synchronization. */
+export type TreeEntry =
+  | { type: 'file'; mode: number; content: Uint8Array }
+  | { type: 'dir' }
+  | { type: 'symlink'; target: string };
+/** Relative-path map representing one normalized managed tree. */
 export type EntryMap = Map<string, TreeEntry>;
 
+/** Directional differences required to make a target match its source. */
 export interface TreeDiff {
   changed: string[];
   extra: string[];
@@ -27,9 +33,11 @@ function contentEquals(leftContent: Uint8Array, rightContent: Uint8Array): boole
 }
 
 /**
- * Compares normalized managed-tree entry maps.
+ * Compares normalized managed-tree entry maps without reading or writing the filesystem.
  *
- * Returns sorted changed, extra, and missing paths without mutating either snapshot.
+ * @param sourceEntries Desired source snapshot.
+ * @param targetEntries Observed target snapshot.
+ * @returns Sorted changed, extra, and missing relative paths without mutating either snapshot.
  */
 export default function diffEntries(sourceEntries: EntryMap, targetEntries: EntryMap): TreeDiff {
   const changed = [];

@@ -9,12 +9,14 @@ import { selection } from '../utils/selection.ts';
 
 type UnknownRecord = Record<string, unknown>;
 
+/** Names the source plugin, its compatibility version, and its package release. */
 export interface PluginIdentity {
   name: string;
   version: string;
   packageVersion: string;
 }
 
+/** Resolved cache ownership, marketplace selection, and missing-installation policy. */
 export interface CacheConfiguration {
   managedPaths: readonly string[] | null;
   excludeNames: readonly string[];
@@ -23,6 +25,7 @@ export interface CacheConfiguration {
   absentCheck: AbsentCheck;
 }
 
+/** Describes observable cache compatibility and Codex registration state. */
 export interface InstallationInspection {
   cachePath: string | null;
   cachePresent: boolean;
@@ -36,6 +39,7 @@ export interface InstallationInspection {
   enabled: boolean | null;
 }
 
+/** Describes one cache-layout candidate before a final target is selected. */
 export interface InstallationCandidate extends Omit<
   InstallationInspection,
   'installed' | 'layoutVerified' | 'registered' | 'enabled'
@@ -44,6 +48,7 @@ export interface InstallationCandidate extends Omit<
   directory: string;
 }
 
+/** Contains the validated source, selected target, configuration, and diagnostics for an operation. */
 export interface ResolvedContext {
   repoRoot: string;
   codexHome: string;
@@ -115,7 +120,17 @@ function marketplaceName(value: unknown): string | null {
   return value;
 }
 
-/** Inspects one selected cache directory without inferring installation or activation state. */
+/**
+ * Inspects one selected cache directory without inferring installation or activation state.
+ *
+ * The function reads the cached plugin manifest and reports absence, malformed metadata, or an
+ * identity mismatch as data. Other filesystem failures propagate.
+ *
+ * @param cachePath Cache directory to inspect.
+ * @param identity Expected plugin name and compatibility version.
+ * @returns Observable cache presence, identity, compatibility, and a diagnostic issue.
+ * @throws When the cache or manifest cannot be read for a reason other than ordinary absence.
+ */
 export async function inspectInstallation(
   cachePath: string,
   identity: Pick<PluginIdentity, 'name' | 'version'>,
@@ -167,7 +182,19 @@ export async function inspectInstallation(
   return result;
 }
 
-/** Resolves a source plugin and one safe cache target, returning diagnostics without mutation. */
+/**
+ * Resolves a source plugin and at most one safe cache target without mutation.
+ *
+ * The source `package.json` and `.codex-plugin/plugin.json` establish identity and compatibility.
+ * Explicit options override declared `codexTools` settings. Ambiguous or unsupported cache layouts
+ * are returned as diagnostics rather than guessed.
+ *
+ * @param options Source, Codex home, marketplace, cache, selection, and absence settings.
+ * @returns The validated source identity, resolved configuration, candidate caches, and selection
+ * diagnostics.
+ * @throws When source metadata or configuration is invalid, paths are unsafe, or required state
+ * cannot be read.
+ */
 export async function resolveContext(options: CodexToolsOptions = {}): Promise<ResolvedContext> {
   let repoRoot = path.resolve(options.repoRoot ?? process.cwd());
   let packageJson: UnknownRecord;
