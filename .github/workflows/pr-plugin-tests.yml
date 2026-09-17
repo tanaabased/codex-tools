@@ -1,0 +1,13 @@
+name: Plugin Tests
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate-plugin:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: tanaabased/actions/validate-codex-plugin@v1
+        with:
+          plugin-directory: .

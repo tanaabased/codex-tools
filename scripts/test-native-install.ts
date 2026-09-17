@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   chmod,
   lstat,
@@ -17,6 +17,66 @@ import { fileURLToPath } from 'node:url';
 
 const cli =
   process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
+
+async function freshSkills(
+  env: NodeJS.ProcessEnv,
+  cwd: string,
+  expected: readonly string[],
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn('codex', ['app-server'], {
+      env,
+      cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let buffer = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error('Fresh-session skill discovery timed out.'));
+    }, 20000);
+    child.stderr.resume();
+    const send = (message: unknown) => child.stdin.write(JSON.stringify(message) + '\n');
+    child.stdout.on('data', (chunk) => {
+      buffer += chunk;
+      let at;
+      while ((at = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, at);
+        buffer = buffer.slice(at + 1);
+        let data: { id?: number; result?: unknown };
+        try {
+          data = JSON.parse(line) as { id?: number; result?: unknown };
+        } catch {
+          continue;
+        }
+        if (data.id === 1) {
+          send({ method: 'initialized' });
+          send({ id: 2, method: 'skills/list', params: { cwds: [cwd], forceReload: true } });
+        }
+        if (data.id === 2) {
+          clearTimeout(timer);
+          child.kill();
+          const result = JSON.stringify(data.result);
+          const missing = expected.filter((skill) => !result.includes(skill));
+          if (!missing.length) resolve();
+          else reject(new Error('Fresh-session skills/list omitted: ' + missing.join(', ')));
+        }
+      }
+    });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    send({
+      id: 1,
+      method: 'initialize',
+      params: {
+        clientInfo: { name: 'codex-tools-native-test', version: '1.0.0' },
+        capabilities: { experimentalApi: true },
+      },
+    });
+  });
+}
+
 interface SmokeResult {
   ok: boolean;
   status: string;
@@ -173,6 +233,108 @@ try {
     await chmod(cacheRoot, 0o755);
   }
   assert.equal(invokeCommand('refresh').ok, true);
+
+  const packageTarball = process.env.CODEX_TOOLS_PACKAGE;
+  if (packageTarball) {
+    const archive = await realpath(path.resolve(packageTarball));
+    const extracted = path.join(root, 'packed-plugin');
+    await mkdir(extracted);
+    const unpacked = spawnSync('tar', ['-xzf', archive, '-C', extracted], {
+      encoding: 'utf8',
+    });
+    assert.equal(unpacked.status, 0, unpacked.stderr);
+    const packageRoot = await realpath(path.join(extracted, 'package'));
+    assert.equal(packageRoot.startsWith(root + path.sep), true);
+    const plugin = JSON.parse(
+      await readFile(path.join(packageRoot, '.codex-plugin/plugin.json'), 'utf8'),
+    ) as { name: string; version: string };
+    assert.equal(plugin.name, 'codex-tools');
+
+    const packagedHome = path.join(root, 'packaged-home');
+    const packagedCodex = path.join(root, 'packaged-codex');
+    await mkdir(packagedHome);
+    const packagedEnv = {
+      ...env,
+      HOME: packagedHome,
+      CODEX_HOME: packagedCodex,
+    };
+    const packagedInstall = spawnSync(cli, ['install', packageRoot, '--json'], {
+      cwd: packagedHome,
+      env: packagedEnv,
+      encoding: 'utf8',
+      timeout: 45000,
+    });
+    assert.equal(
+      packagedInstall.status,
+      0,
+      packagedInstall.stderr || packagedInstall.stdout || packagedInstall.error?.message,
+    );
+    const packagedResult = JSON.parse(packagedInstall.stdout) as SmokeResult;
+    assert.equal(packagedResult.inspection.installed, true);
+    assert.equal(packagedResult.inspection.enabled, true);
+    const cachedPlugin = path.join(
+      packagedCodex,
+      'plugins/cache/personal',
+      plugin.name,
+      plugin.version,
+    );
+    assert.equal(await realpath(cachedPlugin), cachedPlugin);
+    for (const skill of ['tanaab-codex-tools-setup', 'tanaab-codex-tools-maintenance']) {
+      const folder = skill.replace(/^tanaab-/, '');
+      assert.ok(
+        (await readFile(path.join(cachedPlugin, 'skills', folder, 'SKILL.md'), 'utf8')).includes(
+          `name: ${skill}`,
+        ),
+      );
+    }
+    await freshSkills(packagedEnv, packagedHome, [
+      'tanaab-codex-tools-setup',
+      'tanaab-codex-tools-maintenance',
+    ]);
+
+    const packagedInput = path.join(root, 'packaged-input');
+    const packagedTarget = path.join(root, 'packaged-target');
+    await mkdir(path.join(packagedInput, '.codex-plugin'), { recursive: true });
+    await writeFile(
+      path.join(packagedInput, 'package.json'),
+      JSON.stringify({ version: '1.0.0', codexTools: { managedPaths: ['payload.txt'] } }),
+    );
+    await writeFile(
+      path.join(packagedInput, '.codex-plugin/plugin.json'),
+      JSON.stringify({ name: 'packaged-probe', version: '1.0.0' }),
+    );
+    await writeFile(path.join(packagedInput, 'payload.txt'), 'packaged');
+    const cachedCli = path.join(cachedPlugin, 'dist/codex-tools');
+    const setup = spawnSync(cachedCli, ['install', packagedInput, '--dry-run', '--json'], {
+      cwd: packagedHome,
+      env: packagedEnv,
+      encoding: 'utf8',
+    });
+    assert.equal(setup.status, 0, setup.stderr || setup.stdout);
+    assert.equal(JSON.parse(setup.stdout).status, 'planned');
+    const maintenance = spawnSync(
+      cachedCli,
+      [
+        'cache',
+        'sync',
+        '--repo-root',
+        packagedInput,
+        '--cache-path',
+        packagedTarget,
+        '--missing-target',
+        'create',
+        '--dry-run',
+        '--json',
+      ],
+      { cwd: packagedHome, env: packagedEnv, encoding: 'utf8' },
+    );
+    assert.equal(maintenance.status, 0, maintenance.stderr || maintenance.stdout);
+    assert.equal(JSON.parse(maintenance.stdout).status, 'planned');
+    await assert.rejects(lstat(packagedTarget), { code: 'ENOENT' });
+    process.stdout.write(
+      'Packed plugin native smoke passed: external archive, Codex install, fresh-session discovery, and cached skill runtime invocation.\n',
+    );
+  }
   process.stdout.write(
     'Codex 0.153.x native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
   );

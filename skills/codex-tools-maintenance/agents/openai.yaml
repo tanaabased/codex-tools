@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Codex Plugin Maintenance'
+  short_description: 'Tanaab-based Codex plugin maintenance.'
+  icon_small: './assets/icon-small.svg'
+  icon_large: './assets/icon-large.png'
+  brand_color: '#00c88a'
+  default_prompt: 'Use $tanaab-codex-tools-maintenance to inspect Codex plugin state and perform only the requested refresh or cache repair.'

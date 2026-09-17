@@ -35,8 +35,9 @@ bun run test:package
 
 `bun run lint` includes ESLint, Prettier, API-reference drift, and local documentation-link checks.
 `bun run test:package` builds the Node artifacts, inspects the exact npm payload, installs its
-tarball into a disposable consumer, and exercises the CLI, ESM, CommonJS, and TypeScript contracts.
-Nothing is published.
+tarball into a disposable consumer, and exercises the plugin manifest, skills, assets, bundled CLI,
+ESM, CommonJS, and TypeScript contracts. Nothing is published. Generic plugin schema validation is
+a separate pull-request check backed by `tanaabased/actions/validate-codex-plugin@v1`.
 
 Use `bun run format:write` to apply repository formatting. Edit public TypeScript documentation
 comments or the generator rather than editing `API.md` by hand.
@@ -48,6 +49,10 @@ Run these only when the change owns their boundary:
 - `bun run build` builds the Node CLI, ESM/CommonJS libraries, and matching declarations.
 - `bun run test:native` exercises local installation and refresh against a disposable Codex home.
 - `bun run test:native:npm` adds a disposable HTTPS npm registry and npm-backed installation.
+
+The Native Codex Verification workflow also installs the exact packed Codex Tools plugin outside
+the checkout, confirms fresh-session skill discovery, and invokes its cached runtime. Those checks
+are native evidence; package tests alone do not prove Codex discovery or activation.
 
 The six Leia scenarios in `examples/` run against `dist/codex-tools` in pull-request CI. Do not run
 them locally unless explicitly requested. The fake child commands prove Codex Tools orchestration;

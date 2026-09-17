@@ -1,0 +1,32 @@
+{
+  "name": "codex-tools",
+  "version": "0.1.0",
+  "description": "Install, inspect, refresh, and reconcile Codex plugins safely.",
+  "author": {
+    "name": "Tanaab Maneuvering Systems LLC",
+    "email": "emori@tanaab.dev",
+    "url": "https://www.tanaab.dev"
+  },
+  "homepage": "https://github.com/tanaabased/codex-tools",
+  "repository": "https://github.com/tanaabased/codex-tools",
+  "license": "MIT",
+  "keywords": ["codex", "plugins", "maintenance", "tanaab"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Tools",
+    "shortDescription": "Safe Codex plugin setup and maintenance",
+    "longDescription": "Install, inspect, refresh, and reconcile Codex plugins without trampling unrelated local state.",
+    "developerName": "Tanaab Maneuvering Systems",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/tanaabased/codex-tools",
+    "defaultPrompt": [
+      "Use $tanaab-codex-tools-setup to install a Codex plugin safely.",
+      "Use $tanaab-codex-tools-maintenance to inspect this plugin installation.",
+      "Use $tanaab-codex-tools-maintenance to reconcile cache drift after review."
+    ],
+    "brandColor": "#00c88a",
+    "composerIcon": "./assets/composer-icon.svg",
+    "logo": "./assets/icon-large.png"
+  }
+}

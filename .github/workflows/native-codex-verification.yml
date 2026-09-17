@@ -35,6 +35,9 @@ jobs:
           bun run build
           bun scripts/test-package.ts "--pack-destination=$package_dir"
           npm install --prefix "$consumer_dir" --ignore-scripts --no-audit --no-fund "$package_dir/"*.tgz
+          package_tarball="$(find "$package_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
+          test -n "$package_tarball"
+          echo "CODEX_TOOLS_PACKAGE=$package_tarball" >> "$GITHUB_ENV"
       - name: Run isolated native probes
         shell: bash
         run: |
