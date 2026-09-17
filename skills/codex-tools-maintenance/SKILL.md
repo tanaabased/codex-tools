@@ -21,78 +21,59 @@ metadata:
 
 ## Overview
 
-Inspect and maintain one Codex plugin through the packaged Codex Tools runtime. Begin with read-only
-status or cache checks, distinguish source drift from installation problems, and apply only the
-refresh or managed-cache repair the user requested.
+Inspect one Codex plugin and apply the requested refresh or managed-cache repair through the bundled
+Codex Tools runtime.
 
 ## When to Use
 
-- Inspect a plugin's source identity, compatibility, registration, enabled state, or payload drift.
-- Diagnose a local or npm-backed installation with `status` or its `doctor` alias.
-- Refresh an existing installation from its selected local source or pinned npm release.
-- Check or synchronize managed cache content while preserving unmanaged entries.
+- Diagnose installation health, compatibility, registration, enablement, or payload drift.
+- Refresh a local source or pinned npm release, or reconcile managed cache content.
 
 ## When Not to Use
 
-- Do not use this skill for first-time installation; use `$tanaab-codex-tools-setup`.
-- Do not use refresh to upgrade an npm plugin: npm refresh deliberately retains the pinned release.
-- Do not publish a package, prepare a release, or repair unrelated Codex configuration.
+- For first installation or an npm release change, use `$tanaab-codex-tools-setup`.
+- Do not publish packages or repair unrelated Codex configuration.
 
 ## Preconditions
 
-- Resolve the plugin root as two directories above this `SKILL.md`. Invoke the absolute bundled
-  executable at `<plugin-root>/dist/codex-tools` directly; never substitute a checkout path or a
-  global `codex-tools` executable.
-- Require Node. Refresh additionally requires a compatible Codex CLI, and npm refresh requires npm.
-- Resolve the intended plugin source and any explicit Codex home, marketplace, or cache path before
-  selecting an operation.
-- Treat read-only diagnosis as distinct from repair. A request to inspect does not authorize
-  refresh or cache synchronization.
+- Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
+  executable; never substitute a checkout or global executable.
+- Require Node; refresh also needs a supported Codex CLI and npm for npm sources.
+- Resolve the intended source and any explicit Codex home, marketplace, or cache path.
 
 ## Workflow
 
-1. Resolve the bundled executable, run `<plugin-root>/dist/codex-tools --version`, and stop if it is
-   missing or does not match the plugin package version. Do not fall back to another executable.
-2. Inspect before mutation:
-   - Use `status --repo-root <plugin-path> --json` or the `doctor` alias for installation health.
-   - Use `cache check --repo-root <plugin-path> --json` when the question is managed payload drift.
-3. Classify the result before recommending action:
-   - Use `refresh <plugin-path>` for an installed local plugin whose source payload changed.
-   - Use `refresh npm:<package>` to reinstall the exact recorded npm release.
-   - Use `cache sync` only for the selected managed cache contract; it is not plugin installation.
-   - Use setup with a new npm selector when the user wants another package release.
-4. For `refresh` or `cache sync`, run the chosen command with `--dry-run --json` first. Review the
-   selected source, target, marketplace, planned writes, preservation behavior, and unresolved
-   native checks.
-5. When the user's request authorizes the repair, repeat the same command without `--dry-run`.
-   Preserve every selector and target from the reviewed plan.
-6. Re-run `status` or `cache check` as appropriate. Report observed convergence, incomplete
-   operations, retained source edits, and any authentication or activation state that remains
-   unknown.
+1. Run `<plugin-root>/dist/codex-tools --version`. Stop if missing or mismatched with the plugin
+   package version.
+2. Inspect with `status --repo-root <plugin-path> --json` (`doctor` is an alias), or use
+   `cache check --repo-root <plugin-path> --json` for managed payload drift.
+3. Select the repair:
+   - `refresh <plugin-path>` reinstalls changed local source.
+   - `refresh npm:<package>` reinstalls the exact recorded npm release.
+   - `cache sync` reconciles the selected managed cache; it does not install a plugin.
+4. Preview the chosen command with `--dry-run --json`. Review the source, target, marketplace,
+   planned writes, preservation behavior, and unresolved native checks.
+5. When the request authorizes repair, repeat the reviewed command without `--dry-run`.
+6. Re-run `status` or `cache check` as appropriate and report the observed outcome.
 
 ## Checkpoints
 
-- Diagnosis remains read-only until a requested repair operation is selected.
-- Refresh uses the existing installation mapping and never silently changes an npm release.
-- Cache synchronization preserves unmanaged and excluded content and refuses ambiguous targets.
-- Partial native effects are reported rather than described as rolled back.
+- An inspection request does not authorize mutation. Preserve reviewed selectors and targets.
+- Refuse ambiguous targets, preserve unmanaged and excluded content, and retain npm release pins.
+- Report partial native effects and retained source edits without promising rollback.
 
 ## Completion Criteria
 
-- Read-only requests end with a structured diagnosis and no filesystem or child-process mutation.
-- Repair requests have a reviewed dry run, an authorized apply step, and a matching final check.
-- Managed cache repair converges without removing unmanaged content.
-- Installation, authentication, activation, and payload claims remain separate and evidence-based.
+- Diagnosis ends without filesystem writes or child processes.
+- Repair has a matching final check that demonstrates convergence or identifies remaining problems.
+- Installation, authentication, activation, and payload claims remain distinct.
 
 ## Bundled Resources
 
-- [README](../../README.md): common status, refresh, and cache commands.
-- [CLI](../../CLI.md): complete operation, option, precedence, and failure contract.
-- `../../dist/codex-tools`: packaged Node runtime used by this skill.
+- [CLI](../../CLI.md): options, precedence, and failure contract.
+- `../../dist/codex-tools`: packaged Node runtime.
 
 ## Validation
 
-- Confirm the resolved executable is inside this installed plugin and its version matches the
-  plugin package.
-- Confirm the initial command was read-only and any mutation matched the user's requested repair.
-- Confirm the final status or cache check supports every completion claim.
+Confirm the bundled runtime and any mutation matched the requested repair, and that final status or
+cache readback supports the reported outcome. Keep unobserved authentication and activation unknown.

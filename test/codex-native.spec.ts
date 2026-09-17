@@ -23,9 +23,9 @@ describe('lib/codex-native', () => {
   });
 
   it('should preserve text responses and reject invalid JSON', () => {
-    const child = { argv: [], exitCode: 0, stdout: ' codex-cli 0.154.0\n', stderr: '' };
+    const child = { argv: [], exitCode: 0, stdout: ' codex-cli 1.2.3\n', stderr: '' };
 
-    assert.equal(readNativeResult(child, { json: false }), 'codex-cli 0.154.0');
+    assert.equal(readNativeResult(child, { json: false }), 'codex-cli 1.2.3');
     assert.throws(
       () => readNativeResult({ ...child, stdout: '{' }),
       /Native Codex returned invalid JSON/,
@@ -47,11 +47,11 @@ describe('lib/codex-native', () => {
       'codex-cli ' + supportedCodexVersion,
     );
     assert.throws(
-      () => assertSupportedCodexVersion('codex-cli 0.155.0'),
+      () => assertSupportedCodexVersion('codex-cli 999.0.0'),
       new RegExp(
         'Supported native contract is Codex ' +
           supportedCodexFamily.replaceAll('.', '\\.') +
-          '; found codex-cli 0\\.155\\.0',
+          '; found codex-cli 999\\.0\\.0',
       ),
     );
     assert.throws(

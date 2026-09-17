@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -97,7 +95,7 @@ async function generateApiDocumentation(root: string): Promise<string> {
     'This reference covers every supported export from `@tanaab/codex-tools`. Start with the',
     '[README](./README.md) for installation or the [CLI guide](./CLI.md) for terminal usage.',
     '',
-    'Imports through `lib/`, `utils/`, `scripts/`, or `dist/` are private and unsupported.',
+    'Import from the package root; internal paths are unsupported.',
     '',
     '## Usage',
     '',
@@ -139,7 +137,7 @@ async function generateApiDocumentation(root: string): Promise<string> {
 
 const args = process.argv.slice(2);
 if (args.some((arg) => arg !== '--check')) throw new Error('Usage: docs:api [--check]');
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const destination = path.join(root, 'API.md');
 const generated = await generateApiDocumentation(root);
 if (args.includes('--check')) {

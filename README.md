@@ -3,9 +3,8 @@
 Install, inspect, refresh, and reconcile Codex plugins without trampling unrelated local state.
 Codex Tools provides a Node CLI and a typed JavaScript API; the source is developed with Bun.
 
-The distributed package requires Node `^24.15.0 || >=26.0.0`. Local plugin installation and
-refresh support the Codex `0.154.x` CLI contract. Package publication and plugin publication are
-separate operations.
+The distributed package requires Node `^24.15.0 || >=26.0.0`. See [CLI prerequisites](./CLI.md#invocation-and-prerequisites)
+for the supported Codex contract.
 
 ## Install
 
@@ -27,13 +26,6 @@ Start a fresh Codex task after installation. `$tanaab-codex-tools-setup` guides 
 installation, while `$tanaab-codex-tools-maintenance` inspects installations and handles explicit
 refresh or cache-reconciliation requests. Both skills invoke the packaged runtime from the
 installed plugin rather than relying on the global command.
-
-From a source checkout, install the pinned Bun dependencies and run the TypeScript entrypoint:
-
-```sh
-bun install --frozen-lockfile --ignore-scripts
-bun run codex-tools --help
-```
 
 ## Start with a dry run
 
@@ -96,24 +88,12 @@ const result = await runOperation('status', options);
 if (!result.ok) console.error(result.issue);
 ```
 
-Import only from `@tanaab/codex-tools`; `lib/`, `utils/`, `scripts/`, and `dist/` are private
-implementation paths. The generated [API reference](./API.md) covers every supported runtime and
+Import from `@tanaab/codex-tools`; internal paths are unsupported. The generated [API reference](./API.md) covers every supported runtime and
 type export, including results, failures, and side effects.
 
 ## Develop
 
-Source validation uses Bun 1.3.14. Node 26.9.0, pinned in `.node-version`, validates built and
-packed artifacts:
-
-```sh
-bun install --frozen-lockfile --ignore-scripts
-bun run lint
-bun run typecheck
-bun run test
-bun run test:package
-```
-
-See [CONTRIBUTING](./CONTRIBUTING.md) for generation, validation, and CI-owned checks.
+See [CONTRIBUTING](./CONTRIBUTING.md) for source setup, generation, and validation.
 
 ## License and attribution
 

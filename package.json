@@ -53,19 +53,19 @@
   "scripts": {
     "dev": "bun bin/codex-tools.ts",
     "codex-tools": "bun run bin/codex-tools.ts",
-    "build": "bun scripts/build.ts",
-    "docs:api": "bun scripts/generate-api.ts",
-    "docs:api:check": "bun scripts/generate-api.ts --check",
-    "docs:check": "bun run docs:api:check && bun scripts/check-documentation.ts",
+    "build": "bun dev/scripts/build-task.ts",
+    "docs:api": "bun dev/scripts/generate-api-task.ts",
+    "docs:api:check": "bun dev/scripts/generate-api-task.ts --check",
+    "docs:check": "bun run docs:api:check && bun dev/scripts/check-documentation-task.ts",
     "lint:eslint": "bun --bun eslint .",
     "format:check": "bun --bun prettier . --check --ignore-unknown",
     "format:write": "bun --bun prettier . --write --ignore-unknown",
     "lint": "bun run lint:eslint && bun run format:check && bun run docs:check",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun ./node_modules/mocha/bin/mocha.js 'test/*.spec.ts'",
-    "test:package": "bun run build && bun scripts/test-package.ts",
-    "test:native": "bun run build && bun scripts/test-native-install.ts",
-    "test:native:npm": "bun run build && bun scripts/test-native-npm.ts"
+    "test:package": "bun run build && bun dev/scripts/test-package-task.ts",
+    "test:native": "bun run build && bun dev/scripts/test-native-install-task.ts",
+    "test:native:npm": "bun run build && bun dev/scripts/test-native-npm-task.ts"
   },
   "dependencies": {
     "@types/node": "^24.0.0"

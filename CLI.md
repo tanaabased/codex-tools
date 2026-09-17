@@ -16,15 +16,15 @@ bun run codex-tools --help
 
 | Operation                         | Additional prerequisites                                                 |
 | --------------------------------- | ------------------------------------------------------------------------ |
-| `install <path>`                  | Codex `0.154.x`; source `.codex-plugin/plugin.json`                      |
-| `install npm:<selector>`          | Codex `0.154.x`; npm on `PATH`; registry credentials in npm config       |
+| `install <path>`                  | Source `.codex-plugin/plugin.json`                                       |
+| `install npm:<selector>`          | npm on `PATH`; registry credentials in npm config                        |
 | `refresh <path>`                  | Existing enabled local installation and matching local marketplace       |
 | `refresh npm:<package>`           | Existing enabled npm installation; npm on `PATH`; pinned package release |
 | `status`, `doctor`, `cache check` | Source identity and readable selected state; no Codex process is started |
 | `cache sync`                      | One unambiguous installed cache, or an explicit opted-in raw target      |
 
-Install and refresh are verified against Codex 0.154.0. Unsupported Codex
-versions fail before marketplace edits. Cache commands inspect files and configuration directly;
+Install and refresh require Codex `0.154.x`, verified against `0.154.0`. Unsupported versions
+fail before marketplace edits. Cache commands inspect files and configuration directly;
 they do not invoke Codex.
 
 ## Install

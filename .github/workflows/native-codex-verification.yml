@@ -33,7 +33,7 @@ jobs:
           consumer_dir="$RUNNER_TEMP/codex-tools-consumer"
           mkdir -p "$package_dir" "$consumer_dir"
           bun run build
-          bun scripts/test-package.ts "--pack-destination=$package_dir"
+          bun dev/scripts/test-package-task.ts "--pack-destination=$package_dir"
           npm install --prefix "$consumer_dir" --ignore-scripts --no-audit --no-fund "$package_dir/"*.tgz
           package_tarball="$(find "$package_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
           test -n "$package_tarball"
@@ -42,5 +42,5 @@ jobs:
         shell: bash
         run: |
           export CODEX_TOOLS_CLI="$RUNNER_TEMP/codex-tools-consumer/node_modules/.bin/codex-tools"
-          bun scripts/test-native-install.ts
-          bun scripts/test-native-npm.ts
+          bun dev/scripts/test-native-install-task.ts
+          bun dev/scripts/test-native-npm-task.ts

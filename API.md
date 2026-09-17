@@ -5,7 +5,7 @@
 This reference covers every supported export from `@tanaab/codex-tools`. Start with the
 [README](./README.md) for installation or the [CLI guide](./CLI.md) for terminal usage.
 
-Imports through `lib/`, `utils/`, `scripts/`, or `dist/` are private and unsupported.
+Import from the package root; internal paths are unsupported.
 
 ## Usage
 

@@ -22,82 +22,56 @@ metadata:
 
 ## Overview
 
-Install one local or npm-backed Codex plugin through the packaged Codex Tools runtime. Preview the
-exact plan, preserve unrelated marketplace state, apply the requested installation, and report what
-native readback proves without claiming authentication or activation that it cannot observe.
+Install one local or npm-backed Codex plugin through the bundled Codex Tools runtime.
 
 ## When to Use
 
-- Install a local plugin directory containing `.codex-plugin/plugin.json`.
-- Install an npm-backed plugin from an exact version, tag, range, or default `latest` selector.
-- Preview an installation before Codex Tools creates marketplace state or invokes Codex.
-- Verify the installed, enabled, and payload state reported after installation.
+- Install a local plugin or an npm package selected by version, tag, range, or default `latest`.
+- Preview an installation or verify its native readback.
 
 ## When Not to Use
 
-- Do not use this skill to install the Codex Tools CLI or bootstrap this skill itself; follow the
-  package [README](../../README.md) first.
-- Do not use it for routine inspection, refresh, or cache reconciliation; use
-  `$tanaab-codex-tools-maintenance`.
-- Do not publish packages, create releases, or edit a plugin's implementation as part of setup.
+- For inspection, refresh, or cache repair, use `$tanaab-codex-tools-maintenance`.
+- For CLI bootstrap, follow the [README](../../README.md). Do not publish packages or modify plugin
+  implementation as part of installation.
 
 ## Preconditions
 
-- Resolve the plugin root as two directories above this `SKILL.md`. Invoke the absolute bundled
-  executable at `<plugin-root>/dist/codex-tools` directly; never substitute a checkout path or a
-  global `codex-tools` executable.
-- Require Node and a Codex `0.154.x` CLI. Require npm only for an `npm:` selector.
-- Identify one source: an absolute or explicitly resolved local plugin path, or an npm selector such
-  as `npm:@scope/plugin@1.2.3`.
-- Preserve the caller's `HOME`, `CODEX_HOME`, npm configuration, and requested marketplace options.
+- Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
+  executable; never substitute a checkout or global executable.
+- Require Node, a supported Codex CLI, and npm for npm selectors; see [CLI prerequisites](../../CLI.md#invocation-and-prerequisites).
+- Preserve the caller's home, npm configuration, and explicit marketplace and Codex-home options.
 
 ## Workflow
 
-1. Resolve the bundled executable, run `<plugin-root>/dist/codex-tools --version`, and stop if it is
-   missing or does not match the plugin package version. Do not fall back to another executable.
-2. Choose the source form:
-   - Local: `install <plugin-path>`.
-   - npm: `install npm:<package>[@selector]`.
-3. Run the selected command with `--dry-run --json` and any explicit `--codex-home`,
-   `--marketplace`, or `--marketplace-path` values. A dry run plans only; npm resolution, native
-   compatibility, and installation state may remain pending.
-4. Review the JSON plan for the exact source, Codex home, marketplace, catalog path, mapping, and
-   operations. Stop on ambiguous targets, collisions, invalid manifests, or unexpected paths.
-5. When the user's request authorizes installation, repeat the same command without `--dry-run`.
-   Do not change the selector or target between preview and application.
-6. Interpret the final result. Require `ok: true`, an installed readback, and an enabled readback
-   when observable. For npm sources, also require verified payload inspection and exact recorded
-   provenance.
-7. Tell the user that a fresh Codex task is required for skill discovery. Do not call an existing
-   task's activation or authentication state proven.
+1. Run `<plugin-root>/dist/codex-tools --version`. Stop if missing or mismatched with the plugin
+   package version.
+2. Select `install <plugin-path>` or `install npm:<package>[@selector]`. Resolve relative source
+   paths explicitly.
+3. Run with `--dry-run --json` and the selected options. Review source, home, marketplace, mapping,
+   planned writes, and unresolved checks. npm resolution and native compatibility remain pending.
+4. When the request authorizes installation, repeat the reviewed command without `--dry-run`.
+5. Read the result against the completion criteria below. Tell the user to start a fresh Codex
+   task for skill discovery; installation alone does not prove authentication or active-task loading.
 
 ## Checkpoints
 
-- The dry run names one source, one marketplace, and one Codex home before any write or child
-  process.
-- The applied command uses the reviewed selector and options unchanged.
-- Partial failures report completed and remaining operations; do not promise rollback or retry
-  blindly.
-- A successful native readback proves installation state, not live task activation.
+- Stop on ambiguous targets, collisions, invalid manifests, or unexpected paths.
+- Preserve the reviewed selector and options when applying. Report partial effects without promising
+  rollback or blindly retrying.
 
 ## Completion Criteria
 
-- Codex Tools reports a successful installation and observes the intended plugin in the selected
-  marketplace.
-- npm installation records the exact resolved package release and verifies the cached payload.
+- The result is `ok: true`, with installed and, when observable, enabled readback.
+- npm sources have an exact recorded release and verified cached payload.
 - Unrelated marketplace entries and cache content remain preserved.
-- The user knows to begin a fresh Codex task before expecting the new skills to appear.
 
 ## Bundled Resources
 
-- [README](../../README.md): CLI-first bootstrap and common setup path.
-- [CLI](../../CLI.md): complete selectors, options, output, and exit-code contract.
-- `../../dist/codex-tools`: packaged Node runtime used by this skill.
+- [CLI](../../CLI.md): selectors, options, output, and failure contract.
+- `../../dist/codex-tools`: packaged Node runtime.
 
 ## Validation
 
-- Confirm the resolved executable is inside this installed plugin and its version matches the
-  plugin package.
-- Confirm dry-run output was reviewed before any authorized installation.
-- Confirm final claims match the structured readback and keep authentication and activation marked
-  unknown when they were not observed.
+Confirm the bundled runtime, reviewed dry run, authorized command, and native readback support the
+reported outcome. Keep unobserved authentication and activation state unknown.

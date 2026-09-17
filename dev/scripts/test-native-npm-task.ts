@@ -8,8 +8,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { freshSkills } from '../lib/fresh-skills.ts';
+
 const cli =
-  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
+  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../../dist/codex-tools', import.meta.url));
 const root = await realpath(await mkdtemp(path.join(tmpdir(), 'codex-tools-npm-native-')));
 const pkg = '@fixture/package-name';
 const plugin = 'native-npm-probe';
@@ -53,65 +55,6 @@ const command = (
       resolve({ code, stdout, stderr });
     });
   });
-
-async function freshSession(env: NodeJS.ProcessEnv, home: string): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const child = spawn('codex', ['app-server'], {
-      env,
-      cwd: home,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    let buffer = '';
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(new Error('Fresh-session skill discovery timed out.'));
-    }, 20000);
-    child.stderr.resume();
-    const send = (message: unknown) => child.stdin.write(JSON.stringify(message) + '\n');
-    child.stdout.on('data', (chunk) => {
-      buffer += chunk;
-      let at;
-      while ((at = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, at);
-        buffer = buffer.slice(at + 1);
-        let data: { id?: number; result?: unknown };
-        try {
-          data = JSON.parse(line) as { id?: number; result?: unknown };
-        } catch {
-          continue;
-        }
-        if (data.id === 1) {
-          send({ method: 'initialized' });
-          send({ id: 2, method: 'skills/list', params: { cwds: [home], forceReload: true } });
-        }
-        if (data.id === 2) {
-          clearTimeout(timer);
-          child.kill();
-          if (JSON.stringify(data.result).includes(skill)) resolve();
-          else
-            reject(
-              new Error(
-                'Fresh-session skills/list did not expose the installed fixture: ' +
-                  JSON.stringify(data),
-              ),
-            );
-        }
-      }
-    });
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    send({
-      id: 1,
-      method: 'initialize',
-      params: {
-        clientInfo: { name: 'codex-tools-native-test', version: '1.0.0' },
-        capabilities: { experimentalApi: true },
-      },
-    });
-  });
-}
 
 try {
   const cert = path.join(root, 'cert.pem'),
@@ -325,7 +268,7 @@ try {
   await invoke('install', 'npm:' + pkg + '@file:../bad', [], false);
   assert.equal(await readFile(catalogFile, 'utf8'), preserved);
   await assert.rejects(lstat(path.join(root, 'LIFECYCLE-RAN')), { code: 'ENOENT' });
-  await freshSession(env, home);
+  await freshSkills(env, home, [skill]);
   const codex = await command('codex', ['--version'], env);
   const npm = await command('npm', ['--version'], env);
   process.stdout.write(

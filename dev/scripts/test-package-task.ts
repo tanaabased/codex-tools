@@ -16,10 +16,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import packageJson from '../package.json';
-import { checkDocumentationLinks, documentationExample } from './documentation.ts';
+import packageJson from '../../package.json';
+import { checkDocumentationLinks, documentationExample } from '../lib/documentation.ts';
 
-const repo = fileURLToPath(new URL('..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const args = process.argv.slice(2);
 const destination = args
   .find((arg) => arg.startsWith('--pack-destination='))
@@ -50,15 +50,6 @@ interface PackResult {
 const root = await realpath(await mkdtemp(path.join(tmpdir(), 'codex-tools-package-')));
 try {
   const env = { ...process.env, npm_config_cache: path.join(root, 'npm-cache') };
-  const inspected = (
-    JSON.parse(
-      execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
-        cwd: repo,
-        env,
-        encoding: 'utf8',
-      }),
-    ) as PackResult[]
-  )[0]!;
   const declarationSources = (
     await Promise.all(
       ['lib', 'utils'].map(async (directory) =>
@@ -96,7 +87,6 @@ try {
     'skills/codex-tools-setup/assets/icon-small.svg',
     ...declarations,
   ]);
-  assert.deepEqual(new Set(inspected.files.map((file) => file.path)), allowed);
 
   const packDirectory = destination ? path.resolve(repo, destination) : root;
   await mkdir(packDirectory, { recursive: true });
@@ -109,6 +99,7 @@ try {
       ),
     ) as PackResult[]
   )[0]!;
+  assert.deepEqual(new Set(packed.files.map((file) => file.path)), allowed);
   const tarball = path.join(packDirectory, packed.filename);
 
   const consumer = path.join(root, 'consumer');
@@ -167,7 +158,7 @@ try {
     assert.ok(agent.includes("icon_small: './assets/icon-small.svg'"));
     assert.ok(agent.includes("icon_large: './assets/icon-large.png'"));
   }
-  for (const absent of ['bin', 'lib', 'scripts', 'test', 'utils'])
+  for (const absent of ['bin', 'lib', 'dev', 'test', 'utils'])
     await assert.rejects(lstat(path.join(installed, absent)), { code: 'ENOENT' });
   const executable = path.join(installed, 'dist/codex-tools');
   assert.ok((await readFile(executable, 'utf8')).startsWith('#!/usr/bin/env node\n'));
@@ -253,11 +244,11 @@ try {
   const expectedExports = JSON.stringify([...runtimeExports].sort());
   await writeFile(
     esmConsumer,
-    `import assert from 'node:assert/strict';\nimport * as api from '@tanaab/codex-tools';\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\n`,
+    `import assert from 'node:assert/strict';\nimport * as api from '@tanaab/codex-tools';\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n`,
   );
   await writeFile(
     cjsConsumer,
-    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\n`,
+    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n`,
   );
   for (const consumerFile of [esmConsumer, cjsConsumer]) {
     const result = spawnSync(node, [consumerFile], {
@@ -273,6 +264,7 @@ try {
     path.join(consumer, 'types.cts'),
     `import tools = require('@tanaab/codex-tools');
 import type { CacheOperationResult, CodexToolsOptions } from '@tanaab/codex-tools';
+export type { CodexToolsError, InstallationResult, NativeResult, OperationResult, ResolvedContext, TreeDiff } from '@tanaab/codex-tools';
 const options: CodexToolsOptions = { repoRoot: '/source', cachePathOverride: '/cache' };
 const result: Promise<CacheOperationResult> = tools.runOperation('check', options);
 void result;

@@ -1,3 +1,4 @@
+import { supportedCodexFamily } from './codex-native.ts';
 import type { StyleSet } from './presentation.ts';
 
 export function renderHelp(style: StyleSet): string {
@@ -37,7 +38,7 @@ export function renderHelp(style: StyleSet): string {
     '  TANAAB_DEBUG               enable diagnostic output',
     '',
     'Exit: 0 current/synced/planned (or explicit neutral absence); 1 drift/unavailable; 2 invalid input or I/O failure.',
-    'install/refresh use Codex 0.154.x; native child failures retain their exit code. Authentication/activation may remain unknown.',
+    `install/refresh use Codex ${supportedCodexFamily}; native child failures retain their exit code. Authentication/activation may remain unknown.`,
     'Raw creation requires --cache-path and --missing-target create. It does not install or enable a plugin.',
     'Source package.json codexTools selects managedPaths/excludeNames and compatibility defaults.',
     'npm install resolves an exact release; npm refresh retains it. Quote version ranges.',

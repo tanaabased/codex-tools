@@ -1,10 +1,8 @@
-#!/usr/bin/env bun
-
 import { fileURLToPath } from 'node:url';
 
-import { checkDocumentationLinks } from './documentation.ts';
+import { checkDocumentationLinks } from '../lib/documentation.ts';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const documents = ['README.md', 'CLI.md', 'API.md', 'CONTRIBUTING.md'];
 
 await checkDocumentationLinks(root, documents);
