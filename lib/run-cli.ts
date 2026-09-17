@@ -7,18 +7,32 @@ import { runOperation } from './operations.ts';
 
 const SCRIPT_VERSION: string = packageJson.version;
 
+/** Minimal writable stream surface accepted by the CLI wrapper. */
 export interface OutputStream {
   write(value: string): unknown;
   isTTY?: boolean;
 }
 
+/** Injectable process boundaries used by programmatic CLI callers and tests. */
 export interface CLIRuntime {
   env?: NodeJS.ProcessEnv;
   stdout?: OutputStream;
   stderr?: OutputStream;
 }
 
-/** Runs the CLI against injectable streams and returns an exit code without mutating process state. */
+/**
+ * Runs the CLI against injectable environment and output streams.
+ *
+ * The function writes successful results, help, versions, and JSON failures to stdout; diagnostics
+ * remain on stderr. It returns the intended process exit code without assigning `process.exitCode`.
+ * The selected operation may read or modify plugin, marketplace, cache, and native Codex state as
+ * documented by its options.
+ *
+ * @param argv CLI arguments without the executable name.
+ * @param runtime Optional environment and output streams; omitted values use the current process.
+ * @returns `0` for success, `1` for ordinary operation failure, `2` for parsing or thrown errors,
+ * or a preserved native child exit code.
+ */
 export async function runCLI(
   argv: readonly string[] = process.argv.slice(2),
   { env = process.env, stdout = process.stdout, stderr = process.stderr }: CLIRuntime = {},

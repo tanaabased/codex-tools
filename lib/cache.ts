@@ -1,3 +1,4 @@
+import type { Stats } from 'node:fs';
 import {
   chmod,
   lstat,
@@ -17,20 +18,24 @@ import diffEntries from '../utils/diff-entries.ts';
 import type { EntryMap, TreeDiff, TreeEntry } from '../utils/diff-entries.ts';
 import { hasErrorCode } from '../utils/errors.ts';
 import pathExists from '../utils/path-exists.ts';
-import type { StatPath } from '../utils/path-exists.ts';
 import { selection } from '../utils/selection.ts';
 import type { SelectionOptions } from '../utils/selection.ts';
 
-export interface CollectEntriesOptions extends SelectionOptions {
-  statPath?: StatPath;
+/** Selects managed filesystem entries and optionally replaces `lstat` for boundary testing. */
+export interface CollectEntriesOptions {
+  managedPaths?: readonly string[] | null;
+  excludeNames?: readonly string[];
+  statPath?: (targetPath: string) => Promise<Stats>;
 }
 
+/** Identifies two disjoint trees for inspection or synchronization. */
 export interface TreeOptions extends CollectEntriesOptions {
   sourceRoot: string;
   targetRoot: string;
   dryRun?: boolean;
 }
 
+/** Contains normalized source and target snapshots plus their directional diff. */
 export interface TreeInspection {
   sourceRoot: string;
   targetRoot: string;
@@ -39,7 +44,19 @@ export interface TreeInspection {
   diff: TreeDiff;
 }
 
-/** Collects a normalized snapshot of the selected filesystem entries beneath one root. */
+/**
+ * Collects a normalized snapshot of selected filesystem entries beneath one root.
+ *
+ * The operation reads file bytes, modes, directories, and symlink targets without following
+ * symlinks. Missing managed leaves are omitted. The default whole-tree selection excludes `.git`,
+ * `node_modules`, and `.DS_Store`.
+ *
+ * @param root Root directory whose selected entries are read.
+ * @param options Managed paths, additional excluded basenames, and an optional stat boundary.
+ * @returns A map keyed by relative path in deterministic traversal order.
+ * @throws When the root cannot be read, a selected parent is not a real directory, or an
+ * unsupported filesystem entry is encountered.
+ */
 export async function collectEntries(
   root: string,
   options: CollectEntriesOptions = {},
@@ -148,7 +165,13 @@ async function scopedDiff(
   return { ...diff, extra };
 }
 
-/** Inspects two disjoint managed trees and returns their normalized snapshots and diff. */
+/**
+ * Inspects two disjoint managed trees without modifying either tree.
+ *
+ * @returns Resolved roots, normalized snapshots, and a source-to-target diff.
+ * @throws When the roots overlap, the source is not a directory, the target is not a directory,
+ * or either selected tree cannot be read safely.
+ */
 export async function inspectTrees({
   sourceRoot: rawSource,
   targetRoot: rawTarget,
@@ -176,7 +199,18 @@ export async function inspectTrees({
   };
 }
 
-/** Synchronizes one managed tree into another, or reports the planned diff in dry-run mode. */
+/**
+ * Synchronizes selected source entries into a disjoint target tree.
+ *
+ * Dry-run mode returns the planned diff without writing. Otherwise the function removes managed
+ * extras, replaces changed entries, creates missing entries, preserves excluded content, and then
+ * returns the remaining diff after verification.
+ *
+ * @param options Source, target, selection, and dry-run settings.
+ * @returns The planned diff in dry-run mode, or the post-write convergence diff.
+ * @throws When inspection is unsafe, a replacement would remove excluded content, a concurrent
+ * filesystem change prevents a safe write, or convergence cannot be inspected.
+ */
 export async function syncEntries(options: TreeOptions): Promise<TreeDiff> {
   const { sourceRoot, targetRoot, sourceEntries, targetEntries, diff } =
     await inspectTrees(options);

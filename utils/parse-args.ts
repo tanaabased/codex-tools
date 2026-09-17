@@ -1,24 +1,37 @@
 import { parseNpmSelector } from './npm-selector.ts';
 
+/** Operation names accepted by the library after CLI command normalization. */
 export type OperationCommand = 'check' | 'sync' | 'status' | 'doctor' | 'install' | 'refresh';
+/** Controls whether cache synchronization may create an explicit raw target. */
 export type MissingTarget = 'require-installed' | 'create';
+/** Controls whether a missing installation fails read-only inspection. */
 export type AbsentCheck = 'fail' | 'neutral';
 
+/** Options shared by CLI parsing and the public operation functions. */
 export interface CodexToolsOptions {
+  /** Local plugin source; defaults to the current working directory. */
   repoRoot?: string;
+  /** Explicit installed cache or opted-in raw synchronization target. */
   cachePathOverride?: string;
+  /** Selected Codex home; defaults to `CODEX_HOME` or `~/.codex`. */
   codexHome?: string;
+  /** Marketplace name used for selection or disambiguation. */
   marketplace?: string;
+  /** Local marketplace catalog used only by install or refresh. */
   marketplacePath?: string;
   missingTarget?: MissingTarget;
   absentCheck?: AbsentCheck;
+  /** `npm:` package selector used instead of a local source. */
   npmSelector?: string;
+  /** Managed relative paths, or `null` for whole-tree selection. */
   managedPaths?: readonly string[] | null;
+  /** Additional consumer-owned basenames excluded at every depth. */
   excludeNames?: readonly string[];
   help?: boolean;
   version?: boolean;
   json?: boolean;
   debug?: boolean;
+  /** Plans install, refresh, or sync without writes or child processes. */
   dryRun?: boolean;
 }
 

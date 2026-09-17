@@ -62,7 +62,21 @@ export async function planCachebuster(
   return next;
 }
 
-/** Refreshes an existing local or npm-backed installation without changing unrelated Codex state. */
+/**
+ * Refreshes an existing local or npm-backed installation while preserving unrelated Codex state.
+ *
+ * Local execution writes a new source manifest cachebuster before invoking Codex and verifies the
+ * installed payload afterward. npm refresh retains the exact pinned package release. Dry-run mode
+ * writes nothing and starts no child processes. Applied source or native effects are not rolled
+ * back after a partial failure.
+ *
+ * @param options Existing local or npm installation selection plus marketplace and dry-run settings.
+ * @param dependencies Injectable environment, native/npm boundaries, and clock.
+ * @returns A structured plan, partial effects, native results, manifest edit, and installation
+ * readback.
+ * @throws When the selected installation, enablement, mapping, payload, paths, or configuration do
+ * not satisfy refresh preconditions.
+ */
 export async function refreshPlugin(
   options: InstallOptions = {},
   { env = process.env, native = runNative, now = new Date(), npm }: InstallDependencies = {},
