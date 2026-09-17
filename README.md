@@ -27,9 +27,9 @@ Cache commands do not invoke Codex. Local install and refresh require Codex 0.15
 their npm variants also require npm. The package check uses Node, Bun, npm, and tar. There
 is no separate JavaScript source layer.
 
-PR checks run strict type checking, lint/format, unit and package tests, and the Leia
-scenarios in `examples/` against the built executable. Local Leia runs require an explicit
-request.
+PR checks run strict type checking, lint/format, unit and package tests, plus six Leia user
+journeys in `examples/`—defaults, inputs, install, refresh, status, and cache—against the built
+executable. Local Leia runs require an explicit request.
 
 ## Commands
 
