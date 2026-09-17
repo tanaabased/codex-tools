@@ -13,4 +13,5 @@ preserve unmanaged entries, and verify convergence. Tests use disposable roots o
 
 Run bun run lint, bun run typecheck, bun run test, and bun run test:package.
 Leia scenarios run against dist/codex-tools in PR checks; do not run them locally unless requested.
+Use Bun for source validation and .node-version for Node artifact and package validation.
 Release publication and plugin packaging are separate work.
