@@ -35,4 +35,4 @@ jobs:
         run: |
           mkdir -p examples/.tmp
           tmpdir=$(cd examples/.tmp && pwd -P)
-          TMPDIR="$tmpdir" ./node_modules/.bin/leia "examples/${{ matrix.example }}/README.md" --shell bash
+          TMPDIR="$tmpdir" bun run test:leia "examples/${{ matrix.example }}/README.md" --shell bash

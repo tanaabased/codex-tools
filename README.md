@@ -1,78 +1,51 @@
 # Codex Tools
 
-Install, inspect, refresh, and reconcile Codex plugins without trampling unrelated local state.
-Codex Tools provides a Node CLI and a typed JavaScript API; the source is developed with Bun.
+<p align="center">
+  <img src="./assets/codex-tools.png" alt="Codex Tools" width="180" />
+</p>
 
-The distributed package requires Node `^24.15.0 || >=26.0.0`. See [CLI prerequisites](./CLI.md#invocation-and-prerequisites)
-for the supported Codex contract.
+Install, inspect, refresh, and reconcile Codex plugins without trampling unrelated local state.
+Use the Node CLI or the typed JavaScript API; source development runs on Bun.
 
 ## Install
 
-Install the package globally when you want the `codex-tools` command on your path:
+Requires Node `^24.15.0 || >=26.0.0`. Install and refresh also need a
+[supported Codex version](./CLI.md#invocation-and-prerequisites).
 
 ```sh
 npm install --global @tanaab/codex-tools
 codex-tools --help
 ```
 
-The CLI is the bootstrap. Use it to preview and install the same package as a Codex plugin:
+For library use, install locally with `npm install @tanaab/codex-tools`.
+
+## Usage
+
+### CLI
 
 ```sh
-codex-tools install npm:@tanaab/codex-tools --dry-run --json
-codex-tools install npm:@tanaab/codex-tools
-```
-
-Start a fresh Codex task after installation. `$tanaab-codex-tools-setup` guides safe plugin
-installation, while `$tanaab-codex-tools-maintenance` inspects installations and handles explicit
-refresh or cache-reconciliation requests. Both skills invoke the packaged runtime from the
-installed plugin rather than relying on the global command.
-
-## Start with a dry run
-
-Preview a local plugin installation before Codex Tools creates marketplace state or invokes Codex:
-
-```sh
+# Preview an installation, then apply it.
 codex-tools install /path/to/plugin --dry-run --json
-```
-
-Remove `--dry-run` after reviewing the plan. A local plugin needs a
-`.codex-plugin/plugin.json`; npm-backed installation accepts scoped or unscoped package selectors:
-
-```sh
 codex-tools install /path/to/plugin
-codex-tools install 'npm:@scope/plugin@^1.2.0'
-```
 
-Codex Tools preserves unrelated marketplace entries and cache content. It refuses ambiguous or
-unsafe write targets rather than guessing. Successful installation or refresh verifies disk state;
-it does not claim that authentication succeeded or that an existing Codex task loaded the plugin.
+# Install a published plugin package.
+codex-tools install npm:@scope/plugin@1.2.3
 
-## Common commands
-
-```sh
-# Inspect without repairing.
+# Inspect the installation and refresh its local source.
 codex-tools status --repo-root /path/to/plugin --json
-
-# Preview and then apply a local-plugin refresh.
-codex-tools refresh /path/to/plugin --dry-run --json
 codex-tools refresh /path/to/plugin
 
-# Report cache drift, then synchronize the selected cache.
+# Report cache drift, then preview synchronization.
 codex-tools cache check --repo-root /path/to/plugin
 codex-tools cache sync --repo-root /path/to/plugin --dry-run
-codex-tools cache sync --repo-root /path/to/plugin
 ```
 
-`doctor` aliases `status`. Explicit flags override `CODEX_TOOLS_*` environment values, which
-override repository settings and defaults. Read-only commands never repair state, and dry runs do
-not write files or start child processes.
+Dry runs write nothing and start no child processes. Commands refuse ambiguous targets and
+preserve unrelated state. Local refresh edits the source manifest version; review and commit that edit.
 
-See the [CLI guide](./CLI.md) for commands, prerequisites, option precedence, output, and exit
-codes. Its examples link to the executable Leia scenarios used in pull-request checks.
+See the [CLI reference](./CLI.md) for all commands, options, environment variables, and exit codes.
 
-## Use the library
-
-The package exposes the same operation layer used by the CLI:
+### Library
 
 <!-- codex-tools-example:api -->
 
@@ -88,13 +61,19 @@ const result = await runOperation('status', options);
 if (!result.ok) console.error(result.issue);
 ```
 
-Import from `@tanaab/codex-tools`; internal paths are unsupported. The generated [API reference](./API.md) covers every supported runtime and
-type export, including results, failures, and side effects.
+The package supports ESM imports and CommonJS `require`. Import from `@tanaab/codex-tools`;
+internal paths are unsupported. The generated [API reference](./API.md) covers public functions,
+types, results, and side effects.
 
-## Develop
+## Advanced usage
+
+See [advanced usage](./ADVANCED.md) for marketplace and cache ownership, npm pinning, recovery,
+and the optional Codex skills.
+
+## Development
 
 See [CONTRIBUTING](./CONTRIBUTING.md) for source setup, generation, and validation.
 
-## License and attribution
+## License
 
-Codex Tools is licensed under the [MIT License](./LICENSE). See [NOTICE](./NOTICE) for attribution.
+[MIT](./LICENSE). See [NOTICE](./NOTICE) for attribution.

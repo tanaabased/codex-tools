@@ -52,6 +52,7 @@ function renderSymbol(checker: ts.TypeChecker, symbol: ts.Symbol): string {
   assert.ok(documentation, `Public export ${symbol.name} needs a documentation comment.`);
   const tags = target
     .getJsDocTags(checker)
+    .filter((tag) => tag.name !== 'example')
     .map(renderTag)
     .filter((tag) => tag !== undefined);
   return [
@@ -87,6 +88,12 @@ async function generateApiDocumentation(root: string): Promise<string> {
   const types = symbols.filter(
     (symbol) => !(targetSymbol(checker, symbol).flags & ts.SymbolFlags.Value),
   );
+  const operation = values.find((symbol) => symbol.name === 'runOperation');
+  assert.ok(operation, 'Missing runOperation export.');
+  const example = targetSymbol(checker, operation)
+    .getJsDocTags(checker)
+    .find((tag) => tag.name === 'example');
+  assert.ok(example, 'runOperation needs a public @example.');
   const markdown = [
     '# API',
     '',
@@ -101,17 +108,9 @@ async function generateApiDocumentation(root: string): Promise<string> {
     '',
     '<!-- codex-tools-example:api -->',
     '',
-    '```ts',
-    "import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';",
+    display(example.text),
     '',
-    'const options: CodexToolsOptions = {',
-    "  repoRoot: '/path/to/plugin',",
-    "  codexHome: '/path/to/codex-home',",
-    '};',
-    "const result = await runOperation('status', options);",
-    '',
-    'if (!result.ok) console.error(result.issue);',
-    '```',
+    'CommonJS consumers can use `const { runOperation } = require("@tanaab/codex-tools");`.',
     '',
     '## Functions',
     '',

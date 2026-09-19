@@ -48,6 +48,18 @@ export type OperationResult = CacheOperationResult | InstallationResult;
  * refresh can update source, marketplace, cache, and native Codex state; partial failures are
  * reported in their structured result and are not automatically rolled back.
  *
+ * @example
+ * ```ts
+ * import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';
+ *
+ * const options: CodexToolsOptions = {
+ *   repoRoot: '/path/to/plugin',
+ *   codexHome: '/path/to/codex-home',
+ * };
+ * const result = await runOperation('status', options);
+ *
+ * if (!result.ok) console.error(result.issue);
+ * ```
  * @param command Supported operation name. CLI `cache check` and `cache sync` map to `check` and
  * `sync` here.
  * @param options Source selection, Codex state, output-independent behavior, and dry-run settings.

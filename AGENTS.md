@@ -7,7 +7,7 @@
   and flat tests in `test/`. Export the supported API explicitly from `lib/index.ts`.
 - Keep `install.ts` as the source selector, `native-install.ts` as shared installation orchestration,
   `codex-native.ts` as the native process contract, and npm redaction in `npm-install.ts`.
-- `dev/scripts/` owns internal commands; `dev/lib/` owns their shared implementation. Neither ships.
+- `dev/scripts/` owns internal commands; `dev/lib/` and `dev/utils/` own their implementation; `dev/test/` tests it. None ship.
 - Read `examples/AGENTS.md` before changing scenarios or fixtures.
 
 ## Out of scope
@@ -33,14 +33,15 @@
   package checks own the packed payload, Node entrypoints, and ESM/CommonJS runtime and type exports.
 - Native probes own real Codex acquisition and fresh-session discovery. Fakes cannot prove these.
 - Keep ESLint and standalone Prettier separate; keep type-checking separate from lint.
-- Run `bun run lint`, `bun run typecheck`, and `bun run test` for source changes; add
-  `bun run test:package` for build, packaging, shipped documentation, or artifact-contract changes.
+- Run `bun run check:toolchain`, `bun run docs:check`, `bun run lint`, `bun run typecheck`, and `bun run test` for source changes; add
+  `bun run build && bun run check:package` for build, packaging, shipped documentation, or artifact-contract changes.
 - Run native probes when changing their helpers or native compatibility. Leia scenarios stay in
   PR CI unless explicitly requested locally. See CONTRIBUTING for commands.
 
 ## Documentation and skills
 
-- README owns onboarding, CLI owns command reference, CONTRIBUTING owns development, and public
+- README owns onboarding, CLI owns command reference, ADVANCED owns operational detail,
+  CONTRIBUTING owns development, and public
   TypeScript docblocks own generated API.md. Regenerate it with `bun run docs:api`.
 - Give each explanation one home. Delete repetition and obvious comments before adding guides.
 - Skills use namespace `tanaab` and container `codex-plugin`. Preserve their public identities.

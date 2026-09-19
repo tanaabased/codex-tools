@@ -27,7 +27,7 @@ const destination = args
   .slice(1)
   .join('=');
 if (args.some((arg) => !arg.startsWith('--pack-destination=')))
-  throw new Error('Usage: test-package [--pack-destination=directory]');
+  throw new Error('Usage: check:package [--pack-destination=directory]');
 const runtimeExports = [
   'collectEntries',
   'diffEntries',
@@ -68,7 +68,9 @@ try {
     '.codex-plugin/plugin.json',
     'assets/composer-icon.svg',
     'assets/icon-large.png',
+    'assets/codex-tools.png',
     'API.md',
+    'ADVANCED.md',
     'CLI.md',
     'CONTRIBUTING.md',
     'README.md',
@@ -126,7 +128,13 @@ try {
   const installed = path.join(consumer, 'node_modules/@tanaab/codex-tools');
   assert.equal((await lstat(installed)).isSymbolicLink(), false);
   assert.equal(await realpath(installed), installed);
-  await checkDocumentationLinks(installed, ['README.md', 'CLI.md', 'API.md', 'CONTRIBUTING.md']);
+  await checkDocumentationLinks(installed, [
+    'README.md',
+    'CLI.md',
+    'API.md',
+    'ADVANCED.md',
+    'CONTRIBUTING.md',
+  ]);
   const apiExample = documentationExample(
     await readFile(path.join(installed, 'API.md'), 'utf8'),
     'api',

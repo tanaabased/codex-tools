@@ -39,13 +39,17 @@ async function anchors(file: string): Promise<Set<string>> {
   return values;
 }
 
-/** Verifies that local Markdown links resolve to files and declared heading anchors. */
+/** Verifies local Markdown links, heading anchors, and HTML image sources. */
 export async function checkDocumentationLinks(root: string, documents: readonly string[]) {
   const headings = new Map<string, Set<string>>();
   for (const relative of documents) {
     const source = path.resolve(root, relative);
     const markdown = await readFile(source, 'utf8');
-    for (const match of markdown.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g)) {
+    const links = [
+      ...markdown.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g),
+      ...markdown.matchAll(/<img\b[^>]*\bsrc=['"]([^'"]+)['"][^>]*>/gi),
+    ];
+    for (const match of links) {
       const href = match[1]!;
       if (external.test(href)) continue;
       const [rawTarget = '', rawFragment] = href.split('#', 2);

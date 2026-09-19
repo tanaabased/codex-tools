@@ -23,6 +23,8 @@ const result = await runOperation('status', options);
 if (!result.ok) console.error(result.issue);
 ```
 
+CommonJS consumers can use `const { runOperation } = require("@tanaab/codex-tools");`.
+
 ## Functions
 
 ### `collectEntries`
