@@ -7,13 +7,13 @@ import { runOperation } from './operations.ts';
 
 const SCRIPT_VERSION: string = packageJson.version;
 
-/** Minimal writable stream surface accepted by the CLI wrapper. */
+/** minimal writable stream surface accepted by the cli wrapper. */
 export interface OutputStream {
   write(value: string): unknown;
   isTTY?: boolean;
 }
 
-/** Injectable process boundaries used by programmatic CLI callers and tests. */
+/** injectable process boundaries used by programmatic cli callers and tests. */
 export interface CLIRuntime {
   env?: NodeJS.ProcessEnv;
   stdout?: OutputStream;
@@ -21,15 +21,15 @@ export interface CLIRuntime {
 }
 
 /**
- * Runs the CLI against injectable environment and output streams.
+ * runs the cli against injectable environment and output streams.
  *
- * The function writes successful results, help, versions, and JSON failures to stdout; diagnostics
- * remain on stderr. It returns the intended process exit code without assigning `process.exitCode`.
- * The selected operation may read or modify plugin, marketplace, cache, and native Codex state as
+ * the function writes successful results, help, versions, and json failures to stdout; diagnostics
+ * remain on stderr. it returns the intended process exit code without assigning `process.exitCode`.
+ * the selected operation may read or modify plugin, marketplace, cache, and native codex state as
  * documented by its options.
  *
- * @param argv CLI arguments without the executable name.
- * @param runtime Optional environment and output streams; omitted values use the current process.
+ * @param argv cli arguments without the executable name.
+ * @param runtime optional environment and output streams; omitted values use the current process.
  * @returns `0` for success, `1` for ordinary operation failure, `2` for parsing or thrown errors,
  * or a preserved native child exit code.
  */

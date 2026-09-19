@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const external = /^[a-z][a-z+.-]*:/i;
 
-/** Extracts the fenced code block immediately following one named documentation marker. */
+/** extracts the fenced code block immediately following one named documentation marker. */
 export function documentationExample(markdown: string, name: string): string {
   const marker = `<!-- codex-tools-example:${name} -->`;
   const offset = markdown.indexOf(marker);
@@ -39,13 +39,17 @@ async function anchors(file: string): Promise<Set<string>> {
   return values;
 }
 
-/** Verifies that local Markdown links resolve to files and declared heading anchors. */
+/** verifies local markdown links, heading anchors, and html image sources. */
 export async function checkDocumentationLinks(root: string, documents: readonly string[]) {
   const headings = new Map<string, Set<string>>();
   for (const relative of documents) {
     const source = path.resolve(root, relative);
     const markdown = await readFile(source, 'utf8');
-    for (const match of markdown.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g)) {
+    const links = [
+      ...markdown.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g),
+      ...markdown.matchAll(/<img\b[^>]*\bsrc=['"]([^'"]+)['"][^>]*>/gi),
+    ];
+    for (const match of links) {
       const href = match[1]!;
       if (external.test(href)) continue;
       const [rawTarget = '', rawFragment] = href.split('#', 2);

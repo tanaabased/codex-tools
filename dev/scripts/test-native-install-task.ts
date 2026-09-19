@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import {
   chmod,
   lstat,
@@ -15,67 +15,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const cli =
-  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../dist/codex-tools', import.meta.url));
+import { freshSkills } from '../lib/fresh-skills.ts';
+import { supportedCodexFamily } from '../../lib/codex-native.ts';
 
-async function freshSkills(
-  env: NodeJS.ProcessEnv,
-  cwd: string,
-  expected: readonly string[],
-): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const child = spawn('codex', ['app-server'], {
-      env,
-      cwd,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    let buffer = '';
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(new Error('Fresh-session skill discovery timed out.'));
-    }, 20000);
-    child.stderr.resume();
-    const send = (message: unknown) => child.stdin.write(JSON.stringify(message) + '\n');
-    child.stdout.on('data', (chunk) => {
-      buffer += chunk;
-      let at;
-      while ((at = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, at);
-        buffer = buffer.slice(at + 1);
-        let data: { id?: number; result?: unknown };
-        try {
-          data = JSON.parse(line) as { id?: number; result?: unknown };
-        } catch {
-          continue;
-        }
-        if (data.id === 1) {
-          send({ method: 'initialized' });
-          send({ id: 2, method: 'skills/list', params: { cwds: [cwd], forceReload: true } });
-        }
-        if (data.id === 2) {
-          clearTimeout(timer);
-          child.kill();
-          const result = JSON.stringify(data.result);
-          const missing = expected.filter((skill) => !result.includes(skill));
-          if (!missing.length) resolve();
-          else reject(new Error('Fresh-session skills/list omitted: ' + missing.join(', ')));
-        }
-      }
-    });
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    send({
-      id: 1,
-      method: 'initialize',
-      params: {
-        clientInfo: { name: 'codex-tools-native-test', version: '1.0.0' },
-        capabilities: { experimentalApi: true },
-      },
-    });
-  });
-}
+const cli =
+  process.env.CODEX_TOOLS_CLI ?? fileURLToPath(new URL('../../dist/codex-tools', import.meta.url));
 
 interface SmokeResult {
   ok: boolean;
@@ -203,7 +147,7 @@ try {
     await readFile(path.join(selectedCache, 'skills/probe/SKILL.md'), 'utf8'),
     selectedBytes,
   );
-  // A stale source version must still be refreshed through the selected local mapping.
+  // a stale source version must still be refreshed through the selected local mapping.
   const changedManifest = JSON.parse(await readFile(manifestFile, 'utf8'));
   changedManifest.version = '2.0.0-beta.1+local';
   await writeFile(manifestFile, JSON.stringify(changedManifest));
@@ -216,7 +160,7 @@ try {
   assert.match(mismatch.error, /source mapping/);
   await rm(mapping);
   await symlink(source, mapping);
-  // A real native cache write failure must retain the source edit and child error.
+  // a real native cache write failure must retain the source edit and child error.
   const cacheRoot = path.join(codexHome, 'plugins/cache/personal/codex-tools-smoke');
   await chmod(cacheRoot, 0o555);
   try {
@@ -336,7 +280,9 @@ try {
     );
   }
   process.stdout.write(
-    'Codex 0.153.x native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
+    'Codex ' +
+      supportedCodexFamily +
+      ' native smoke passed: fresh home, external source, payload readback, repeat install, explicit marketplace, successive/stale refresh, preservation, mapping rejection, and failed native reinstall recovery.\n',
   );
 } finally {
   await rm(root, { recursive: true, force: true });

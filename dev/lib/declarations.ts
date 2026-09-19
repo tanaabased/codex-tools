@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import ts from 'typescript';
 
-/** Emits one checked declaration graph with module-format-specific paths and extensions. */
+/** emits one checked declaration graph with module-format-specific paths and extensions. */
 export async function declarations(root: string): Promise<void> {
   const config = ts.readConfigFile(path.join(root, 'tsconfig.build.json'), ts.sys.readFile);
   if (config.error) {
@@ -90,8 +90,8 @@ export async function declarations(root: string): Promise<void> {
         ],
       },
     );
-    // JSON imports have no declaration output, so TypeScript reports a skipped emit even while
-    // writing the complete TypeScript declaration graph.
+    // json imports have no declaration output, so typescript reports a skipped emit even while
+    // writing the complete typescript declaration graph.
     if (result.diagnostics.length) {
       throw new Error(
         `${format} declaration emission failed\n` +

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 import type { NativeOptions, NativeResult, NativeRunner } from '../lib/codex-native.ts';
 import type { NpmRunner } from '../lib/install-types.ts';
 import { installPlugin } from '../lib/install.ts';
@@ -79,7 +80,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.ok(childEnv.HOME);
     calls.push(['codex', ...argv]);
     if (argv[0] === '--version')
-      return { argv, exitCode: 0, stdout: 'codex-cli 0.153.4', stderr: '' };
+      return { argv, exitCode: 0, stdout: 'codex-cli ' + supportedCodexVersion, stderr: '' };
     const staging = childEnv.CODEX_HOME !== codexHome;
     const file = staging
       ? path.join(childEnv.HOME, '.agents/plugins/marketplace.json')
@@ -258,7 +259,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.equal(failed.ok, false);
     assert.match(failed.issue ?? '', /payload does not match/);
     stalePayload = false;
-    // Retry must repair a stale payload, not skip it based on catalog metadata.
+    // retry must repair a stale payload, not skip it based on catalog metadata.
     const retry = await run('npm:' + packageName + '@2.0.0');
     assert.equal(retry.ok, true, retry.issue ?? undefined);
   });

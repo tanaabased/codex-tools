@@ -170,7 +170,7 @@ export async function snapshot(file: string): Promise<FileSnapshot | null> {
   };
 }
 
-/** Validates the source identity and contained plugin resources used during installation. */
+/** validates the source identity and contained plugin resources used during installation. */
 export async function validateSource(
   sourcePath: string,
   { portable = false }: { portable?: boolean } = {},

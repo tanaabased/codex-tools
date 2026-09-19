@@ -16,10 +16,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import packageJson from '../package.json';
-import { checkDocumentationLinks, documentationExample } from './documentation.ts';
+import packageJson from '../../package.json';
+import { checkDocumentationLinks, documentationExample } from '../lib/documentation.ts';
 
-const repo = fileURLToPath(new URL('..', import.meta.url));
+const repo = fileURLToPath(new URL('../..', import.meta.url));
 const args = process.argv.slice(2);
 const destination = args
   .find((arg) => arg.startsWith('--pack-destination='))
@@ -27,7 +27,7 @@ const destination = args
   .slice(1)
   .join('=');
 if (args.some((arg) => !arg.startsWith('--pack-destination=')))
-  throw new Error('Usage: test-package [--pack-destination=directory]');
+  throw new Error('Usage: check:package [--pack-destination=directory]');
 const runtimeExports = [
   'collectEntries',
   'diffEntries',
@@ -50,15 +50,6 @@ interface PackResult {
 const root = await realpath(await mkdtemp(path.join(tmpdir(), 'codex-tools-package-')));
 try {
   const env = { ...process.env, npm_config_cache: path.join(root, 'npm-cache') };
-  const inspected = (
-    JSON.parse(
-      execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], {
-        cwd: repo,
-        env,
-        encoding: 'utf8',
-      }),
-    ) as PackResult[]
-  )[0]!;
   const declarationSources = (
     await Promise.all(
       ['lib', 'utils'].map(async (directory) =>
@@ -77,7 +68,9 @@ try {
     '.codex-plugin/plugin.json',
     'assets/composer-icon.svg',
     'assets/icon-large.png',
+    'assets/codex-tools.png',
     'API.md',
+    'ADVANCED.md',
     'CLI.md',
     'CONTRIBUTING.md',
     'README.md',
@@ -96,7 +89,6 @@ try {
     'skills/codex-tools-setup/assets/icon-small.svg',
     ...declarations,
   ]);
-  assert.deepEqual(new Set(inspected.files.map((file) => file.path)), allowed);
 
   const packDirectory = destination ? path.resolve(repo, destination) : root;
   await mkdir(packDirectory, { recursive: true });
@@ -109,6 +101,7 @@ try {
       ),
     ) as PackResult[]
   )[0]!;
+  assert.deepEqual(new Set(packed.files.map((file) => file.path)), allowed);
   const tarball = path.join(packDirectory, packed.filename);
 
   const consumer = path.join(root, 'consumer');
@@ -135,15 +128,20 @@ try {
   const installed = path.join(consumer, 'node_modules/@tanaab/codex-tools');
   assert.equal((await lstat(installed)).isSymbolicLink(), false);
   assert.equal(await realpath(installed), installed);
-  await checkDocumentationLinks(installed, ['README.md', 'CLI.md', 'API.md', 'CONTRIBUTING.md']);
+  await checkDocumentationLinks(installed, [
+    'README.md',
+    'CLI.md',
+    'API.md',
+    'ADVANCED.md',
+    'CONTRIBUTING.md',
+  ]);
   const apiExample = documentationExample(
-    await readFile(path.join(installed, 'API.md'), 'utf8'),
+    await readFile(path.join(installed, 'README.md'), 'utf8'),
     'api',
   );
-  assert.equal(
-    documentationExample(await readFile(path.join(installed, 'README.md'), 'utf8'), 'api'),
-    apiExample,
-    'README.md and API.md must publish the same checked API example.',
+  const commonjsExample = documentationExample(
+    await readFile(path.join(installed, 'API.md'), 'utf8'),
+    'api-commonjs',
   );
   const plugin = JSON.parse(
     await readFile(path.join(installed, '.codex-plugin/plugin.json'), 'utf8'),
@@ -167,7 +165,7 @@ try {
     assert.ok(agent.includes("icon_small: './assets/icon-small.svg'"));
     assert.ok(agent.includes("icon_large: './assets/icon-large.png'"));
   }
-  for (const absent of ['bin', 'lib', 'scripts', 'test', 'utils'])
+  for (const absent of ['bin', 'lib', 'dev', 'test', 'utils'])
     await assert.rejects(lstat(path.join(installed, absent)), { code: 'ENOENT' });
   const executable = path.join(installed, 'dist/codex-tools');
   assert.ok((await readFile(executable, 'utf8')).startsWith('#!/usr/bin/env node\n'));
@@ -253,19 +251,21 @@ try {
   const expectedExports = JSON.stringify([...runtimeExports].sort());
   await writeFile(
     esmConsumer,
-    `import assert from 'node:assert/strict';\nimport * as api from '@tanaab/codex-tools';\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\n`,
+    `import assert from 'node:assert/strict';\nimport * as api from '@tanaab/codex-tools';\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n`,
   );
   await writeFile(
     cjsConsumer,
-    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\n`,
+    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n` +
+      commonjsExample,
   );
   for (const consumerFile of [esmConsumer, cjsConsumer]) {
     const result = spawnSync(node, [consumerFile], {
       cwd: consumer,
       encoding: 'utf8',
-      env: nodeOnlyEnv,
+      env: { ...nodeOnlyEnv, HOME: root, CODEX_HOME: path.join(root, 'codex') },
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
+    if (consumerFile === cjsConsumer) assert.equal(result.stdout, 'planned\n');
   }
 
   await writeFile(path.join(consumer, 'types.mts'), apiExample);
@@ -273,6 +273,7 @@ try {
     path.join(consumer, 'types.cts'),
     `import tools = require('@tanaab/codex-tools');
 import type { CacheOperationResult, CodexToolsOptions } from '@tanaab/codex-tools';
+export type { CodexToolsError, InstallationResult, NativeResult, OperationResult, ResolvedContext, TreeDiff } from '@tanaab/codex-tools';
 const options: CodexToolsOptions = { repoRoot: '/source', cachePathOverride: '/cache' };
 const result: Promise<CacheOperationResult> = tools.runOperation('check', options);
 void result;
@@ -299,7 +300,7 @@ void result;
     const result = spawnSync(node, [typescript, '--project', 'tsconfig.json'], {
       cwd: consumer,
       encoding: 'utf8',
-      env: nodeOnlyEnv,
+      env: { ...nodeOnlyEnv, HOME: root, CODEX_HOME: path.join(root, 'codex') },
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
   }

@@ -15,6 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 import type { NativeResult, NativeRunner } from '../lib/codex-native.ts';
 import type {
   InstallationEffects,
@@ -154,7 +155,7 @@ describe('native local refresh', () => {
     calls = [];
     hook = null;
     failure = null;
-    version = 'codex-cli 0.153.4';
+    version = 'codex-cli ' + supportedCodexVersion;
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
@@ -274,7 +275,7 @@ describe('native local refresh', () => {
       if (kind === 'mismatched') installed[0]!.source!.path = home;
       if (kind === 'nonlocal') installed[0]!.source!.source = 'git';
       if (kind === 'disabled') installed[0]!.enabled = false;
-      if (kind === 'unsupported version') version = 'codex-cli 0.154.0';
+      if (kind === 'unsupported version') version = 'codex-cli 999.0.0';
       if (kind === 'malformed JSON')
         hook = async (argv) => (argv[1] === 'list' ? { stdout: '{' } : null);
       const before = await readFile(manifestFile, 'utf8');

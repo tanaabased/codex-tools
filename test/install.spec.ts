@@ -13,6 +13,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 import type { NativeRunner } from '../lib/codex-native.ts';
 import type {
   MarketplaceEntry,
@@ -77,7 +78,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
       return { argv, exitCode: 37, stdout: 'child output', stderr: 'native failure' };
     let data;
     if (argv[0] === '--version')
-      return { argv, exitCode: 0, stdout: 'codex-cli 0.153.4\n', stderr: '' };
+      return { argv, exitCode: 0, stdout: 'codex-cli ' + supportedCodexVersion + '\n', stderr: '' };
     if (argv[1] === 'marketplace' && argv[2] === 'list') {
       const exists = await readFile(catalogFile, 'utf8').then(
         () => true,
@@ -206,7 +207,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
   it('rejects an unsupported native version before setup', async () => {
     const result = await installPlugin(options, {
       env,
-      native: async (argv) => ({ argv, exitCode: 0, stdout: 'codex-cli 0.154.0', stderr: '' }),
+      native: async (argv) => ({ argv, exitCode: 0, stdout: 'codex-cli 999.0.0', stderr: '' }),
     });
     assert.equal(result.ok, false);
     assert.match(result.issue ?? '', /Supported native contract/);

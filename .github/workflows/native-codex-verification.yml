@@ -13,12 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .node-version
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - uses: tanaabased/actions/setup-node@v1
+      - uses: tanaabased/actions/setup-bun@v1
       - run: bun install --frozen-lockfile --ignore-scripts
       - name: Install the supported Codex contract
         shell: bash
@@ -33,7 +29,7 @@ jobs:
           consumer_dir="$RUNNER_TEMP/codex-tools-consumer"
           mkdir -p "$package_dir" "$consumer_dir"
           bun run build
-          bun scripts/test-package.ts "--pack-destination=$package_dir"
+          bun dev/scripts/check-package-task.ts "--pack-destination=$package_dir"
           npm install --prefix "$consumer_dir" --ignore-scripts --no-audit --no-fund "$package_dir/"*.tgz
           package_tarball="$(find "$package_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
           test -n "$package_tarball"
@@ -42,5 +38,5 @@ jobs:
         shell: bash
         run: |
           export CODEX_TOOLS_CLI="$RUNNER_TEMP/codex-tools-consumer/node_modules/.bin/codex-tools"
-          bun scripts/test-native-install.ts
-          bun scripts/test-native-npm.ts
+          bun dev/scripts/test-native-install-task.ts
+          bun dev/scripts/test-native-npm-task.ts
