@@ -36,7 +36,7 @@ export function renderHelp(style: StyleSet): string {
       ['--absent-check <mode>', 'fail or neutral ' + style.dim('[default: fail]')],
       ['--dry-run', 'plan install/refresh/sync without writes or child processes'],
       ['--json', 'machine-readable output'],
-      ['--debug, --no-debug', 'diagnostics on stderr'],
+      ['--debug', 'diagnostics on stderr'],
       ['-h, --help', 'display help'],
       ['-V, -v, --version', 'report version'],
     ]),
@@ -50,10 +50,9 @@ export function renderHelp(style: StyleSet): string {
       ['CODEX_TOOLS_MARKETPLACE_PATH', 'same as --marketplace-path'],
       ['CODEX_TOOLS_MISSING_TARGET', 'same as --missing-target'],
       ['CODEX_TOOLS_ABSENT_CHECK', 'same as --absent-check'],
-      ['CODEX_TOOLS_JSON', 'same as --json (1/true or 0/false)'],
-      ['CODEX_TOOLS_DEBUG', 'same as --debug (1/true or 0/false)'],
-      ['CODEX_TOOLS_DRY_RUN', 'same as --dry-run (1/true or 0/false)'],
-      ['TANAAB_DEBUG', 'enable diagnostic output'],
+      ['CODEX_TOOLS_JSON', 'same as --json'],
+      ['CODEX_TOOLS_DEBUG', 'same as --debug'],
+      ['CODEX_TOOLS_DRY_RUN', 'same as --dry-run'],
     ]),
   ].join('\n');
 }

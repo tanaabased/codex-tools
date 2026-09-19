@@ -128,12 +128,22 @@ export function parseArgs(
     const [flag = '', ...parts] = arg.slice(2).split('=');
     const value = parts.length ? parts.join('=') : undefined;
     const negative = flag.startsWith('no-');
-    const boolean = booleans.get(negative ? flag.slice(3) : flag);
+    const boolean = flag === 'no-debug' ? undefined : booleans.get(negative ? flag.slice(3) : flag);
     if (arg.startsWith('--') && boolean) {
-      if (value !== undefined) throw new Error('Flag --' + flag + ' does not accept a value.');
       if (explicit.has(boolean)) throw new Error('Repeated option: --' + flag);
+      let enabled = !negative;
+      if (boolean === 'debug') {
+        const debugValue =
+          value ?? (['false', '0'].includes(argv[i + 1] ?? '') ? argv[++i] : undefined);
+        if (debugValue !== undefined) {
+          if (!['false', '0'].includes(debugValue)) throw new Error('Invalid --debug value.');
+          enabled = false;
+        }
+      } else if (value !== undefined) {
+        throw new Error('Flag --' + flag + ' does not accept a value.');
+      }
       explicit.add(boolean);
-      setBooleanOption(options, boolean, !negative);
+      setBooleanOption(options, boolean, enabled);
     } else if (arg.startsWith('--') && strings.has(flag)) {
       const key = strings.get(flag)!;
       if (explicit.has(key)) throw new Error('Repeated option: --' + flag);
@@ -157,9 +167,7 @@ export function parseArgs(
     }
   }
   if (!explicit.has('debug') && options.debug === undefined) {
-    options.debug =
-      !['', '0', 'false', 'no', 'off'].includes((env.TANAAB_DEBUG ?? '').toLowerCase()) ||
-      env.RUNNER_DEBUG === '1';
+    options.debug = env.RUNNER_DEBUG === '1';
   }
   if (options.codexHome === undefined && env.CODEX_HOME !== undefined) {
     options.codexHome = env.CODEX_HOME;

@@ -27,9 +27,10 @@ not start Codex. See [refresh and recovery](./ADVANCED.md#refresh-and-recovery) 
 ## Options
 
 Flags override `CODEX_TOOLS_*` environment defaults, then repository `package.json#codexTools`
-settings where applicable. Use `--name value` or `--name=value`. Boolean flags take no value and
-accept `--no-<name>`. Unknown or repeated flags, extra arguments, and invalid values fail before
-filesystem effects. A positional install/refresh source overrides `--repo-root`.
+settings where applicable. Use `--name value` or `--name=value`. Switches normally take no value.
+Unknown or repeated flags, extra arguments, and invalid values fail before filesystem effects.
+A positional install/refresh source replaces the environment source; combining it with an explicit
+`--repo-root` is an error.
 
 ### `--repo-root`
 
@@ -120,14 +121,12 @@ npm and native checks may remain unresolved in the plan.
 
 ### `--debug`
 
-| Field       | Value                                                    |
-| ----------- | -------------------------------------------------------- |
-| Environment | `CODEX_TOOLS_DEBUG`                                      |
-| Default     | off unless `TANAAB_DEBUG` or `RUNNER_DEBUG=1` enables it |
-| Values      | value-free flag                                          |
-| Description | Enables diagnostics on stderr.                           |
-
-`--no-debug` overrides ambient debug enablement.
+| Field       | Value                                  |
+| ----------- | -------------------------------------- |
+| Environment | `CODEX_TOOLS_DEBUG`                    |
+| Default     | off unless `RUNNER_DEBUG=1` enables it |
+| Values      | value-free flag                        |
+| Description | Enables diagnostics on stderr.         |
 
 ### `--version`
 
@@ -148,7 +147,8 @@ npm and native checks may remain unresolved in the plan.
 ## Environment defaults
 
 Empty path and selection environment values are unset. Boolean values must be `1`, `true`, `0`,
-or `false`; an empty boolean value is invalid.
+or `false`; an empty boolean value is invalid. Set `CODEX_TOOLS_DEBUG=false` to suppress inherited
+CI debug enablement.
 Explicit flags override their environment values, including invalid ones. `CODEX_TOOLS_CODEX_HOME`
 precedes `CODEX_HOME`; otherwise Codex Tools uses `~/.codex`. Repository settings apply only to
 cache ownership and absence behavior, as described in [advanced usage](./ADVANCED.md#cache-ownership).

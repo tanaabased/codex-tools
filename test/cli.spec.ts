@@ -38,6 +38,10 @@ describe('lib/run-cli', () => {
     ['--help', '--unknown'],
     ['cache', 'sync', '--repo-root', 'one', '--repo-root', 'two'],
     ['status', '--dry-run'],
+    ['status', '--no-debug'],
+    ['status', '--debug='],
+    ['status', '--debug=sometimes'],
+    ['status', '--debug', '--debug=false'],
   ]) {
     it('should reject invalid arguments during parsing: ' + args.join(' '), () => {
       assert.throws(() => parseArgs(args, {}));
@@ -45,17 +49,46 @@ describe('lib/run-cli', () => {
   }
 
   it('should apply flags over environment and support explicit boolean negation', () => {
-    const parsed = parseArgs(['cache', 'sync', '--repo-root', '/cli', '--no-debug', '--no-json'], {
-      CODEX_TOOLS_REPO_ROOT: '/env',
-      CODEX_HOME: '/home',
-      CODEX_TOOLS_DEBUG: 'true',
-      CODEX_TOOLS_JSON: 'true',
-    });
+    const parsed = parseArgs(
+      ['cache', 'sync', '--repo-root', '/cli', '--debug=false', '--no-json'],
+      {
+        CODEX_TOOLS_REPO_ROOT: '/env',
+        CODEX_HOME: '/home',
+        CODEX_TOOLS_DEBUG: 'true',
+        CODEX_TOOLS_JSON: 'true',
+      },
+    );
     assert.equal(parsed.repoRoot, '/cli');
     assert.equal(parsed.codexHome, '/home');
     assert.equal(parsed.debug, false);
     assert.equal(parsed.json, false);
     assert.equal(parseArgs(['status'], { CODEX_TOOLS_REPO_ROOT: '/env' }).repoRoot, '/env');
+  });
+
+  it('should disable inherited debug with a falsy value without consuming command arguments', () => {
+    for (const args of [['--debug=false'], ['--debug=0'], ['--debug', 'false'], ['--debug', '0']]) {
+      const parsed = parseArgs([...args, 'status'], {
+        CODEX_TOOLS_DEBUG: 'true',
+        RUNNER_DEBUG: '1',
+      });
+      assert.equal(parsed.command, 'status');
+      assert.equal(parsed.debug, false);
+    }
+    assert.equal(parseArgs(['--debug', 'status'], { CODEX_TOOLS_DEBUG: 'false' }).debug, true);
+    assert.equal(
+      parseArgs(['status', '--debug=false'], { CODEX_TOOLS_DEBUG: 'invalid' }).debug,
+      false,
+    );
+    assert.equal(parseArgs(['install', 'false', '--debug'], {}).repoRoot, 'false');
+  });
+
+  it('should ignore unrelated debug controls and let scoped settings override CI', () => {
+    assert.equal(parseArgs(['status'], { TANAAB_DEBUG: 'on' }).debug, false);
+    assert.equal(parseArgs(['status'], { RUNNER_DEBUG: '1' }).debug, true);
+    assert.equal(
+      parseArgs(['status'], { RUNNER_DEBUG: '1', CODEX_TOOLS_DEBUG: 'false' }).debug,
+      false,
+    );
   });
 
   it('should report malformed source metadata without writing the cache', async () => {
