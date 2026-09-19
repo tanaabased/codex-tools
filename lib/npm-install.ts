@@ -32,7 +32,7 @@ import { performInstall } from './native-install.ts';
 export const runNpm: NpmRunner = (argv, options) =>
   runNative(argv, { ...options, executable: 'npm', timeoutMs: 60000 });
 
-// npm and native npm failures can echo authentication configuration. Keep raw output private.
+// npm and native npm failures can echo authentication configuration. keep raw output private.
 export function npmFailure(child: NativeResult, operation: string): string {
   const output = String(child.stderr ?? '') + String(child.stdout ?? '');
   const code = output.match(
@@ -282,7 +282,7 @@ export async function installNpmPlugin(
     const catalogFile = path.join(stageHome, '.agents/plugins/marketplace.json');
     await mkdir(path.dirname(catalogFile), { recursive: true });
     await mkdir(stageCodex);
-    // Retain npm's user auth configuration when native acquisition changes HOME.
+    // retain npm's user auth configuration when native acquisition changes `HOME`.
     const stageEnv = {
       ...registryEnv(env, provenance),
       HOME: stageHome,
@@ -313,7 +313,7 @@ export async function installNpmPlugin(
       stageOptions,
     );
     if (installed.exitCode !== 0 && !pinned) {
-      // Codex 0.154.x exposes a manifest-name mismatch before installation. This is
+      // codex 0.154.x exposes a manifest-name mismatch before installation. this is
       // only a discovery hint; the acquired manifest below is the identity authority.
       const discovered = installed.stderr.match(
         /plugin\.json name `([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)` does not match marketplace plugin name `codex-tools-identity-probe`/,
@@ -369,7 +369,7 @@ export async function installNpmPlugin(
     };
     result.completed = result.plan.slice(0, 4);
     result.remaining = result.plan.slice(4);
-    // Acquisition must not overwrite a marketplace changed while npm was running.
+    // acquisition must not overwrite a marketplace changed while npm was running.
     if (
       !isDeepStrictEqual(await snapshot(context.catalogFile), context.catalogSnapshot) ||
       !isDeepStrictEqual(await snapshot(context.configFile), context.configSnapshot)
@@ -399,7 +399,7 @@ export async function installNpmPlugin(
     };
     return completed;
   } catch (error) {
-    // Prerequisite errors contain our paths/field names, never raw npm output.
+    // prerequisite errors contain our paths/field names, never raw npm output.
     const failure = asError(error);
     if (failure.source?.valid === false) result.source.valid = false;
     result.issue = failure.message;

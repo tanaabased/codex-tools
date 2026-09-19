@@ -2,16 +2,20 @@
 
 Use the [README](./README.md) for installation and the [CLI reference](./CLI.md) for command behavior.
 
-## Development
+## Setup
 
 Use Bun from `.bun-version` for source work and Node from `.node-version` for built and packed
 consumers. Install dependencies without lifecycle scripts:
 
 ```sh
+git clone https://github.com/tanaabased/codex-tools.git
+cd codex-tools
 bun install --frozen-lockfile --ignore-scripts
 bun run check:toolchain
 bun run codex-tools --help
 ```
+
+## Develop and validate
 
 | Command                | Purpose                                              |
 | ---------------------- | ---------------------------------------------------- |

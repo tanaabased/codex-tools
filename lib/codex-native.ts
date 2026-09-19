@@ -17,7 +17,7 @@ export interface NativePluginInspection {
   installedPath: string;
 }
 
-/** Captured result from one bounded native Codex or npm subprocess. */
+/** captured result from one bounded native codex or npm subprocess. */
 export interface NativeResult {
   argv: readonly string[];
   exitCode: number;
@@ -27,7 +27,7 @@ export interface NativeResult {
   error?: string;
 }
 
-/** Environment, working directory, executable, and deadline for a native command. */
+/** environment, working directory, executable, and deadline for a native command. */
 export interface NativeOptions {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
@@ -35,13 +35,13 @@ export interface NativeOptions {
   timeoutMs?: number;
 }
 
-/** Injectable asynchronous native-command boundary used by install and refresh. */
+/** injectable asynchronous native-command boundary used by install and refresh. */
 export type NativeRunner = (
   argv: readonly string[],
   options?: NativeOptions,
 ) => Promise<NativeResult>;
 
-/** Runs one bounded native Codex command without interpreting its response. */
+/** runs one bounded native codex command without interpreting its response. */
 export async function runNative(
   argv: readonly string[],
   { env, cwd, executable = 'codex', timeoutMs = 30000 }: NativeOptions = {},
@@ -61,7 +61,7 @@ export async function runNative(
         if (grouped && child.pid) process.kill(-child.pid, 'SIGKILL');
         else child.kill('SIGKILL');
       } catch {
-        /* The process may have exited as its deadline expired. */
+        /* the process may have exited as its deadline expired. */
       }
     }, timeoutMs);
     child.stdout.on('data', (chunk) => {
@@ -121,7 +121,7 @@ export function readNativeResult(
   }
 }
 
-/** Reads the list envelopes returned by the supported native Codex contract. */
+/** reads the list envelopes returned by the supported native codex contract. */
 export function readNativeRows(
   value: unknown,
   field: 'installed' | 'marketplaces',
@@ -152,7 +152,7 @@ export function readNativeRows(
   return rows as NativeRecord[];
 }
 
-/** Reads the plugin identity returned by native npm acquisition. */
+/** reads the plugin identity returned by native npm acquisition. */
 export function readNativePluginInspection(value: unknown): NativePluginInspection {
   if (typeof value !== 'object' || value === null)
     throw new Error('Native inspection returned an unexpected package identity or path.');
@@ -176,7 +176,7 @@ export function readNativePluginInspection(value: unknown): NativePluginInspecti
   };
 }
 
-/** Enforces the native response contract supported by this package version. */
+/** enforces the native response contract supported by this package version. */
 export function assertSupportedCodexVersion(
   version: string,
   { unsupportedMessage }: { unsupportedMessage?: string } = {},

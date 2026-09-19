@@ -4,13 +4,21 @@
   <img src="./assets/codex-tools.png" alt="Codex Tools" width="180" />
 </p>
 
-Install, inspect, refresh, and reconcile Codex plugins without trampling unrelated local state.
-Use the Node CLI or the typed JavaScript API; source development runs on Bun.
+Develop Codex plugins and install them with less setup. Codex Tools handles marketplace registration,
+installation, source refresh, and cache synchronization through a CLI and typed JavaScript API.
+
+## Overview
+
+- **Install local plugins:** set up a personal marketplace automatically while preserving existing entries.
+- **Install from npm:** resolve a package version, install its plugin, and retain the exact release pin.
+- **Refresh source plugins:** update the development version and reinstall changes through Codex.
+- **Sync installed caches:** copy changes from a source repository into its selected live plugin cache while preserving unmanaged files.
+- **Inspect and preview:** report installation state and drift with `status`/`doctor`, or preview changes with a dry run.
 
 ## Install
 
 Requires Node `^24.15.0 || >=26.0.0`. Install and refresh also need a
-[supported Codex version](./CLI.md#invocation-and-prerequisites).
+[supported Codex version](./CLI.md#invocation).
 
 ```sh
 npm install --global @tanaab/codex-tools
@@ -24,18 +32,18 @@ For library use, install locally with `npm install @tanaab/codex-tools`.
 ### CLI
 
 ```sh
-# Preview an installation, then apply it.
+# preview an installation, then apply it.
 codex-tools install /path/to/plugin --dry-run --json
 codex-tools install /path/to/plugin
 
-# Install a published plugin package.
+# install a published plugin package.
 codex-tools install npm:@scope/plugin@1.2.3
 
-# Inspect the installation and refresh its local source.
+# inspect the installation and refresh its local source.
 codex-tools status --repo-root /path/to/plugin --json
 codex-tools refresh /path/to/plugin
 
-# Report cache drift, then preview synchronization.
+# report cache drift, then preview synchronization.
 codex-tools cache check --repo-root /path/to/plugin
 codex-tools cache sync --repo-root /path/to/plugin --dry-run
 ```

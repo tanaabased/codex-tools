@@ -136,13 +136,12 @@ try {
     'CONTRIBUTING.md',
   ]);
   const apiExample = documentationExample(
-    await readFile(path.join(installed, 'API.md'), 'utf8'),
+    await readFile(path.join(installed, 'README.md'), 'utf8'),
     'api',
   );
-  assert.equal(
-    documentationExample(await readFile(path.join(installed, 'README.md'), 'utf8'), 'api'),
-    apiExample,
-    'README.md and API.md must publish the same checked API example.',
+  const commonjsExample = documentationExample(
+    await readFile(path.join(installed, 'API.md'), 'utf8'),
+    'api-commonjs',
   );
   const plugin = JSON.parse(
     await readFile(path.join(installed, '.codex-plugin/plugin.json'), 'utf8'),
@@ -256,15 +255,17 @@ try {
   );
   await writeFile(
     cjsConsumer,
-    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n`,
+    `const assert = require('node:assert/strict');\nconst api = require('@tanaab/codex-tools');\nassert.deepEqual(Object.keys(api).sort(), ${expectedExports});\nfor (const value of Object.values(api)) assert.equal(typeof value, 'function');\n` +
+      commonjsExample,
   );
   for (const consumerFile of [esmConsumer, cjsConsumer]) {
     const result = spawnSync(node, [consumerFile], {
       cwd: consumer,
       encoding: 'utf8',
-      env: nodeOnlyEnv,
+      env: { ...nodeOnlyEnv, HOME: root, CODEX_HOME: path.join(root, 'codex') },
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
+    if (consumerFile === cjsConsumer) assert.equal(result.stdout, 'planned\n');
   }
 
   await writeFile(path.join(consumer, 'types.mts'), apiExample);
@@ -299,7 +300,7 @@ void result;
     const result = spawnSync(node, [typescript, '--project', 'tsconfig.json'], {
       cwd: consumer,
       encoding: 'utf8',
-      env: nodeOnlyEnv,
+      env: { ...nodeOnlyEnv, HOME: root, CODEX_HOME: path.join(root, 'codex') },
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
   }

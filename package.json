@@ -1,6 +1,6 @@
 {
   "name": "@tanaab/codex-tools",
-  "description": "Local Codex plugin installation, cache synchronization, and diagnostics.",
+  "description": "Codex plugin development and easy installation: marketplace setup, npm installs, source refresh, and cache sync.",
   "version": "0.1.0",
   "author": "Tanaab",
   "license": "MIT",

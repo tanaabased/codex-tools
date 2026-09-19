@@ -352,7 +352,7 @@ export async function performInstall(
             await unchanged();
             if (expectedCatalog) await rename(temporary, catalogFile);
             else {
-              // Exclusive creation keeps an intervening catalog from being replaced.
+              // exclusive creation keeps an intervening catalog from being replaced.
               await link(temporary, catalogFile);
               await rm(temporary);
             }

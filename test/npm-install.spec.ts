@@ -259,7 +259,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.equal(failed.ok, false);
     assert.match(failed.issue ?? '', /payload does not match/);
     stalePayload = false;
-    // Retry must repair a stale payload, not skip it based on catalog metadata.
+    // retry must repair a stale payload, not skip it based on catalog metadata.
     const retry = await run('npm:' + packageName + '@2.0.0');
     assert.equal(retry.ok, true, retry.issue ?? undefined);
   });

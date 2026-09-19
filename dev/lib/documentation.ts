@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const external = /^[a-z][a-z+.-]*:/i;
 
-/** Extracts the fenced code block immediately following one named documentation marker. */
+/** extracts the fenced code block immediately following one named documentation marker. */
 export function documentationExample(markdown: string, name: string): string {
   const marker = `<!-- codex-tools-example:${name} -->`;
   const offset = markdown.indexOf(marker);
@@ -39,7 +39,7 @@ async function anchors(file: string): Promise<Set<string>> {
   return values;
 }
 
-/** Verifies local Markdown links, heading anchors, and HTML image sources. */
+/** verifies local markdown links, heading anchors, and html image sources. */
 export async function checkDocumentationLinks(root: string, documents: readonly string[]) {
   const headings = new Map<string, Set<string>>();
   for (const relative of documents) {

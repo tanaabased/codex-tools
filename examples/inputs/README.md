@@ -8,8 +8,8 @@ strict failures without mutating Codex state.
 ```bash
 # should report help and displayed defaults from outside the checkout
 cd /tmp
-codex-tools --help | grep -F 'Usage: codex-tools'
-codex-tools --help | grep -F 'CODEX_TOOLS_CODEX_HOME      same as --codex-home; precedes CODEX_HOME'
+codex-tools --help | grep -F 'codex-tools <command> [source] [options]'
+codex-tools --help | grep -E 'CODEX_TOOLS_CODEX_HOME +same as --codex-home; precedes CODEX_HOME'
 codex-tools --help | grep -F '[default: current directory]'
 codex-tools --help | grep -F '[default: CODEX_HOME or ~/.codex]'
 codex-tools --help | grep -F '[default: require-installed]'

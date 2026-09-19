@@ -9,13 +9,13 @@ import type { TreeDiff } from '../utils/diff-entries.ts';
 import hasDiff from '../utils/has-diff.ts';
 import type { CodexToolsOptions, OperationCommand } from '../utils/parse-args.ts';
 
-/** Read-only and synchronizing operations that use the cache reconciliation contract. */
+/** read-only and synchronizing operations that use the cache reconciliation contract. */
 export type CacheCommand = Exclude<OperationCommand, 'install' | 'refresh'>;
-/** Stable cache-operation states returned to CLI and library consumers. */
+/** stable cache-operation states returned to cli and library consumers. */
 export type CacheStatus =
   'not_installed' | 'unresolved' | 'planned' | 'synchronized_directory' | 'current' | 'drifted';
 
-/** Normalized result returned by status, doctor, cache check, and cache sync. */
+/** normalized result returned by status, doctor, cache check, and cache sync. */
 export interface CacheOperationResult {
   command: CacheCommand;
   source: { path: string; valid: true } & PluginIdentity;
@@ -29,44 +29,41 @@ export interface CacheOperationResult {
     excludeNames: readonly string[];
   };
   diff: TreeDiff | null;
-  /** Stable machine-readable operation state. */
+  /** stable machine-readable operation state. */
   status: CacheStatus;
-  /** Whether the requested observation or synchronization satisfied its contract. */
+  /** whether the requested observation or synchronization satisfied its contract. */
   ok: boolean;
   dryRun: boolean;
-  /** Human-readable reason for an unsuccessful or unresolved result. */
+  /** human-readable reason for an unsuccessful or unresolved result. */
   issue: string | null;
 }
 
-/** Result union returned by the shared operation layer. */
+/** result union returned by the shared operation layer. */
 export type OperationResult = CacheOperationResult | InstallationResult;
 
 /**
- * Runs one supported operation without rendering output or changing process exit state.
+ * runs one supported operation without rendering output or changing process exit state.
  *
- * Status, doctor, and check are read-only. Sync writes only when `dryRun` is false. Install and
- * refresh can update source, marketplace, cache, and native Codex state; partial failures are
+ * status, doctor, and check are read-only. sync writes only when `dryRun` is false. install and
+ * refresh can update source, marketplace, cache, and native codex state; partial failures are
  * reported in their structured result and are not automatically rolled back.
  *
  * @example
- * ```ts
- * import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';
+ * ```js
+ * const { runOperation } = require('@tanaab/codex-tools');
  *
- * const options: CodexToolsOptions = {
- *   repoRoot: '/path/to/plugin',
- *   codexHome: '/path/to/codex-home',
- * };
- * const result = await runOperation('status', options);
- *
- * if (!result.ok) console.error(result.issue);
+ * runOperation('install', {
+ *   npmSelector: 'npm:@scope/plugin@1.2.3',
+ *   dryRun: true,
+ * }).then((result) => console.log(result.status));
  * ```
- * @param command Supported operation name. CLI `cache check` and `cache sync` map to `check` and
+ * @param command supported operation name. cli `cache check` and `cache sync` map to `check` and
  * `sync` here.
- * @param options Source selection, Codex state, output-independent behavior, and dry-run settings.
- * @param runtime Injectable environment and native/npm process boundaries for install or refresh.
- * @returns The normalized cache or installation result used by JSON output.
- * @throws When the command, source, configuration, filesystem, or operation preconditions are
- * invalid. Native operational failures are ordinarily returned as structured results.
+ * @param options source selection, codex state, output-independent behavior, and dry-run settings.
+ * @param runtime injectable environment and native/npm process boundaries for install or refresh.
+ * @returns the normalized cache or installation result used by json output.
+ * @throws when the command, source, configuration, filesystem, or operation preconditions are
+ * invalid. native operational failures are ordinarily returned as structured results.
  */
 export function runOperation(
   command: 'install' | 'refresh',

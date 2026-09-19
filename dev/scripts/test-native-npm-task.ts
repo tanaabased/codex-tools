@@ -205,7 +205,7 @@ try {
   const preview = await invoke('install', 'npm:' + pkg + '@1.2.3', ['--dry-run']);
   assert.equal(preview.source.valid, null);
   await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
-  // Exercise native npm sources directly before testing the wrapper.
+  // exercise native npm sources directly before testing the wrapper.
   const nativeHome = path.join(root, 'native-home');
   await mkdir(path.join(nativeHome, '.agents/plugins'), { recursive: true });
   await mkdir(path.join(root, 'native-codex'));

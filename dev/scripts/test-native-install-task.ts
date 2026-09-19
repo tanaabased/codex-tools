@@ -147,7 +147,7 @@ try {
     await readFile(path.join(selectedCache, 'skills/probe/SKILL.md'), 'utf8'),
     selectedBytes,
   );
-  // A stale source version must still be refreshed through the selected local mapping.
+  // a stale source version must still be refreshed through the selected local mapping.
   const changedManifest = JSON.parse(await readFile(manifestFile, 'utf8'));
   changedManifest.version = '2.0.0-beta.1+local';
   await writeFile(manifestFile, JSON.stringify(changedManifest));
@@ -160,7 +160,7 @@ try {
   assert.match(mismatch.error, /source mapping/);
   await rm(mapping);
   await symlink(source, mapping);
-  // A real native cache write failure must retain the source edit and child error.
+  // a real native cache write failure must retain the source edit and child error.
   const cacheRoot = path.join(codexHome, 'plugins/cache/personal/codex-tools-smoke');
   await chmod(cacheRoot, 0o555);
   try {

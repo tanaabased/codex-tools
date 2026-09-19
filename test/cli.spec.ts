@@ -91,7 +91,10 @@ describe('lib/run-cli', () => {
   it('should keep JSON help color-free on a terminal stream', async () => {
     const result = await invoke(['--help', '--json']);
     assert.equal(result.status, 0);
-    assert.match(JSON.parse(result.stdout).help, /Usage: codex-tools/);
+    assert.match(
+      JSON.parse(result.stdout).help,
+      /Usage: .*codex-tools <command> \[source\] \[options\]/,
+    );
     assert.ok(!result.stdout.includes('\\u001b'));
   });
 
