@@ -6,8 +6,8 @@ for package installation and [advanced usage](./ADVANCED.md) for marketplace and
 ## Invocation
 
 ```sh
-codex-tools <command> [options]
-npm exec --offline -- codex-tools <command> [options]
+codex-tools <command> [source] [options]
+npm exec --offline -- codex-tools <command> [source] [options]
 ```
 
 | Command                          | Purpose                                                                                                     |
