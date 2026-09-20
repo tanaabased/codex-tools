@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 
 import codexsyncDiffHasChanges from '../utils/has-diff.ts';
 import diffCodexsyncEntries from '../utils/diff-entries.ts';
-import type { FileEntry, SymlinkEntry, TreeEntry } from '../utils/diff-entries.ts';
+import type { TreeEntry } from '../utils/diff-entries.ts';
 
-function fileEntry(content: string, mode = 0o644): FileEntry {
+function fileEntry(content: string, mode = 0o644): Extract<TreeEntry, { type: 'file' }> {
   return { content: Buffer.from(content), mode, type: 'file' };
 }
 
-function symlinkEntry(target: string): SymlinkEntry {
+function symlinkEntry(target: string): Extract<TreeEntry, { type: 'symlink' }> {
   return { target, type: 'symlink' };
 }
 

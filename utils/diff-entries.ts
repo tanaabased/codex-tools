@@ -1,18 +1,3 @@
-export interface FileEntry {
-  type: 'file';
-  mode: number;
-  content: Uint8Array;
-}
-
-export interface DirectoryEntry {
-  type: 'dir';
-}
-
-export interface SymlinkEntry {
-  type: 'symlink';
-  target: string;
-}
-
 /** normalized managed-tree entry used for comparison and synchronization. */
 export type TreeEntry =
   | { type: 'file'; mode: number; content: Uint8Array }
