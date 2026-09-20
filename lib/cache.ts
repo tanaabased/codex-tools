@@ -1,10 +1,9 @@
-import type { Stats } from 'node:fs';
 import {
   chmod,
   lstat,
   mkdir,
-  readFile,
   readdir,
+  readFile,
   readlink,
   realpath,
   rm,
@@ -13,6 +12,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import type { Stats } from 'node:fs';
 
 import diffEntries from '../utils/diff-entries.ts';
 import type { EntryMap, TreeDiff, TreeEntry } from '../utils/diff-entries.ts';

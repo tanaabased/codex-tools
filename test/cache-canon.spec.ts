@@ -10,8 +10,8 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 
 import { collectEntries, syncEntries } from '../lib/cache.ts';
 

@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { supportedCodexVersion } from '../lib/codex-native.ts';
+import { tmpdir } from 'node:os';
+
+import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import { installPlugin } from '../lib/install.ts';
 import type { NativeOptions, NativeResult, NativeRunner } from '../lib/codex-native.ts';
 import type { NpmRunner } from '../lib/install-types.ts';
-import { installPlugin } from '../lib/install.ts';
-import { refreshPlugin } from '../lib/refresh.ts';
-import type { CodexToolsOptions } from '../utils/parse-args.ts';
 import { parseArgs } from '../utils/parse-args.ts';
 import { parseNpmSelector, registryUrl } from '../utils/npm-selector.ts';
+import { refreshPlugin } from '../lib/refresh.ts';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 
 const json = async (file: string, value: unknown): Promise<void> => {
   await mkdir(path.dirname(file), { recursive: true });

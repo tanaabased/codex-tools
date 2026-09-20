@@ -9,11 +9,12 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { runOperation } from '../lib/operations.ts';
-import { resolveContext } from '../lib/context.ts';
+import { tmpdir } from 'node:os';
+
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import { resolveContext } from '../lib/context.ts';
+import { runOperation } from '../lib/operations.ts';
 
 describe('lib/operations', () => {
   let root = '';

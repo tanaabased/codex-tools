@@ -1,7 +1,7 @@
-import type { NativeResult, NativeRunner } from './codex-native.ts';
-import type { MarketplaceCatalog, NpmProvenance, ValidatedSource } from './install-context.ts';
-import type { TreeDiff } from '../utils/diff-entries.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import type { MarketplaceCatalog, NpmProvenance, ValidatedSource } from './install-context.ts';
+import type { NativeResult, NativeRunner } from './codex-native.ts';
+import type { TreeDiff } from '../utils/diff-entries.ts';
 
 /** one planned, completed, or remaining installation-side operation. */
 export interface OperationStep extends Record<string, unknown> {

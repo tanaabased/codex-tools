@@ -1,6 +1,6 @@
+import type { InstallationResult, InstallDependencies, InstallOptions } from './install-types.ts';
 import { installNpmPlugin } from './npm-install.ts';
 import { performInstall } from './native-install.ts';
-import type { InstallDependencies, InstallationResult, InstallOptions } from './install-types.ts';
 
 /**
  * installs a local or npm-backed plugin while preserving unrelated codex state.

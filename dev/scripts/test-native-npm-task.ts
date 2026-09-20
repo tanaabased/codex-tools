@@ -1,12 +1,12 @@
+import type { AddressInfo } from 'node:net';
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:https';
-import type { AddressInfo } from 'node:net';
-import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 
 import { freshSkills } from '../lib/fresh-skills.ts';
 

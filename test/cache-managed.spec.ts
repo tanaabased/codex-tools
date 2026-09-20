@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-
 import {
   chmod,
   lstat,
@@ -18,6 +17,7 @@ import path from 'node:path';
 import { collectEntries, syncEntries } from '../lib/cache.ts';
 import pathExists from '../utils/path-exists.ts';
 import type { StatPath } from '../utils/path-exists.ts';
+
 const managedPaths = [
   '.codex-plugin',
   '.mcp.json',

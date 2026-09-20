@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
 
 import { format } from 'prettier';
 import ts from 'typescript';

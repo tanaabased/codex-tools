@@ -1,30 +1,31 @@
-import { randomUUID } from 'node:crypto';
 import { chmod, lstat, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+
 import { asError } from '../utils/errors.ts';
-import parseToml from '../utils/parse-toml.ts';
-import { collectEntries } from './cache.ts';
 import {
   assertSupportedCodexVersion,
   readNativeResult,
   readNativeRows,
   runNative,
 } from './codex-native.ts';
-import type { NativeResult } from './codex-native.ts';
+import { collectEntries } from './cache.ts';
+import diffEntries from '../utils/diff-entries.ts';
+import hasDiff from '../utils/has-diff.ts';
 import { inside, object, optional, resolveInstall, snapshot } from './install-context.ts';
-import type { UnknownRecord } from './install-context.ts';
 import type {
-  InstallDependencies,
   InstallationEffects,
   InstallationResult,
+  InstallDependencies,
   InstallOptions,
   ManifestEdit,
   OperationStep,
 } from './install-types.ts';
 import { installNpmPlugin } from './npm-install.ts';
-import diffEntries from '../utils/diff-entries.ts';
-import hasDiff from '../utils/has-diff.ts';
+import type { NativeResult } from './codex-native.ts';
+import parseToml from '../utils/parse-toml.ts';
+import type { UnknownRecord } from './install-context.ts';
 
 interface NativeInstalled extends UnknownRecord {
   pluginId: string;

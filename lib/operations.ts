@@ -1,13 +1,13 @@
+import type { CodexToolsOptions, OperationCommand } from '../utils/parse-args.ts';
+import hasDiff from '../utils/has-diff.ts';
 import { inspectInstallation, resolveContext } from './context.ts';
-import type { InstallationCandidate, InstallationInspection, PluginIdentity } from './context.ts';
 import { inspectTrees, syncEntries } from './cache.ts';
-import type { TreeOptions } from './cache.ts';
+import type { InstallationCandidate, InstallationInspection, PluginIdentity } from './context.ts';
+import type { InstallationResult, InstallDependencies } from './install-types.ts';
 import { installPlugin } from './install.ts';
 import { refreshPlugin } from './refresh.ts';
-import type { InstallDependencies, InstallationResult } from './install-types.ts';
 import type { TreeDiff } from '../utils/diff-entries.ts';
-import hasDiff from '../utils/has-diff.ts';
-import type { CodexToolsOptions, OperationCommand } from '../utils/parse-args.ts';
+import type { TreeOptions } from './cache.ts';
 
 /** read-only and synchronizing operations that use the cache reconciliation contract. */
 export type CacheCommand = Exclude<OperationCommand, 'install' | 'refresh'>;

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { lstat, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 
-import { runCLI } from '../lib/run-cli.ts';
 import packageJson from '../package.json';
 import { parseArgs } from '../utils/parse-args.ts';
+import { runCLI } from '../lib/run-cli.ts';
 
 async function invoke(args: readonly string[], env: NodeJS.ProcessEnv = {}) {
   let stdout = '';

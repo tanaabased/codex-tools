@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
   lstat,
   mkdir,
@@ -10,20 +10,21 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { supportedCodexVersion } from '../lib/codex-native.ts';
-import type { NativeRunner } from '../lib/codex-native.ts';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+
+import { asError, hasErrorCode } from '../utils/errors.ts';
+import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import { installPlugin } from '../lib/install.ts';
 import type {
   MarketplaceEntry,
   MarketplacePolicy,
   MarketplaceSource,
 } from '../lib/install-context.ts';
-import type { CodexToolsOptions } from '../utils/parse-args.ts';
-import { installPlugin } from '../lib/install.ts';
+import type { NativeRunner } from '../lib/codex-native.ts';
 import { parseArgs } from '../utils/parse-args.ts';
-import { asError, hasErrorCode } from '../utils/errors.ts';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 
 const cli = fileURLToPath(new URL('../bin/codex-tools.ts', import.meta.url));
 const writeJson = async (file: string, data: unknown): Promise<void> => {

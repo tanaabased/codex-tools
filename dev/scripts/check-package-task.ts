@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
   lstat,
   mkdir,
   mkdtemp,
-  readFile,
   readdir,
+  readFile,
   realpath,
   rm,
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 
-import packageJson from '../../package.json';
 import { checkDocumentationLinks, documentationExample } from '../lib/documentation.ts';
+import packageJson from '../../package.json';
 
 const repo = fileURLToPath(new URL('../..', import.meta.url));
 const args = process.argv.slice(2);

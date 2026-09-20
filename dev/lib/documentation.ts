@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 
 const external = /^[a-z][a-z+.-]*:/i;
 

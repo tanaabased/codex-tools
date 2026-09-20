@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 
+import codexsyncDiffHasChanges from '../utils/has-diff.ts';
 import diffCodexsyncEntries from '../utils/diff-entries.ts';
 import type { FileEntry, SymlinkEntry, TreeEntry } from '../utils/diff-entries.ts';
-import codexsyncDiffHasChanges from '../utils/has-diff.ts';
 
 function fileEntry(content: string, mode = 0o644): FileEntry {
   return { content: Buffer.from(content), mode, type: 'file' };

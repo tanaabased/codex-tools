@@ -1,8 +1,8 @@
-import packageJson from '../package.json';
 import { asError } from '../utils/errors.ts';
+import packageJson from '../package.json';
 import { parseArgs } from '../utils/parse-args.ts';
 import { renderHelp } from './help.ts';
-import { styles, renderResult } from './presentation.ts';
+import { renderResult, styles } from './presentation.ts';
 import { runOperation } from './operations.ts';
 
 const SCRIPT_VERSION: string = packageJson.version;

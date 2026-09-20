@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import {
   chmod,
   cp,
@@ -12,21 +11,23 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { supportedCodexVersion } from '../lib/codex-native.ts';
-import type { NativeResult, NativeRunner } from '../lib/codex-native.ts';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+
+import type { CodexToolsOptions } from '../utils/parse-args.ts';
 import type {
   InstallationEffects,
   InstallationResult,
   ManifestEdit,
 } from '../lib/install-types.ts';
-import { refreshPlugin } from '../lib/refresh.ts';
-import { runOperation } from '../lib/operations.ts';
-import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import type { NativeResult, NativeRunner } from '../lib/codex-native.ts';
 import { parseArgs } from '../utils/parse-args.ts';
+import { refreshPlugin } from '../lib/refresh.ts';
 import { renderResult } from '../lib/presentation.ts';
+import { runOperation } from '../lib/operations.ts';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 
 const writeJson = async (file: string, value: unknown): Promise<void> => {
   await mkdir(path.dirname(file), { recursive: true });

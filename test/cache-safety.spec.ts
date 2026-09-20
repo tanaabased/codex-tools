@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
+
 import { collectEntries, inspectTrees, syncEntries } from '../lib/cache.ts';
 
 describe('lib/cache', () => {

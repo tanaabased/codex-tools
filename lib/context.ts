@@ -1,10 +1,10 @@
-import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
+import type { AbsentCheck, CodexToolsOptions, MissingTarget } from '../utils/parse-args.ts';
 import { asError, hasErrorCode } from '../utils/errors.ts';
 import parseToml from '../utils/parse-toml.ts';
-import type { AbsentCheck, CodexToolsOptions, MissingTarget } from '../utils/parse-args.ts';
 import { selection } from '../utils/selection.ts';
 
 type UnknownRecord = Record<string, unknown>;

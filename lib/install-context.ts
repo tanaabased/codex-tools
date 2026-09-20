@@ -1,12 +1,12 @@
-import type { Stats } from 'node:fs';
-import { lstat, readFile, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { lstat, readFile, realpath, stat } from 'node:fs/promises';
+import path from 'node:path';
+import type { Stats } from 'node:fs';
 
 import { asError, hasErrorCode } from '../utils/errors.ts';
-import parseToml from '../utils/parse-toml.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import parseToml from '../utils/parse-toml.ts';
 
 export type UnknownRecord = Record<string, unknown>;
 

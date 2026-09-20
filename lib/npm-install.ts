@@ -1,15 +1,9 @@
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+
 import { asError } from '../utils/errors.ts';
-import {
-  exactVersion,
-  parseNpmSelector,
-  registryUrl,
-  resolvedVersion,
-} from '../utils/npm-selector.ts';
-import type { NpmSelection } from '../utils/npm-selector.ts';
 import {
   assertSupportedCodexVersion,
   readNativePluginInspection,
@@ -17,16 +11,23 @@ import {
   runNative,
   supportedCodexFamily,
 } from './codex-native.ts';
-import type { NativeOptions, NativeResult, NativeRunner } from './codex-native.ts';
+import {
+  exactVersion,
+  parseNpmSelector,
+  registryUrl,
+  resolvedVersion,
+} from '../utils/npm-selector.ts';
 import { inside, object, resolveMarketplace, snapshot, validateSource } from './install-context.ts';
-import type { MarketplaceContext, NpmProvenance } from './install-context.ts';
 import type {
-  InstallDependencies,
   InstallationResult,
+  InstallDependencies,
   InstallOptions,
   NpmPinnedEntry,
   NpmRunner,
 } from './install-types.ts';
+import type { MarketplaceContext, NpmProvenance } from './install-context.ts';
+import type { NativeOptions, NativeResult, NativeRunner } from './codex-native.ts';
+import type { NpmSelection } from '../utils/npm-selector.ts';
 import { performInstall } from './native-install.ts';
 
 export const runNpm: NpmRunner = (argv, options) =>
