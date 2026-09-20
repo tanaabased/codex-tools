@@ -5,15 +5,15 @@ import path from 'node:path';
 
 import { checkDocumentationLinks, documentationExample } from '../lib/documentation.ts';
 
-describe('documentation contracts', () => {
-  it('extracts only the marked example and refuses a missing or misplaced fence', () => {
+describe('dev/lib/documentation', () => {
+  it('should extract only the marked example and refuse a missing or misplaced fence', () => {
     const marker = '<!-- codex-tools-example:api -->';
     assert.equal(documentationExample(marker + '\n\n```ts\nstatus();\n```', 'api'), 'status();\n');
     assert.throws(() => documentationExample('unmarked', 'api'), /Missing documentation example/);
     assert.throws(() => documentationExample(`${marker}\nprose`, 'api'), /Missing fenced code/);
   });
 
-  it('checks local links, duplicate heading anchors, and HTML image sources', async () => {
+  it('should check local links, duplicate heading anchors, and HTML image sources', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'codex-tools-docs-'));
     try {
       await writeFile(path.join(root, 'guide.md'), '# Usage\n\n# Usage\n');

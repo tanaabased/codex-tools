@@ -56,7 +56,7 @@ const entry = (name = 'sample', source = './plugins/sample'): FixtureEntry => ({
   category: 'Custom',
 });
 
-describe('local installation (Me link-preservation and catalog reconciliation)', () => {
+describe('lib/install', () => {
   let root = '';
   let home = '';
   let codexHome = '';
@@ -143,7 +143,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     await rm(root, { recursive: true, force: true });
   });
 
-  it('installs a standalone plugin without package.json and skips native add on repetition', async () => {
+  it('should install a standalone plugin without package.json and skip native add on repetition', async () => {
     const result = await run();
     assert.equal(result.ok, true, result.issue ?? undefined);
     assert.equal(result.inspection.installed, true);
@@ -163,7 +163,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal((await lstat(mapping)).ino, linkBefore.ino);
     assert.ok(!calls.some((argv) => argv[1] === 'add'));
   });
-  it('accepts native defaults without rewriting an existing entry', async () => {
+  it('should accept native defaults without rewriting an existing entry', async () => {
     await writeJson(catalogFile, { name: market });
     assert.equal((await run()).ok, true);
     const minimal = { name: 'sample', source: { source: 'local', path: './plugins/sample' } };
@@ -172,7 +172,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal((await run()).ok, true);
     assert.equal(await readFile(catalogFile, 'utf8'), before);
   });
-  it('lists fresh Codex home creation in dry run and performs it before discovery', async () => {
+  it('should list fresh Codex home creation in dry run and perform it before discovery', async () => {
     await rm(codexHome, { recursive: true });
     const preview = await run({ dryRun: true });
     assert.ok(preview.plan.some((step) => step.operation === 'create-codex-home'));
@@ -182,7 +182,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     };
     assert.equal((await run()).ok, true);
   });
-  it('stops on a changed source mapping without replacing it', async () => {
+  it('should stop on a changed source mapping without replacing it', async () => {
     hook = async (argv) => {
       if (argv[0] === '--version') {
         await mkdir(path.dirname(mapping), { recursive: true });
@@ -194,7 +194,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.match(result.issue ?? '', /mapping changed/);
     assert.equal(await readFile(mapping, 'utf8'), 'concurrent file');
   });
-  it('does not overwrite or reinstall a different installed version', async () => {
+  it('should not overwrite or reinstall a different installed version', async () => {
     assert.equal((await run()).ok, true);
     assert.ok(installed);
     installed.version = '0.9.0';
@@ -204,7 +204,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.match(result.issue ?? '', /Another version/);
     assert.ok(!calls.some((argv) => argv[1] === 'add'));
   });
-  it('rejects an unsupported native version before setup', async () => {
+  it('should reject an unsupported native version before setup', async () => {
     const result = await installPlugin(options, {
       env,
       native: async (argv) => ({ argv, exitCode: 0, stdout: 'codex-cli 999.0.0', stderr: '' }),
@@ -213,7 +213,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.match(result.issue ?? '', /Supported native contract/);
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
-  it('reports malformed native JSON and incompatible readback without claiming success', async () => {
+  it('should report malformed native JSON and incompatible readback without claiming success', async () => {
     const result = await installPlugin(options, {
       env,
       native: async (argv) =>
@@ -223,7 +223,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.match(result.issue ?? '', /invalid JSON/);
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
-  it('makes dry run entirely read-only, including no native process', async () => {
+  it('should make dry run entirely read-only, including no native process', async () => {
     const result = await run({ dryRun: true });
     assert.equal(result.status, 'planned');
     assert.equal(result.ok, true);
@@ -234,7 +234,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
     await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
   });
-  it('preserves metadata, policy, ordering, regular files, and unrelated links', async () => {
+  it('should preserve metadata, policy, ordering, regular files, and unrelated links', async () => {
     await catalog([entry('other', './elsewhere')], {
       interface: { displayName: 'Keep this' },
       custom: { order: 7 },
@@ -251,7 +251,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal(await readFile(path.join(home, 'plugins/notes'), 'utf8'), 'keep');
     assert.equal((await lstat(path.join(home, 'plugins/unrelated'))).isSymbolicLink(), true);
   });
-  it('leaves an existing matching catalog byte-for-byte intact, including ON_USE policy', async () => {
+  it('should leave an existing matching catalog byte-for-byte intact, including ON_USE policy', async () => {
     const value = entry();
     value.policy.authentication = 'ON_USE';
     value.interface = { displayName: 'Special' };
@@ -262,7 +262,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal((await run()).ok, true);
     assert.equal(await readFile(catalogFile, 'utf8'), before);
   });
-  it('reuses an existing in-root source without requiring a symlink', async () => {
+  it('should reuse an existing in-root source without requiring a symlink', async () => {
     repoRoot = path.join(home, 'existing');
     options.repoRoot = repoRoot;
     mapping = repoRoot;
@@ -275,7 +275,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal(result.ok, true, result.issue ?? undefined);
     assert.ok(!result.plan.some((step) => step.operation === 'map-source'));
   });
-  it('generates a catalog and registers an explicitly selected local marketplace', async () => {
+  it('should generate a catalog and register an explicitly selected local marketplace', async () => {
     marketRoot = path.join(root, 'market space');
     await mkdir(marketRoot);
     market = 'selected';
@@ -290,7 +290,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.ok(!calls.some((argv) => argv[1] === 'marketplace' && argv[2] === 'add'));
   });
   for (const kind of ['file', 'directory', 'unrelated link', 'dangling link']) {
-    it('refuses to replace a ' + kind + ' at the source mapping', async () => {
+    it('should refuse to replace a ' + kind + ' at the source mapping', async () => {
       await mkdir(path.dirname(mapping), { recursive: true });
       if (kind === 'file') await writeFile(mapping, 'preserve');
       else if (kind === 'directory') await mkdir(mapping);
@@ -311,7 +311,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     { name: 'personal', plugins: [entry('sample', '../escape')] },
     { name: 'personal', interface: 'bad', plugins: [] },
   ]) {
-    it('refuses malformed catalogs without effects: ' + JSON.stringify(bad), async () => {
+    it('should refuse malformed catalogs without effects: ' + JSON.stringify(bad), async () => {
       await writeJson(catalogFile, bad);
       const before = await readFile(catalogFile, 'utf8');
       await assert.rejects(run());
@@ -320,7 +320,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
       await assert.rejects(lstat(mapping), { code: 'ENOENT' });
     });
   }
-  it('rejects malformed JSON, blocked policy, duplicate source, and nonlocal name collisions', async () => {
+  it('should reject malformed JSON, blocked policy, duplicate source, and nonlocal name collisions', async () => {
     await catalog();
     await writeFile(catalogFile, '{');
     await assert.rejects(run(), SyntaxError);
@@ -337,13 +337,13 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     await catalog([remote]);
     await assert.rejects(run(), /collision/);
   });
-  it('detects a catalog source collision even when its mapping is missing', async () => {
+  it('should detect a catalog source collision even when its mapping is missing', async () => {
     await catalog([entry('other', './plugins/sample')]);
     await assert.rejects(run(), /another plugin name/);
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
     assert.deepEqual(calls, []);
   });
-  it('rejects unsafe or malformed source prerequisites before effects', async () => {
+  it('should reject unsafe or malformed source prerequisites before effects', async () => {
     for (const value of [
       null,
       { name: '../escape' },
@@ -361,7 +361,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     await assert.rejects(run(), /escapes/);
     assert.deepEqual(calls, []);
   });
-  it('refuses a marketplace-name collision in selected Codex configuration', async () => {
+  it('should refuse a marketplace-name collision in selected Codex configuration', async () => {
     await writeFile(
       path.join(codexHome, 'config.toml'),
       '[marketplaces.personal]\nsource_type = "git"\nsource = "https://example.invalid/repo"\n',
@@ -369,14 +369,16 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     await assert.rejects(run(), /collision/);
     assert.deepEqual(calls, []);
   });
-  it('refuses linked catalog parents without altering their targets', async () => {
+  it('should refuse linked catalog parents without altering their targets', async () => {
     await symlink(root, path.join(home, '.agents'));
     await assert.rejects(run(), /real directory/);
     assert.deepEqual(calls, []);
   });
   for (const phase of ['preflight', 'register', 'install', 'readback']) {
     it(
-      'reports completed work, remaining operations, and child errors after ' + phase + ' failure',
+      'should report completed work, remaining operations, and child errors after ' +
+        phase +
+        ' failure',
       async () => {
         if (phase === 'register') {
           marketRoot = path.join(root, 'selected');
@@ -413,7 +415,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
       },
     );
   }
-  it('detects intervening catalog edits before any filesystem changes', async () => {
+  it('should detect intervening catalog edits before any filesystem changes', async () => {
     await catalog();
     hook = async (argv) => {
       if (argv[0] === '--version') await catalog([], { note: 'concurrent' });
@@ -424,7 +426,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal(JSON.parse(await readFile(catalogFile, 'utf8')).note, 'concurrent');
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
-  it('does not infer installation from an empty successful native response', async () => {
+  it('should not infer installation from an empty successful native response', async () => {
     hook = async (argv) => {
       if (argv[1] === 'list') installed = null;
     };
@@ -434,7 +436,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.ok(result.remaining[0]);
     assert.equal(result.remaining[0].operation, 'readback');
   });
-  it('keeps a disabled installation disabled on repeated install', async () => {
+  it('should keep a disabled installation disabled on repeated install', async () => {
     assert.equal((await run()).ok, true);
     assert.ok(installed);
     installed.enabled = false;
@@ -442,7 +444,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.equal(result.ok, true);
     assert.equal(result.status, 'installed_pending_enablement');
   });
-  it('uses strict positional/option/environment precedence', () => {
+  it('should use strict positional/option/environment precedence', () => {
     assert.equal(
       parseArgs(['install', '/positional'], { CODEX_TOOLS_REPO_ROOT: '/env' }).repoRoot,
       '/positional',
@@ -451,7 +453,7 @@ describe('local installation (Me link-preservation and catalog reconciliation)',
     assert.throws(() => parseArgs(['install', '/one', '--repo-root', '/two'], {}));
     assert.throws(() => parseArgs(['status', '--marketplace-path', catalogFile], {}));
   });
-  it('executes a fake Codex through argv and preserves the actual child exit code in CLI JSON', async () => {
+  it('should execute a fake Codex through argv and preserve the actual child exit code in CLI JSON', async () => {
     const bin = path.join(root, 'bin');
     await mkdir(bin);
     await writeFile(path.join(bin, 'codex'), '#!/bin/sh\nprintf native-failure >&2\nexit 37\n', {

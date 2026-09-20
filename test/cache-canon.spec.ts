@@ -17,7 +17,7 @@ import { collectEntries, syncEntries } from '../lib/cache.ts';
 
 const aligned = { changed: [], extra: [], missing: [] };
 
-describe('lib/codexsync-cache', () => {
+describe('lib/cache', () => {
   let root = '';
   let sourceRoot = '';
   let targetRoot = '';

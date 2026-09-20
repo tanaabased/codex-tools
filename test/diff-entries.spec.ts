@@ -12,7 +12,7 @@ function symlinkEntry(target: string): SymlinkEntry {
   return { target, type: 'symlink' };
 }
 
-describe('lib/codexsync-diff', () => {
+describe('utils/diff-entries', () => {
   it('should report matching entries as current', () => {
     const source = new Map<string, TreeEntry>([
       ['file.txt', fileEntry('same')],

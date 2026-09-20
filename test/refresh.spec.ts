@@ -33,7 +33,7 @@ const writeJson = async (file: string, value: unknown): Promise<void> => {
   await writeFile(file, JSON.stringify(value));
 };
 
-describe('native local refresh', () => {
+describe('lib/refresh', () => {
   interface FixtureManifest {
     name: string;
     version: string;
@@ -161,7 +161,7 @@ describe('native local refresh', () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it('reinstalls stale and successive payloads without release bumps or same-second cache reuse', async () => {
+  it('should reinstall stale and successive payloads without release bumps or same-second cache reuse', async () => {
     const catalogBefore = await readFile(catalogFile, 'utf8');
     const configBefore = await readFile(configFile, 'utf8');
     const linkBefore = await lstat(mapping);
@@ -196,7 +196,7 @@ describe('native local refresh', () => {
     ]);
     assert.ok(!calls.some((argv) => argv.includes('remove')));
   });
-  it('previews the manifest edit and pending validation without a process or writes', async () => {
+  it('should preview the manifest edit and pending validation without a process or writes', async () => {
     const before = await readFile(manifestFile, 'utf8');
     const result = await run({ dryRun: true });
     assert.equal(result.ok, true);
@@ -210,7 +210,7 @@ describe('native local refresh', () => {
     assert.equal(await readFile(manifestFile, 'utf8'), before);
     assert.match(renderResult(result), /manifest: .* -> .* \(planned\)/);
   });
-  it('uses the operation dispatcher and strict parser with positional precedence', async () => {
+  it('should use the operation dispatcher and strict parser with positional precedence', async () => {
     assert.equal(
       parseArgs(['refresh', repoRoot], { CODEX_TOOLS_REPO_ROOT: '/other' }).repoRoot,
       repoRoot,
@@ -238,7 +238,7 @@ describe('native local refresh', () => {
     'no version',
     'symlink payload',
   ]) {
-    it('rejects ' + kind + ' before effects', async () => {
+    it('should reject ' + kind + ' before effects', async () => {
       if (kind === 'missing catalog') await rm(catalogFile);
       if (kind.includes('mapping')) {
         await rm(mapping);
@@ -269,7 +269,7 @@ describe('native local refresh', () => {
     'unsupported version',
     'malformed JSON',
   ]) {
-    it('rejects native ' + kind + ' before editing the manifest', async () => {
+    it('should reject native ' + kind + ' before editing the manifest', async () => {
       if (kind === 'absent') installed.shift();
       if (kind === 'ambiguous') installed.push(installed[0]!);
       if (kind === 'mismatched') installed[0]!.source!.path = home;
@@ -287,7 +287,7 @@ describe('native local refresh', () => {
     });
   }
   for (const kind of ['source', 'catalog', 'config', 'mapping']) {
-    it('detects concurrent ' + kind + ' edits before mutation', async () => {
+    it('should detect concurrent ' + kind + ' edits before mutation', async () => {
       hook = async (argv) => {
         if (argv[0] !== '--version') return;
         if (kind === 'source')
@@ -307,7 +307,7 @@ describe('native local refresh', () => {
     });
   }
   for (const phase of ['preflight', 'reinstall', 'readback']) {
-    it('retains native errors and partial effects after ' + phase + ' failure', async () => {
+    it('should retain native errors and partial effects after ' + phase + ' failure', async () => {
       failure = (argv) =>
         phase === 'preflight'
           ? argv[0] === '--version'
@@ -339,7 +339,7 @@ describe('native local refresh', () => {
     'unrelated state',
   ]) {
     it(
-      'does not turn a successful native exit with ' + kind + ' into refresh success',
+      'should not turn a successful native exit with ' + kind + ' into refresh success',
       async () => {
         hook = async (argv) => {
           if (argv[1] === 'add' && kind === 'empty response') return { stdout: '{}' };
@@ -369,19 +369,19 @@ describe('native local refresh', () => {
       },
     );
   }
-  it('refuses aliased cache parents before source edits', async () => {
+  it('should refuse aliased cache parents before source edits', async () => {
     await mkdir(path.join(codexHome, 'plugins'));
     await symlink(home, path.join(codexHome, 'plugins/cache'));
     await assert.rejects(run(), /cache parent must be a real directory/);
     assert.deepEqual(calls, []);
   });
-  it('preserves manifest modes despite the process umask', async () => {
+  it('should preserve manifest modes despite the process umask', async () => {
     await chmod(manifestFile, 0o664);
     const result = await run();
     assert.equal(result.ok, true, result.issue ?? undefined);
     assert.equal((await lstat(manifestFile)).mode & 0o777, 0o664);
   });
-  it('detects a cache version created after planning before editing the source', async () => {
+  it('should detect a cache version created after planning before editing the source', async () => {
     hook = async (argv) => {
       if (argv[0] === '--version')
         await mkdir(
@@ -394,7 +394,7 @@ describe('native local refresh', () => {
     assert.match(result.issue ?? '', /already exists/);
     assert.equal(result.manifestEdit.applied, false);
   });
-  it('returns the actual native child exit code and effects through CLI JSON', async () => {
+  it('should return the actual native child exit code and effects through CLI JSON', async () => {
     const bin = path.join(root, 'bin');
     await mkdir(bin);
     await writeFile(path.join(bin, 'codex'), '#!/bin/sh\nprintf native-failure >&2\nexit 37\n', {

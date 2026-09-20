@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { collectEntries, inspectTrees, syncEntries } from '../lib/cache.ts';
 
-describe('scope and dry-run safeguards', () => {
+describe('lib/cache', () => {
   let root = '';
   let sourceRoot = '';
   let targetRoot = '';
@@ -19,7 +19,7 @@ describe('scope and dry-run safeguards', () => {
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });
   });
-  it('preserves excluded descendants of extra directories and converges', async () => {
+  it('should preserve excluded descendants of extra directories and converge', async () => {
     await mkdir(path.join(targetRoot, 'extra/nested/node_modules'), { recursive: true });
     await writeFile(path.join(targetRoot, 'extra/nested/node_modules/keep'), 'safe');
     await writeFile(path.join(targetRoot, 'extra/delete'), 'remove');
@@ -31,7 +31,7 @@ describe('scope and dry-run safeguards', () => {
       'safe',
     );
   });
-  it('refuses type replacement over excluded contents before any deletion', async () => {
+  it('should refuse type replacement over excluded contents before any deletion', async () => {
     await writeFile(path.join(sourceRoot, 'entry'), 'new');
     await mkdir(path.join(targetRoot, 'entry/.git'), { recursive: true });
     await writeFile(path.join(targetRoot, 'entry/.git/keep'), 'safe');
@@ -40,7 +40,7 @@ describe('scope and dry-run safeguards', () => {
     await assert.rejects(syncEntries({ sourceRoot, targetRoot }), /ignored content/);
     assert.deepEqual(await collectEntries(targetRoot), before);
   });
-  it('does not follow an intermediate symlink in a scoped path', async () => {
+  it('should not follow an intermediate symlink in a scoped path', async () => {
     const outside = path.join(root, 'outside');
     await mkdir(outside);
     await writeFile(path.join(outside, 'entry'), 'safe');
@@ -53,7 +53,7 @@ describe('scope and dry-run safeguards', () => {
     );
     assert.equal(await readFile(path.join(outside, 'entry'), 'utf8'), 'safe');
   });
-  it('supports scoped leaves without taking ownership of sibling files', async () => {
+  it('should support scoped leaves without taking ownership of sibling files', async () => {
     for (const directory of [sourceRoot, targetRoot]) await mkdir(path.join(directory, 'bin'));
     await writeFile(path.join(sourceRoot, 'bin/tool.ts'), 'new');
     await writeFile(path.join(targetRoot, 'bin/keep.ts'), 'safe');
@@ -63,7 +63,7 @@ describe('scope and dry-run safeguards', () => {
     );
     assert.equal(await readFile(path.join(targetRoot, 'bin/keep.ts'), 'utf8'), 'safe');
   });
-  it('keeps a dry-run snapshot unchanged while reporting additions and deletions', async () => {
+  it('should keep a dry-run snapshot unchanged while reporting additions and deletions', async () => {
     await writeFile(path.join(sourceRoot, 'new'), 'new');
     await writeFile(path.join(targetRoot, 'old'), 'old');
     const before = await collectEntries(targetRoot);
@@ -79,7 +79,7 @@ describe('scope and dry-run safeguards', () => {
     ['.git'],
     [],
   ]) {
-    it('rejects invalid scope ' + JSON.stringify(managedPaths), async () => {
+    it('should reject invalid scope ' + JSON.stringify(managedPaths), async () => {
       await assert.rejects(syncEntries({ sourceRoot, targetRoot, managedPaths }), /[Mm]anaged/);
     });
   }

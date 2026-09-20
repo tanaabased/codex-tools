@@ -51,7 +51,7 @@ async function syncRoots(sourceRoot: string, targetRoot: string, statPath: StatP
   return syncEntries({ sourceRoot, targetRoot, managedPaths, statPath });
 }
 
-describe('lib/codexsync-cache', () => {
+describe('lib/cache', () => {
   const tempRoots: string[] = [];
 
   afterEach(async () => {

@@ -15,7 +15,7 @@ import { runOperation } from '../lib/operations.ts';
 import { resolveContext } from '../lib/context.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
 
-describe('installation diagnostics and consumer compatibility (adapted from Agentbox)', () => {
+describe('lib/operations', () => {
   let root = '';
   let repoRoot = '';
   let codexHome = '';
@@ -81,7 +81,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     });
   }
 
-  it('discovers an exact manifest version without assuming the directory name', async () => {
+  it('should discover an exact manifest version without assuming the directory name', async () => {
     await install();
     const context = await resolveContext(options);
     assert.equal(context.cachePath, cachePath);
@@ -89,7 +89,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     assert.equal(context.inspection.installed, true);
     assert.equal(context.inspection.registered, null);
   });
-  it('uses plugin cachebuster identity rather than the package version', async () => {
+  it('should use plugin cachebuster identity rather than the package version', async () => {
     const value = { ...manifest, version: '1.0.0+codex.local' };
     await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), value);
     await install(cachePath, value);
@@ -97,7 +97,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
   });
   for (const marketplace of ['custom', 'wrong']) {
     it(
-      'resolves an explicit cache through a home alias with marketplace ' + marketplace,
+      'should resolve an explicit cache through a home alias with marketplace ' + marketplace,
       async () => {
         await install();
         const alias = path.join(root, 'codex-alias');
@@ -118,7 +118,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
       },
     );
   }
-  it('reports local registration and disabled state independently of cache identity', async () => {
+  it('should report local registration and disabled state independently of cache identity', async () => {
     await install();
     await writeFile(
       path.join(codexHome, 'config.toml'),
@@ -129,13 +129,13 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     assert.equal(result.inspection.enabled, false);
     assert.equal(result.inspection.installed, true);
   });
-  it('rejects malformed configuration before modifying a target', async () => {
+  it('should reject malformed configuration before modifying a target', async () => {
     await install();
     await writeFile(path.join(codexHome, 'config.toml'), 'not valid toml ]');
     await assert.rejects(runOperation('sync', options));
     await assert.rejects(lstat(path.join(cachePath, 'managed.txt')), { code: 'ENOENT' });
   });
-  it('makes missing installation checks explicitly neutral while refusing sync', async () => {
+  it('should make missing installation checks explicitly neutral while refusing sync', async () => {
     const check = await runOperation('check', { ...options, absentCheck: 'neutral' });
     assert.equal(check.ok, true);
     assert.equal(check.status, 'not_installed');
@@ -150,7 +150,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     ['wrong name', { name: 'other', version: '1.0.0' }],
     ['wrong version', { name: 'sample', version: '0.9.0' }],
   ]) {
-    it('reports a ' + label + ' cached manifest without repairing it', async () => {
+    it('should report a ' + label + ' cached manifest without repairing it', async () => {
       await mkdir(path.join(cachePath, '.codex-plugin'), { recursive: true });
       if (value !== undefined)
         await writeFile(
@@ -166,14 +166,14 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
       await assert.rejects(lstat(path.join(cachePath, 'managed.txt')), { code: 'ENOENT' });
     });
   }
-  it('lists other versions without selecting an incompatible target', async () => {
+  it('should list other versions without selecting an incompatible target', async () => {
     await install(cachePath, { ...manifest, version: '0.9.0' });
     const result = await runOperation('status', options);
     assert.equal(result.cachePath, null);
     assert.equal(result.candidates[0]?.version, '0.9.0');
     assert.equal(result.ok, false);
   });
-  it('refuses ambiguous markets or versions until an explicit override resolves them', async () => {
+  it('should refuse ambiguous markets or versions until an explicit override resolves them', async () => {
     await install();
     const other = path.join(codexHome, 'plugins/cache/second/sample/other');
     await install(other);
@@ -186,7 +186,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     );
     assert.equal((await runOperation('sync', { ...options, cachePathOverride: other })).ok, true);
   });
-  it('does not let a conflicting marketplace override redirect sync', async () => {
+  it('should not let a conflicting marketplace override redirect sync', async () => {
     await install();
     const result = await runOperation('sync', {
       ...options,
@@ -196,7 +196,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     assert.equal(result.status, 'unresolved');
     await assert.rejects(lstat(path.join(cachePath, 'managed.txt')), { code: 'ENOENT' });
   });
-  it('preserves unmanaged files and converges without replacing matching files', async () => {
+  it('should preserve unmanaged files and converge without replacing matching files', async () => {
     await install();
     await writeFile(path.join(cachePath, 'unmanaged.txt'), 'preserve');
     assert.equal((await runOperation('check', options)).status, 'drifted');
@@ -209,7 +209,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     assert.equal(await readFile(path.join(cachePath, 'unmanaged.txt'), 'utf8'), 'preserve');
     assert.equal((await runOperation('doctor', options)).status, 'current');
   });
-  it('never labels an explicit raw target as installed, including later checks', async () => {
+  it('should never label an explicit raw target as installed, including later checks', async () => {
     const raw = path.join(root, 'raw');
     const selected: CodexToolsOptions = {
       ...options,
@@ -229,11 +229,11 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
       false,
     );
   });
-  it('does not infer a raw creation target', async () => {
+  it('should not infer a raw creation target', async () => {
     assert.equal((await runOperation('sync', { ...options, missingTarget: 'create' })).ok, false);
     await assert.rejects(lstat(codexHome), { code: 'ENOENT' });
   });
-  it('dry run and status leave existing cache contents unchanged', async () => {
+  it('should leave existing cache contents unchanged during dry run and status', async () => {
     await install();
     await writeFile(path.join(cachePath, 'managed.txt'), 'old');
     const before = await lstat(path.join(cachePath, 'managed.txt'));
@@ -245,7 +245,7 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     assert.equal(await readFile(path.join(cachePath, 'managed.txt'), 'utf8'), 'old');
     assert.equal((await lstat(path.join(cachePath, 'managed.txt'))).mtimeMs, before.mtimeMs);
   });
-  it('refuses an aliased cache installation', async () => {
+  it('should refuse an aliased cache installation', async () => {
     const outside = path.join(root, 'outside');
     await install(outside);
     await mkdir(path.dirname(cachePath), { recursive: true });
