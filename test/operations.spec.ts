@@ -49,6 +49,38 @@ describe('installation diagnostics and consumer compatibility (adapted from Agen
     await rm(root, { recursive: true, force: true });
   });
 
+  for (const [label, override, expected] of [
+    ['inherit repository selection when omitted', {}, ['managed.txt']],
+    [
+      'select the whole tree for explicit null',
+      { managedPaths: null },
+      ['extra.txt', 'managed.txt', 'package.json'],
+    ],
+    [
+      'replace repository selection with explicit paths',
+      { managedPaths: ['extra.txt'] },
+      ['extra.txt'],
+    ],
+  ] satisfies Array<[string, CodexToolsOptions, string[]]>) {
+    it('should ' + label, async () => {
+      await install();
+      await writeFile(path.join(repoRoot, 'extra.txt'), 'extra');
+      const selected = { ...options, ...override };
+      assert.deepEqual((await runOperation('check', selected)).diff?.missing, expected);
+      assert.equal((await runOperation('sync', selected)).ok, true);
+      for (const file of ['managed.txt', 'extra.txt', 'package.json']) {
+        if (expected.includes(file)) {
+          assert.equal(
+            await readFile(path.join(cachePath, file), 'utf8'),
+            await readFile(path.join(repoRoot, file), 'utf8'),
+          );
+        } else {
+          await assert.rejects(lstat(path.join(cachePath, file)), { code: 'ENOENT' });
+        }
+      }
+    });
+  }
+
   it('discovers an exact manifest version without assuming the directory name', async () => {
     await install();
     const context = await resolveContext(options);

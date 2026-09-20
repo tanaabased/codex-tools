@@ -234,7 +234,9 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
     throw new Error('Invalid package.json codexTools configuration.');
   }
   const config: CacheConfiguration = {
-    managedPaths: managedList(options.managedPaths ?? declaredValue.managedPaths),
+    managedPaths: managedList(
+      options.managedPaths === undefined ? declaredValue.managedPaths : options.managedPaths,
+    ),
     excludeNames: stringList(options.excludeNames ?? declaredValue.excludeNames, []),
     marketplace: marketplaceName(options.marketplace ?? declaredValue.marketplace),
     missingTarget: missingTarget(options.missingTarget ?? declaredValue.missingTarget),
