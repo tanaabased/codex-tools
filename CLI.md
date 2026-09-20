@@ -138,11 +138,11 @@ npm and native checks may remain unresolved in the plan.
 
 ### `--help`
 
-| Field       | Value                                                      |
-| ----------- | ---------------------------------------------------------- |
-| Alias       | `-h`                                                       |
-| Values      | value-free flag                                            |
-| Description | Shows usage, options, examples, and environment variables. |
+| Field       | Value                                            |
+| ----------- | ------------------------------------------------ |
+| Alias       | `-h`                                             |
+| Values      | value-free flag                                  |
+| Description | Shows usage, options, and environment variables. |
 
 ## Environment defaults
 
