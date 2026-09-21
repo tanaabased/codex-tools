@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+## v1.0.0 - [September 21, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.0)
+
 ### Plugin installation and refresh
 
 - Added automatic personal marketplace setup for local plugins while preserving existing entries and source mappings. [#9](https://github.com/tanaabased/codex-tools/pull/9)
