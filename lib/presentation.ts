@@ -1,4 +1,5 @@
 import ansis from 'ansis';
+
 import type { CacheOperationResult, OperationResult } from './operations.ts';
 import type { InstallationResult } from './install-types.ts';
 

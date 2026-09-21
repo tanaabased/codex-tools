@@ -1,71 +1,62 @@
 # Contributing to Codex Tools
 
-This guide covers source development and validation. Start with the [README](./README.md) for the
-user journey, [CLI](./CLI.md) for command behavior, and generated [API reference](./API.md) for the
-public library contract.
+Use the [README](./README.md) for installation and the [CLI reference](./CLI.md) for command behavior.
 
 ## Setup
 
-Install Bun 1.3.14 from `.bun-version` and Node 26.9.0 from `.node-version`, then install the locked
-dependencies without lifecycle scripts:
+Use Bun from `.bun-version` for source work and Node from `.node-version` for built and packed
+consumers. Install dependencies without lifecycle scripts:
 
 ```sh
+git clone https://github.com/tanaabased/codex-tools.git
+cd codex-tools
 bun install --frozen-lockfile --ignore-scripts
+bun run check:toolchain
+bun run codex-tools --help
 ```
-
-Bun owns source execution, generation, linting, type checking, and unit tests. Node owns validation
-of the built CLI, ESM/CommonJS library artifacts, declarations, and packed consumer experience.
-There is no separate JavaScript source layer or Node 24 compatibility job.
 
 ## Develop and validate
 
+| Command                | Purpose                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `bun run lint`         | ESLint and Prettier                                  |
+| `bun run format:write` | Apply formatting                                     |
+| `bun run typecheck`    | Check TypeScript source                              |
+| `bun run test`         | Run application and development-tool unit tests      |
+| `bun run test:app`     | Runtime policy, parsing, and safety tests in `test/` |
+| `bun run test:dev`     | Maintainer-helper tests in `dev/test/`               |
+| `bun run docs:check`   | Generated API drift, local links, and images         |
+| `bun run docs:api`     | Generate API.md from public TypeScript docblocks     |
+
+Run lint, typecheck, and tests after source changes. Run `docs:check` after documentation or public
+API changes. Edit public docblocks, including `@example`, rather than the generated API reference.
+
+## Artifacts and integration
+
+Build once, then check the prepared package:
+
 ```sh
-# Run the TypeScript CLI directly.
-bun run codex-tools --help
-
-# Regenerate the public API reference after changing exports or docblocks.
-bun run docs:api
-
-# Run the standard local validation path.
-bun run lint
-bun run typecheck
-bun run test
-bun run test:package
+bun run build
+bun run check:package
 ```
 
-`bun run lint` includes ESLint, Prettier, API-reference drift, and local documentation-link checks.
-`bun run test:package` builds the Node artifacts, inspects the exact npm payload, installs its
-tarball into a disposable consumer, and exercises the plugin manifest, skills, assets, bundled CLI,
-ESM, CommonJS, and TypeScript contracts. Nothing is published. Generic plugin schema validation is
-a separate pull-request check backed by `tanaabased/actions/validate-codex-plugin@v1`.
+The build emits the Node CLI, ESM/CommonJS bundles, and matching declarations. The package check
+packs and exercises the exact payload in a disposable Node consumer, including both module
+formats, type exports, documentation examples, skills, and assets. Run it for changes to build,
+packaging, shipped documentation, or the artifact contract. Nothing is published.
 
-Use `bun run format:write` to apply repository formatting. Edit public TypeScript documentation
-comments or the generator rather than editing `API.md` by hand.
+`bun run test:native` checks installation, refresh, and preservation through real Codex;
+`bun run test:native:npm` checks acquisition through a disposable HTTPS registry. Both build first.
+Run these when changing native compatibility or the probes themselves.
 
-## Additional checks
+## Leia scenarios
 
-Run these only when the change owns their boundary:
+PR CI runs Leia 2 against `dist/codex-tools` through `bun run test:leia <scenario> --shell bash`.
+The six groups cover defaults, inputs, install, refresh, status, and cache behavior. Fixtures live
+beside their scenarios, with shared fake child commands in `examples/fixtures/bin`.
+Read [examples/AGENTS.md](https://github.com/tanaabased/codex-tools/blob/main/examples/AGENTS.md)
+before editing them. Local Leia execution requires an explicit request.
 
-- `bun run build` builds the Node CLI, ESM/CommonJS libraries, and matching declarations.
-- `bun run test:native` exercises local installation and refresh against a disposable Codex home.
-- `bun run test:native:npm` adds a disposable HTTPS npm registry and npm-backed installation.
-
-The Native Codex Verification workflow also installs the exact packed Codex Tools plugin outside
-the checkout, confirms fresh-session skill discovery, and invokes its cached runtime. Those checks
-are native evidence; package tests alone do not prove Codex discovery or activation.
-
-The six Leia scenarios in `examples/` run against `dist/codex-tools` in pull-request CI. Do not run
-them locally unless explicitly requested. The fake child commands prove Codex Tools orchestration;
-native verification owns real Codex and npm compatibility.
-
-## Source boundaries
-
-- `bin/` contains the thin public CLI entrypoint.
-- `lib/` contains orchestration and the public package entrypoint.
-- `utils/` contains small, independently testable helpers.
-- `scripts/` contains internal build, generation, and validation commands.
-- `test/` contains flat unit and contract tests.
-- `examples/` contains disposable executable user journeys.
-
-Keep public exports explicit in `lib/index.ts`. Imports through internal paths are unsupported.
-Release publication and Codex plugin packaging remain separate work.
+The fake commands verify orchestration. The Native Codex Verification workflow separately installs
+the packed plugin, checks fresh-session skill discovery, and invokes its cached runtime on Linux
+and macOS. PR CI also validates the plugin with `tanaabased/actions/validate-codex-plugin@v1`.

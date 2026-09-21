@@ -1,9 +1,9 @@
-import type { NativeResult, NativeRunner } from './codex-native.ts';
-import type { MarketplaceCatalog, NpmProvenance, ValidatedSource } from './install-context.ts';
-import type { TreeDiff } from '../utils/diff-entries.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import type { MarketplaceCatalog, NpmProvenance, ValidatedSource } from './install-context.ts';
+import type { NativeResult, NativeRunner } from './codex-native.ts';
+import type { TreeDiff } from '../utils/diff-entries.ts';
 
-/** One planned, completed, or remaining installation-side operation. */
+/** one planned, completed, or remaining installation-side operation. */
 export interface OperationStep extends Record<string, unknown> {
   operation: string;
   argv?: string[];
@@ -54,7 +54,7 @@ export interface ManifestEdit {
   applied: boolean;
 }
 
-/** Structured install or refresh result, including partial effects and native diagnostics. */
+/** structured install or refresh result, including partial effects and native diagnostics. */
 export interface InstallationResult extends Record<string, unknown> {
   command: 'install' | 'refresh';
   source: InstallationSource;
@@ -66,24 +66,24 @@ export interface InstallationResult extends Record<string, unknown> {
   pluginId?: string;
   cachePath?: string;
   dryRun: boolean;
-  /** Whether final readback satisfied the requested install or refresh contract. */
+  /** whether final readback satisfied the requested install or refresh contract. */
   ok: boolean;
-  /** Stable machine-readable lifecycle state such as `planned`, `installed`, or `incomplete`. */
+  /** stable machine-readable lifecycle state such as `planned`, `installed`, or `incomplete`. */
   status: string;
-  /** Human-readable reason for an unsuccessful or incomplete result. */
+  /** human-readable reason for an unsuccessful or incomplete result. */
   issue: string | null;
   inspection: NativeInspection;
   plan: OperationStep[];
-  /** Planned steps observed as complete before the result was returned. */
+  /** planned steps observed as complete before the result was returned. */
   completed: OperationStep[];
-  /** Planned steps not verified as complete. */
+  /** planned steps not verified as complete. */
   remaining: OperationStep[];
-  /** Sanitized native child-process results retained by the operation. */
+  /** sanitized native child-process results retained by the operation. */
   native: NativeResult[];
   effects?: InstallationEffects;
   manifestEdit?: ManifestEdit;
   diff?: TreeDiff;
-  /** Native child exit code preserved for CLI callers when available. */
+  /** native child exit code preserved for cli callers when available. */
   exitCode?: number;
   nativeError?: NativeResult;
   codexVersion?: string;
@@ -96,7 +96,7 @@ export interface InstallationResult extends Record<string, unknown> {
 
 export type NpmRunner = NativeRunner;
 
-/** Injectable environment, process, source, and clock boundaries for installation operations. */
+/** injectable environment, process, source, and clock boundaries for installation operations. */
 export interface InstallDependencies {
   env?: NodeJS.ProcessEnv;
   native?: NativeRunner;
@@ -106,7 +106,7 @@ export interface InstallDependencies {
   now?: Date;
 }
 
-/** Public operation options with an optional explicit install or refresh command marker. */
+/** public operation options with an optional explicit install or refresh command marker. */
 export interface InstallOptions extends CodexToolsOptions {
   command?: 'install' | 'refresh';
 }

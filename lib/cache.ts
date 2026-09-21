@@ -1,10 +1,9 @@
-import type { Stats } from 'node:fs';
 import {
   chmod,
   lstat,
   mkdir,
-  readFile,
   readdir,
+  readFile,
   readlink,
   realpath,
   rm,
@@ -13,6 +12,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import type { Stats } from 'node:fs';
 
 import diffEntries from '../utils/diff-entries.ts';
 import type { EntryMap, TreeDiff, TreeEntry } from '../utils/diff-entries.ts';
@@ -21,21 +21,21 @@ import pathExists from '../utils/path-exists.ts';
 import { selection } from '../utils/selection.ts';
 import type { SelectionOptions } from '../utils/selection.ts';
 
-/** Selects managed filesystem entries and optionally replaces `lstat` for boundary testing. */
+/** selects managed filesystem entries and optionally replaces `lstat` for boundary testing. */
 export interface CollectEntriesOptions {
   managedPaths?: readonly string[] | null;
   excludeNames?: readonly string[];
   statPath?: (targetPath: string) => Promise<Stats>;
 }
 
-/** Identifies two disjoint trees for inspection or synchronization. */
+/** identifies two disjoint trees for inspection or synchronization. */
 export interface TreeOptions extends CollectEntriesOptions {
   sourceRoot: string;
   targetRoot: string;
   dryRun?: boolean;
 }
 
-/** Contains normalized source and target snapshots plus their directional diff. */
+/** contains normalized source and target snapshots plus their directional diff. */
 export interface TreeInspection {
   sourceRoot: string;
   targetRoot: string;
@@ -45,16 +45,16 @@ export interface TreeInspection {
 }
 
 /**
- * Collects a normalized snapshot of selected filesystem entries beneath one root.
+ * collects a normalized snapshot of selected filesystem entries beneath one root.
  *
- * The operation reads file bytes, modes, directories, and symlink targets without following
- * symlinks. Missing managed leaves are omitted. The default whole-tree selection excludes `.git`,
+ * the operation reads file bytes, modes, directories, and symlink targets without following
+ * symlinks. missing managed leaves are omitted. the default whole-tree selection excludes `.git`,
  * `node_modules`, and `.DS_Store`.
  *
- * @param root Root directory whose selected entries are read.
- * @param options Managed paths, additional excluded basenames, and an optional stat boundary.
- * @returns A map keyed by relative path in deterministic traversal order.
- * @throws When the root cannot be read, a selected parent is not a real directory, or an
+ * @param root root directory whose selected entries are read.
+ * @param options managed paths, additional excluded basenames, and an optional stat boundary.
+ * @returns a map keyed by relative path in deterministic traversal order.
+ * @throws when the root cannot be read, a selected parent is not a real directory, or an
  * unsupported filesystem entry is encountered.
  */
 export async function collectEntries(
@@ -93,7 +93,7 @@ export async function collectEntries(
   }
   if (managedPaths) {
     for (const relative of managedPaths) {
-      // A scoped leaf never grants authority over an aliased or non-directory parent.
+      // a scoped leaf never grants authority over an aliased or non-directory parent.
       let parent = path.dirname(relative);
       while (parent !== '.') {
         if (await pathExists(path.join(root, parent), statPath)) {
@@ -166,10 +166,10 @@ async function scopedDiff(
 }
 
 /**
- * Inspects two disjoint managed trees without modifying either tree.
+ * inspects two disjoint managed trees without modifying either tree.
  *
- * @returns Resolved roots, normalized snapshots, and a source-to-target diff.
- * @throws When the roots overlap, the source is not a directory, the target is not a directory,
+ * @returns resolved roots, normalized snapshots, and a source-to-target diff.
+ * @throws when the roots overlap, the source is not a directory, the target is not a directory,
  * or either selected tree cannot be read safely.
  */
 export async function inspectTrees({
@@ -200,15 +200,15 @@ export async function inspectTrees({
 }
 
 /**
- * Synchronizes selected source entries into a disjoint target tree.
+ * synchronizes selected source entries into a disjoint target tree.
  *
- * Dry-run mode returns the planned diff without writing. Otherwise the function removes managed
+ * dry-run mode returns the planned diff without writing. otherwise the function removes managed
  * extras, replaces changed entries, creates missing entries, preserves excluded content, and then
  * returns the remaining diff after verification.
  *
- * @param options Source, target, selection, and dry-run settings.
- * @returns The planned diff in dry-run mode, or the post-write convergence diff.
- * @throws When inspection is unsafe, a replacement would remove excluded content, a concurrent
+ * @param options source, target, selection, and dry-run settings.
+ * @returns the planned diff in dry-run mode, or the post-write convergence diff.
+ * @throws when inspection is unsafe, a replacement would remove excluded content, a concurrent
  * filesystem change prevents a safe write, or convergence cannot be inspected.
  */
 export async function syncEntries(options: TreeOptions): Promise<TreeDiff> {
@@ -216,7 +216,7 @@ export async function syncEntries(options: TreeOptions): Promise<TreeDiff> {
     await inspectTrees(options);
   const updates = new Set([...diff.changed, ...diff.missing]);
   const { ignored } = selection(options);
-  // Type replacement cannot recursively delete excluded descendants.
+  // type replacement cannot recursively delete excluded descendants.
   for (const relative of diff.changed) {
     if (
       targetEntries.get(relative)?.type === 'dir' &&
@@ -252,7 +252,7 @@ export async function syncEntries(options: TreeOptions): Promise<TreeDiff> {
     if (sourceEntry.type === 'dir') await mkdir(target, { recursive: true });
     else if (sourceEntry.type === 'symlink') await symlink(sourceEntry.target, target);
     else {
-      // Write the inspected bytes to a new entry; never follow cached hard links or symlinks.
+      // write the inspected bytes to a new entry; never follow cached hard links or symlinks.
       await writeFile(target, sourceEntry.content, { flag: 'wx', mode: sourceEntry.mode });
       await chmod(target, sourceEntry.mode);
     }

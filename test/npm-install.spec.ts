@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
+
+import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import { installPlugin } from '../lib/install.ts';
 import type { NativeOptions, NativeResult, NativeRunner } from '../lib/codex-native.ts';
 import type { NpmRunner } from '../lib/install-types.ts';
-import { installPlugin } from '../lib/install.ts';
-import { refreshPlugin } from '../lib/refresh.ts';
-import type { CodexToolsOptions } from '../utils/parse-args.ts';
 import { parseArgs } from '../utils/parse-args.ts';
 import { parseNpmSelector, registryUrl } from '../utils/npm-selector.ts';
+import { refreshPlugin } from '../lib/refresh.ts';
+import { supportedCodexVersion } from '../lib/codex-native.ts';
 
 const json = async (file: string, value: unknown): Promise<void> => {
   await mkdir(path.dirname(file), { recursive: true });
@@ -21,7 +23,7 @@ const response = (argv: readonly string[], value: unknown): NativeResult => ({
   stderr: '',
 });
 
-describe('npm installation through native acquisition and shared marketplace orchestration', () => {
+describe('lib/npm-install', () => {
   interface FixtureSource {
     source: string;
     package: string;
@@ -79,7 +81,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.ok(childEnv.HOME);
     calls.push(['codex', ...argv]);
     if (argv[0] === '--version')
-      return { argv, exitCode: 0, stdout: 'codex-cli 0.153.4', stderr: '' };
+      return { argv, exitCode: 0, stdout: 'codex-cli ' + supportedCodexVersion, stderr: '' };
     const staging = childEnv.CODEX_HOME !== codexHome;
     const file = staging
       ? path.join(childEnv.HOME, '.agents/plugins/marketplace.json')
@@ -178,7 +180,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     await rm(root, { recursive: true, force: true });
   });
 
-  it('accepts npm selectors without changing local parsing or trusting acquisition URLs', () => {
+  it('should accept npm selectors without changing local parsing or trusting acquisition URLs', () => {
     for (const input of [
       'npm:plain',
       'npm:plain@latest',
@@ -212,14 +214,14 @@ describe('npm installation through native acquisition and shared marketplace orc
     ])
       assert.throws(() => registryUrl(url), /HTTPS URL/);
   });
-  it('keeps npm dry-run free of all subprocesses and writes, with unresolved values pending', async () => {
+  it('should keep npm dry-run free of all subprocesses and writes, with unresolved values pending', async () => {
     const result = await run(undefined, { dryRun: true });
     assert.equal(result.ok, true);
     assert.equal(result.source.name, null);
     assert.deepEqual(calls, []);
     await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
   });
-  it('reads identity from the acquired manifest and persists an exact native npm entry', async () => {
+  it('should read identity from the acquired manifest and persist an exact native npm entry', async () => {
     const result = await run();
     assert.equal(result.ok, true, result.issue ?? undefined);
     assert.equal(result.source.name, 'actual-plugin');
@@ -232,7 +234,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.equal(entry.codexTools.npm.pluginVersion, '7.0.0');
     await assert.rejects(lstat(path.join(home, 'plugins')), { code: 'ENOENT' });
   });
-  it('resolves a tag or range, leaves repeats untouched, and refreshes the pin after the tag moves', async () => {
+  it('should resolve a tag or range, leave repeats untouched, and refresh the pin after the tag moves', async () => {
     release = ['1.2.2', '1.2.3'];
     assert.equal((await run('npm:' + packageName + '@^1.2.0')).ok, true);
     const before = await lstat(catalogFile);
@@ -250,7 +252,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.equal((await lstat(catalogFile)).mtimeMs, before.mtimeMs);
     await assert.rejects(refresh('npm:' + packageName + '@latest'), /cannot select another/);
   });
-  it('allows explicit release changes and detects stale native payload even with an unchanged plugin version', async () => {
+  it('should allow explicit release changes and detect stale native payload even with an unchanged plugin version', async () => {
     assert.equal((await run()).ok, true);
     release = '2.0.0';
     stalePayload = true;
@@ -258,12 +260,12 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.equal(failed.ok, false);
     assert.match(failed.issue ?? '', /payload does not match/);
     stalePayload = false;
-    // Retry must repair a stale payload, not skip it based on catalog metadata.
+    // retry must repair a stale payload, not skip it based on catalog metadata.
     const retry = await run('npm:' + packageName + '@2.0.0');
     assert.equal(retry.ok, true, retry.issue ?? undefined);
   });
   for (const kind of ['local collision', 'package collision', 'incomplete', 'concurrent']) {
-    it('preserves unrelated catalog entries on ' + kind, async () => {
+    it('should preserve unrelated catalog entries on ' + kind, async () => {
       const other = {
         name: 'unrelated',
         source: { source: 'npm', package: 'other', version: '1.0.0' },
@@ -292,7 +294,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     });
   }
   for (const phase of ['npm', 'staging', 'target'] as const) {
-    it('redacts registry credentials and reports failure effects at ' + phase, async () => {
+    it('should redact registry credentials and report failure effects at ' + phase, async () => {
       failure = phase;
       const result = await run();
       assert.equal(result.ok, false);
@@ -304,7 +306,7 @@ describe('npm installation through native acquisition and shared marketplace orc
       else await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
     });
   }
-  it('preserves disabled installs and refuses refresh that would enable one', async () => {
+  it('should preserve disabled installations and refuse refresh that would enable one', async () => {
     assert.equal((await run()).ok, true);
     assert.ok(installed);
     installed.enabled = false;
@@ -315,7 +317,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.ok(installed);
     assert.equal(installed.enabled, false);
   });
-  it('rejects a package whose npm metadata does not match its acquired release', async () => {
+  it('should reject a package whose npm metadata does not match its acquired release', async () => {
     const wrong: NativeRunner = async (argv, opts) => {
       const child = await native(argv, opts);
       if (argv[1] === 'add' && child.exitCode === 0 && opts?.env?.CODEX_HOME !== codexHome) {
@@ -332,7 +334,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.match(result.issue ?? '', /does not match/);
     assert.equal(installed, null);
   });
-  it('detects unrelated configuration changes made during native installation', async () => {
+  it('should detect unrelated configuration changes made during native installation', async () => {
     const configFile = path.join(codexHome, 'config.toml');
     await writeFile(configFile, 'model = "preserve-me"\n');
     const changed: NativeRunner = async (argv, opts) => {
@@ -349,7 +351,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     assert.match(result.issue ?? '', /Unrelated Codex configuration/);
     assert.ok(result.nativeState);
   });
-  it('retains the pinned registry even after scoped npm configuration changes', async () => {
+  it('should retain the pinned registry even after scoped npm configuration changes', async () => {
     assert.equal((await run()).ok, true);
     env['npm_config_@fixture:registry'] = 'https://another-registry.invalid';
     const checked: NativeRunner = async (argv, opts) => {
@@ -365,7 +367,7 @@ describe('npm installation through native acquisition and shared marketplace orc
     );
     assert.equal(result.ok, true, result.issue ?? undefined);
   });
-  it('does not expose credentials from malformed npm registry configuration', async () => {
+  it('should not expose credentials from malformed npm registry configuration', async () => {
     const badRegistry: NpmRunner = async (argv) =>
       argv[0] === 'config'
         ? { argv, exitCode: 0, stdout: 'https://user:supersecret@example.com', stderr: '' }

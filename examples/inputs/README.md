@@ -8,8 +8,8 @@ strict failures without mutating Codex state.
 ```bash
 # should report help and displayed defaults from outside the checkout
 cd /tmp
-codex-tools --help | grep -F 'Usage: codex-tools'
-codex-tools --help | grep -F 'CODEX_TOOLS_CODEX_HOME      same as --codex-home; precedes CODEX_HOME'
+codex-tools --help | grep -F 'codex-tools <command> [source] [options]'
+codex-tools --help | grep -E 'CODEX_TOOLS_CODEX_HOME +same as --codex-home; precedes CODEX_HOME'
 codex-tools --help | grep -F '[default: current directory]'
 codex-tools --help | grep -F '[default: CODEX_HOME or ~/.codex]'
 codex-tools --help | grep -F '[default: require-installed]'
@@ -40,21 +40,21 @@ trap 'rm -rf "$root"' EXIT
 CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=1 CODEX_TOOLS_DEBUG=true codex-tools status --codex-home "$root/home" >"$root/json" 2>"$root/debug"
 bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "not_installed") process.exit(1)' "$root/json"
 grep -F 'debug:' "$root/debug"
-CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=true CODEX_TOOLS_DEBUG=true codex-tools status --codex-home "$root/home" --no-json --no-debug >"$root/text" 2>"$root/quiet"
+CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=true CODEX_TOOLS_DEBUG=true codex-tools status --codex-home "$root/home" --no-json --debug=false >"$root/text" 2>"$root/quiet"
 grep -F 'status: not_installed' "$root/text"
 test ! -s "$root/quiet"
 CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=0 CODEX_TOOLS_DEBUG=false codex-tools status --codex-home "$root/home" >"$root/falsey" 2>"$root/falsey-error"
 grep -F 'status: not_installed' "$root/falsey"
 test ! -s "$root/falsey-error"
 
-# should honor ambient debug controls without changing stdout
+# should honor ci debug and ignore unrelated environment controls
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
-CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral TANAAB_DEBUG=on codex-tools status --codex-home "$root/home" >"$root/tanaab" 2>"$root/tanaab-debug"
+env -u CODEX_TOOLS_DEBUG -u RUNNER_DEBUG CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral TANAAB_DEBUG=on codex-tools status --codex-home "$root/home" >"$root/tanaab" 2>"$root/tanaab-debug"
 CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral RUNNER_DEBUG=1 codex-tools status --codex-home "$root/home" >"$root/runner" 2>"$root/runner-debug"
 grep -F 'status: not_installed' "$root/tanaab"
 grep -F 'status: not_installed' "$root/runner"
-grep -F 'debug:' "$root/tanaab-debug"
+test ! -s "$root/tanaab-debug"
 grep -F 'debug:' "$root/runner-debug"
 
 # should reject invalid input before filesystem effects

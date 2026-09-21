@@ -1,11 +1,11 @@
 import { build } from 'bun';
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
-import { declarations } from './declarations.ts';
+import { declarations } from '../lib/declarations.ts';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const outdir = path.join(root, 'dist');
 
 async function bundle(

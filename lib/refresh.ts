@@ -1,30 +1,31 @@
-import { randomUUID } from 'node:crypto';
 import { chmod, lstat, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+
 import { asError } from '../utils/errors.ts';
-import parseToml from '../utils/parse-toml.ts';
-import { collectEntries } from './cache.ts';
 import {
   assertSupportedCodexVersion,
   readNativeResult,
   readNativeRows,
   runNative,
 } from './codex-native.ts';
-import type { NativeResult } from './codex-native.ts';
+import { collectEntries } from './cache.ts';
+import diffEntries from '../utils/diff-entries.ts';
+import hasDiff from '../utils/has-diff.ts';
 import { inside, object, optional, resolveInstall, snapshot } from './install-context.ts';
-import type { UnknownRecord } from './install-context.ts';
 import type {
-  InstallDependencies,
   InstallationEffects,
   InstallationResult,
+  InstallDependencies,
   InstallOptions,
   ManifestEdit,
   OperationStep,
 } from './install-types.ts';
 import { installNpmPlugin } from './npm-install.ts';
-import diffEntries from '../utils/diff-entries.ts';
-import hasDiff from '../utils/has-diff.ts';
+import type { NativeResult } from './codex-native.ts';
+import parseToml from '../utils/parse-toml.ts';
+import type { UnknownRecord } from './install-context.ts';
 
 interface NativeInstalled extends UnknownRecord {
   pluginId: string;
@@ -41,7 +42,7 @@ function operationArgv(operation: OperationStep): string[] {
   return operation.argv;
 }
 
-// Plugin Creator's prefix-before-+ and single +codex.<UTC timestamp> convention.
+// plugin creator's prefix-before-+ and single +codex.<utc timestamp> convention.
 export async function planCachebuster(
   version: unknown,
   cacheRoot: string,
@@ -63,18 +64,18 @@ export async function planCachebuster(
 }
 
 /**
- * Refreshes an existing local or npm-backed installation while preserving unrelated Codex state.
+ * refreshes an existing local or npm-backed installation while preserving unrelated codex state.
  *
- * Local execution writes a new source manifest cachebuster before invoking Codex and verifies the
- * installed payload afterward. npm refresh retains the exact pinned package release. Dry-run mode
- * writes nothing and starts no child processes. Applied source or native effects are not rolled
+ * local execution writes a new source manifest cachebuster before invoking codex and verifies the
+ * installed payload afterward. npm refresh retains the exact pinned package release. dry-run mode
+ * writes nothing and starts no child processes. applied source or native effects are not rolled
  * back after a partial failure.
  *
- * @param options Existing local or npm installation selection plus marketplace and dry-run settings.
- * @param dependencies Injectable environment, native/npm boundaries, and clock.
- * @returns A structured plan, partial effects, native results, manifest edit, and installation
+ * @param options existing local or npm installation selection plus marketplace and dry-run settings.
+ * @param dependencies injectable environment, native/npm boundaries, and clock.
+ * @returns a structured plan, partial effects, native results, manifest edit, and installation
  * readback.
- * @throws When the selected installation, enablement, mapping, payload, paths, or configuration do
+ * @throws when the selected installation, enablement, mapping, payload, paths, or configuration do
  * not satisfy refresh preconditions.
  */
 export async function refreshPlugin(
@@ -319,7 +320,7 @@ export async function refreshPlugin(
           try {
             await writeFile(temporary, manifestText, { flag: 'wx', mode: source.original.mode });
             await chmod(temporary, source.original.mode & 0o777);
-            // The temporary file is ours, not a concurrent source edit.
+            // the temporary file is ours, not a concurrent source edit.
             expectedSource.set(path.relative(source.root, temporary), {
               type: 'file',
               mode: source.original.mode & 0o777,

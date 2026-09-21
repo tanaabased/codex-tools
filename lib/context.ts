@@ -1,22 +1,22 @@
-import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
+import type { AbsentCheck, CodexToolsOptions, MissingTarget } from '../utils/parse-args.ts';
 import { asError, hasErrorCode } from '../utils/errors.ts';
 import parseToml from '../utils/parse-toml.ts';
-import type { AbsentCheck, CodexToolsOptions, MissingTarget } from '../utils/parse-args.ts';
 import { selection } from '../utils/selection.ts';
 
 type UnknownRecord = Record<string, unknown>;
 
-/** Names the source plugin, its compatibility version, and its package release. */
+/** names the source plugin, its compatibility version, and its package release. */
 export interface PluginIdentity {
   name: string;
   version: string;
   packageVersion: string;
 }
 
-/** Resolved cache ownership, marketplace selection, and missing-installation policy. */
+/** resolved cache ownership, marketplace selection, and missing-installation policy. */
 export interface CacheConfiguration {
   managedPaths: readonly string[] | null;
   excludeNames: readonly string[];
@@ -25,7 +25,7 @@ export interface CacheConfiguration {
   absentCheck: AbsentCheck;
 }
 
-/** Describes observable cache compatibility and Codex registration state. */
+/** describes observable cache compatibility and codex registration state. */
 export interface InstallationInspection {
   cachePath: string | null;
   cachePresent: boolean;
@@ -39,7 +39,7 @@ export interface InstallationInspection {
   enabled: boolean | null;
 }
 
-/** Describes one cache-layout candidate before a final target is selected. */
+/** describes one cache-layout candidate before a final target is selected. */
 export interface InstallationCandidate extends Omit<
   InstallationInspection,
   'installed' | 'layoutVerified' | 'registered' | 'enabled'
@@ -48,7 +48,7 @@ export interface InstallationCandidate extends Omit<
   directory: string;
 }
 
-/** Contains the validated source, selected target, configuration, and diagnostics for an operation. */
+/** contains the validated source, selected target, configuration, and diagnostics for an operation. */
 export interface ResolvedContext {
   repoRoot: string;
   codexHome: string;
@@ -121,15 +121,15 @@ function marketplaceName(value: unknown): string | null {
 }
 
 /**
- * Inspects one selected cache directory without inferring installation or activation state.
+ * inspects one selected cache directory without inferring installation or activation state.
  *
- * The function reads the cached plugin manifest and reports absence, malformed metadata, or an
- * identity mismatch as data. Other filesystem failures propagate.
+ * the function reads the cached plugin manifest and reports absence, malformed metadata, or an
+ * identity mismatch as data. other filesystem failures propagate.
  *
- * @param cachePath Cache directory to inspect.
- * @param identity Expected plugin name and compatibility version.
- * @returns Observable cache presence, identity, compatibility, and a diagnostic issue.
- * @throws When the cache or manifest cannot be read for a reason other than ordinary absence.
+ * @param cachePath cache directory to inspect.
+ * @param identity expected plugin name and compatibility version.
+ * @returns observable cache presence, identity, compatibility, and a diagnostic issue.
+ * @throws when the cache or manifest cannot be read for a reason other than ordinary absence.
  */
 export async function inspectInstallation(
   cachePath: string,
@@ -183,16 +183,16 @@ export async function inspectInstallation(
 }
 
 /**
- * Resolves a source plugin and at most one safe cache target without mutation.
+ * resolves a source plugin and at most one safe cache target without mutation.
  *
- * The source `package.json` and `.codex-plugin/plugin.json` establish identity and compatibility.
- * Explicit options override declared `codexTools` settings. Ambiguous or unsupported cache layouts
+ * the source `package.json` and `.codex-plugin/plugin.json` establish identity and compatibility.
+ * explicit options override declared `codexTools` settings. ambiguous or unsupported cache layouts
  * are returned as diagnostics rather than guessed.
  *
- * @param options Source, Codex home, marketplace, cache, selection, and absence settings.
- * @returns The validated source identity, resolved configuration, candidate caches, and selection
+ * @param options source, codex home, marketplace, cache, selection, and absence settings.
+ * @returns the validated source identity, resolved configuration, candidate caches, and selection
  * diagnostics.
- * @throws When source metadata or configuration is invalid, paths are unsafe, or required state
+ * @throws when source metadata or configuration is invalid, paths are unsafe, or required state
  * cannot be read.
  */
 export async function resolveContext(options: CodexToolsOptions = {}): Promise<ResolvedContext> {
@@ -234,7 +234,9 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
     throw new Error('Invalid package.json codexTools configuration.');
   }
   const config: CacheConfiguration = {
-    managedPaths: managedList(options.managedPaths ?? declaredValue.managedPaths),
+    managedPaths: managedList(
+      options.managedPaths === undefined ? declaredValue.managedPaths : options.managedPaths,
+    ),
     excludeNames: stringList(options.excludeNames ?? declaredValue.excludeNames, []),
     marketplace: marketplaceName(options.marketplace ?? declaredValue.marketplace),
     missingTarget: missingTarget(options.missingTarget ?? declaredValue.missingTarget),
