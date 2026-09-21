@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+- Fixed stable npm releases to update `edge` alongside `latest` through the shared publishing action.
+
 ## v1.0.0 - [September 21, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.0)
 
 ### Plugin installation and refresh
