@@ -4,6 +4,13 @@
   <img src="./assets/codex-tools.png" alt="Codex Tools" width="180" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;label=release" alt="Latest GitHub release, including prereleases" /></a>
+  <a href="https://www.npmjs.com/package/@tanaab/codex-tools"><img src="https://img.shields.io/npm/v/@tanaab/codex-tools/latest?label=npm" alt="npm stable version" /></a>
+  <a href="https://www.npmjs.com/package/@tanaab/codex-tools?activeTab=versions"><img src="https://img.shields.io/npm/v/@tanaab/codex-tools/edge?label=npm%20edge" alt="npm prerelease version" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/tanaabased/codex-tools" alt="License" /></a>
+</p>
+
 Develop Codex plugins and install them with less setup. Codex Tools handles marketplace registration,
 installation, source refresh, and cache synchronization through a CLI, typed JavaScript API,
 and agent skills.
