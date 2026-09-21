@@ -79,6 +79,7 @@ try {
     'README.md',
     'LICENSE',
     'NOTICE',
+    'PLUGINS.md',
     'dist/codex-tools',
     'dist/esm/index.js',
     'dist/cjs/index.cjs',
@@ -139,6 +140,7 @@ try {
     'API.md',
     'ADVANCED.md',
     'CONTRIBUTING.md',
+    'PLUGINS.md',
   ]);
   const apiExample = documentationExample(
     await readFile(path.join(installed, 'README.md'), 'utf8'),

@@ -78,19 +78,3 @@ Remove `--dry-run` to create or synchronize the directory. The result is
 `synchronized_directory`, never `installed`. See the executable
 [cache scenarios](https://github.com/tanaabased/codex-tools/tree/main/examples/cache) and
 [default-selection scenario](https://github.com/tanaabased/codex-tools/tree/main/examples/defaults).
-
-## Codex skills
-
-After installing the Codex Tools CLI globally, the same package provides its setup and maintenance
-skills as an npm-backed Codex plugin:
-
-```sh
-codex-tools install npm:@tanaab/codex-tools --dry-run --json
-codex-tools install npm:@tanaab/codex-tools
-```
-
-Open a fresh Codex task after installation so the packaged skills are discovered.
-
-`$tanaab-codex-tools-setup` guides plugin installation; `$tanaab-codex-tools-maintenance` handles
-inspection, refresh, and cache reconciliation. Both invoke the runtime bundled in the installed
-plugin rather than relying on the global command.
