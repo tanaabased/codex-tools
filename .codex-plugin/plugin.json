@@ -1,6 +1,6 @@
 {
   "name": "codex-tools",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.1",
   "description": "Install, inspect, refresh, and reconcile Codex plugins safely.",
   "author": {
     "name": "Tanaab Maneuvering Systems LLC",
