@@ -232,8 +232,8 @@ try {
       );
     }
     await freshSkills(packagedEnv, packagedHome, [
-      'tanaab-codex-tools-setup',
-      'tanaab-codex-tools-maintenance',
+      'codex-tools:tanaab-codex-tools-setup',
+      'codex-tools:tanaab-codex-tools-maintenance',
     ]);
 
     const packagedInput = path.join(root, 'packaged-input');

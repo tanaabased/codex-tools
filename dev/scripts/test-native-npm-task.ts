@@ -268,7 +268,7 @@ try {
   await invoke('install', 'npm:' + pkg + '@file:../bad', [], false);
   assert.equal(await readFile(catalogFile, 'utf8'), preserved);
   await assert.rejects(lstat(path.join(root, 'LIFECYCLE-RAN')), { code: 'ENOENT' });
-  await freshSkills(env, home, [skill]);
+  await freshSkills(env, home, [plugin + ':' + skill]);
   const codex = await command('codex', ['--version'], env);
   const npm = await command('npm', ['--version'], env);
   process.stdout.write(
