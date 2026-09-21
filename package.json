@@ -1,7 +1,7 @@
 {
   "name": "@tanaab/codex-tools",
   "description": "Codex plugin development and easy installation: marketplace setup, npm installs, source refresh, and cache sync.",
-  "version": "0.1.0",
+  "version": "1.0.0-beta.0",
   "author": "Tanaab",
   "license": "MIT",
   "repository": {
