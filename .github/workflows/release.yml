@@ -1,18 +1,20 @@
 name: Release
 on:
   release:
-    types: [published]
+    types:
+      - published
 permissions:
   contents: read
 concurrency:
   group: release
   cancel-in-progress: false
 jobs:
-  prepare:
-    name: Prepare release artifacts
+  publish-artifacts:
+    name: Publish npm package and plugin
     runs-on: ubuntu-24.04
-    outputs:
-      version: ${{ steps.prepare.outputs.version }}
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,104 +30,55 @@ jobs:
           bun run docs:check
           bun run typecheck
           bun run test
-      - id: prepare
-        uses: ./.github/actions/prepare-release
+      - uses: tanaabased/actions/prepare-release@v1
         with:
-          version: ${{ github.event.release.tag_name }}
-          release-date: ${{ github.event.release.published_at }}
-          release-url: ${{ github.event.release.html_url }}
-          prerelease: ${{ github.event.release.prerelease }}
-      - id: package
-        uses: ./.github/actions/package-release
+          commands: |
+            version-injector .codex-plugin/plugin.json --style json --version "$PREPARE_RELEASE_VERSION"
+            bun --bun prettier .codex-plugin/plugin.json --write
+      - run: bun run format:check && bun run build
+      - id: pack
+        uses: tanaabased/actions/npm-pack@v1
+      - name: Verify package and stage plugin
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball-path }}
+        run: |
+          bun run check:package "--tarball=$TARBALL"
+          mkdir -p .temp/plugin
+          tar -xzf "$TARBALL" -C .temp/plugin --strip-components=1
+      - uses: tanaabased/actions/validate-codex-plugin@v1
+        with:
+          plugin-directory: .temp/plugin
       - name: Dry-run npm publication
         uses: tanaabased/actions/publish-npm@v1
         with:
           dry-run: 'true'
-          tarball: ${{ steps.package.outputs.tarball }}
-      - name: Retain prepared release artifacts
-        env:
-          PLUGIN_ARCHIVE: ${{ steps.package.outputs.plugin-archive }}
-          TARBALL: ${{ steps.package.outputs.tarball }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/release-artifacts"
-          cp "$TARBALL" "$PLUGIN_ARCHIVE" "$RUNNER_TEMP/release-artifacts/"
-      - uses: actions/upload-artifact@v7
+          tarball: ${{ steps.pack.outputs.tarball-path }}
+      - uses: tanaabased/actions/publish-codex-plugin@v1
         with:
-          name: release-artifacts
-          if-no-files-found: error
-          path: ${{ runner.temp }}/release-artifacts/
-
-  publish-npm:
-    name: Publish npm package
-    needs: prepare
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/download-artifact@v8
-        with:
-          name: release-artifacts
-          path: .temp/release
+          plugin-directory: .temp/plugin
+          archive-name: codex-tools-${{ steps.pack.outputs.package-version }}.tar.gz
+          dependency-policy: exclude-node-modules
+          release-tag: ${{ github.event.release.tag_name }}
+          github-token: ${{ github.token }}
       - uses: tanaabased/actions/publish-npm@v1
         with:
-          tarball: .temp/release/tanaab-codex-tools-${{ needs.prepare.outputs.version }}.tgz
-
-  publish-plugin:
-    name: Publish plugin archive
-    needs: prepare
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: release-artifacts
-          path: release-artifacts
-      - name: Upload the prepared plugin archive
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-        run: gh release upload "$RELEASE_TAG" "release-artifacts/codex-tools-$VERSION.tar.gz" --clobber
+          tarball: ${{ steps.pack.outputs.tarball-path }}
 
   publish-repo:
     name: Synchronize release metadata
-    needs: prepare
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Check repository synchronization prerequisites
-        env:
-          SYNC_TOKEN: ${{ secrets.TANAAB_COAXIUM_INJECTOR }}
-          RELEASE_SHA: ${{ github.sha }}
-        run: |
-          test -n "$SYNC_TOKEN" || { echo '::error::TANAAB_COAXIUM_INJECTOR is required for protected main'; exit 1; }
-          test "$(git rev-parse origin/main)" = "$RELEASE_SHA" || { echo '::error::main advanced; reconcile release metadata before syncing'; exit 1; }
       - uses: tanaabased/actions/setup-bun@v1
       - run: bun install --frozen-lockfile --ignore-scripts
-      - uses: ./.github/actions/prepare-release
+      - uses: tanaabased/actions/publish-repo@v1
         with:
-          version: ${{ github.event.release.tag_name }}
-          release-date: ${{ github.event.release.published_at }}
-          release-url: ${{ github.event.release.html_url }}
-          prerelease: ${{ github.event.release.prerelease }}
-      # metadata is already formatted and checked; do not stamp the changelog twice.
-      - uses: tanaabased/prepare-release-action@v1
-        with:
-          version: ${{ github.event.release.tag_name }}
-          sync: true
+          commands: |
+            version-injector .codex-plugin/plugin.json --style json --version "$PREPARE_RELEASE_VERSION"
+            bun --bun prettier .codex-plugin/plugin.json --write
           sync-branch: main
-          sync-verified: true
           sync-token: ${{ secrets.TANAAB_COAXIUM_INJECTOR }}
-          sync-email: tanaabot@tanaab.dev
-          sync-username: tanaabot
+      - run: bun run format:check
