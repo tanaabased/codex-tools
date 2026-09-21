@@ -37,17 +37,39 @@ Build once, then check the prepared package:
 
 ```sh
 bun run build
-bun run check:package
+bun run check:package --pack-destination=.temp/package
 ```
 
 The build emits the Node CLI, ESM/CommonJS bundles, and matching declarations. The package check
 packs and exercises the exact payload in a disposable Node consumer, including both module
 formats, type exports, documentation examples, skills, and assets. Run it for changes to build,
 packaging, shipped documentation, or the artifact contract. Nothing is published.
+Pass `--tarball=/path/to/package.tgz` to check an existing tarball without repacking it.
 
 `bun run test:native` checks installation, refresh, and preservation through real Codex;
 `bun run test:native:npm` checks acquisition through a disposable HTTPS registry. Both build first.
 Run these when changing native compatibility or the probes themselves.
+
+## Install a local release candidate
+
+After building and checking the package above, extract its tarball into an empty directory:
+
+```sh
+candidate="$(mktemp -d "$PWD/.temp/codex-tools.XXXXXX")"
+version="$(bun -p 'require("./package.json").version')"
+tar -xzf ".temp/package/tanaab-codex-tools-$version.tgz" -C "$candidate" --strip-components=1
+```
+
+For Codex, let the extracted CLI install its own plugin:
+
+```sh
+node "$candidate/dist/codex-tools" install "$candidate" --dry-run --json
+node "$candidate/dist/codex-tools" install "$candidate"
+```
+
+For OpenClaw, use `openclaw plugins install "$candidate"`. Keep the extracted directory while
+using this local installation, and start a fresh task or session to discover its skills.
+See [plugin usage](./PLUGINS.md) for both hosts. Local installations do not follow npm updates.
 
 ## Leia scenarios
 
@@ -60,3 +82,8 @@ before editing them. Local Leia execution requires an explicit request.
 The fake commands verify orchestration. The Native Codex Verification workflow separately installs
 the packed plugin, checks fresh-session skill discovery, and invokes its cached runtime on Linux
 and macOS. PR CI also validates the plugin with `tanaabased/actions/validate-codex-plugin@v1`.
+
+## Releases
+
+Use Canon's [Release Author](https://github.com/tanaabased/canon/tree/main/skills/release-author)
+skill for releases. Keep upcoming changes in [CHANGELOG.md](./CHANGELOG.md).

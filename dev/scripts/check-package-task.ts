@@ -21,13 +21,15 @@ import packageJson from '../../package.json';
 
 const repo = fileURLToPath(new URL('../..', import.meta.url));
 const args = process.argv.slice(2);
-const destination = args
-  .find((arg) => arg.startsWith('--pack-destination='))
-  ?.split('=')
-  .slice(1)
-  .join('=');
-if (args.some((arg) => !arg.startsWith('--pack-destination=')))
-  throw new Error('Usage: check:package [--pack-destination=directory]');
+const option = args[0];
+if (args.length > 1 || (option && !/^--(?:pack-destination|tarball)=.+$/.test(option)))
+  throw new Error('Usage: check:package [--pack-destination=directory | --tarball=file]');
+const destination = option?.startsWith('--pack-destination=')
+  ? option.slice('--pack-destination='.length)
+  : undefined;
+const suppliedTarball = option?.startsWith('--tarball=')
+  ? path.resolve(repo, option.slice('--tarball='.length))
+  : undefined;
 const runtimeExports = [
   'collectEntries',
   'diffEntries',
@@ -72,10 +74,12 @@ try {
     'API.md',
     'ADVANCED.md',
     'CLI.md',
+    'CHANGELOG.md',
     'CONTRIBUTING.md',
     'README.md',
     'LICENSE',
     'NOTICE',
+    'PLUGINS.md',
     'dist/codex-tools',
     'dist/esm/index.js',
     'dist/cjs/index.cjs',
@@ -96,13 +100,15 @@ try {
     JSON.parse(
       execFileSync(
         'npm',
-        ['pack', '--ignore-scripts', '--json', '--pack-destination', packDirectory],
+        suppliedTarball
+          ? ['pack', suppliedTarball, '--dry-run', '--offline', '--ignore-scripts', '--json']
+          : ['pack', '--ignore-scripts', '--json', '--pack-destination', packDirectory],
         { cwd: repo, env, encoding: 'utf8' },
       ),
     ) as PackResult[]
   )[0]!;
   assert.deepEqual(new Set(packed.files.map((file) => file.path)), allowed);
-  const tarball = path.join(packDirectory, packed.filename);
+  const tarball = suppliedTarball ?? path.join(packDirectory, packed.filename);
 
   const consumer = path.join(root, 'consumer');
   await mkdir(consumer);
@@ -134,6 +140,7 @@ try {
     'API.md',
     'ADVANCED.md',
     'CONTRIBUTING.md',
+    'PLUGINS.md',
   ]);
   const apiExample = documentationExample(
     await readFile(path.join(installed, 'README.md'), 'utf8'),

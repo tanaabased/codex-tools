@@ -4,8 +4,18 @@
   <img src="./assets/codex-tools.png" alt="Codex Tools" width="180" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;sort=semver" alt="Latest release, including prereleases" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-linter.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-linter.yml?event=pull_request&amp;label=Lint" alt="Lint" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-unit-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-unit-tests.yml?event=pull_request&amp;label=Unit%20Tests" alt="Unit Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-examples-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-examples-tests.yml?event=pull_request&amp;label=Example%20Tests" alt="Example Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-plugin-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-plugin-tests.yml?event=pull_request&amp;label=Plugin%20Tests" alt="Plugin Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-release-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-release-tests.yml?event=pull_request&amp;label=Release%20Tests" alt="Release Tests" /></a>
+</p>
+
 Develop Codex plugins and install them with less setup. Codex Tools handles marketplace registration,
-installation, source refresh, and cache synchronization through a CLI and typed JavaScript API.
+installation, source refresh, and cache synchronization through a CLI, typed JavaScript API,
+and agent skills.
 
 ## Overview
 
@@ -26,6 +36,7 @@ codex-tools --help
 ```
 
 For library use, install locally with `npm install @tanaab/codex-tools`.
+For unpublished builds, see [local candidate installation](./CONTRIBUTING.md#install-a-local-release-candidate).
 
 ## Usage
 
@@ -73,10 +84,18 @@ The package supports ESM imports and CommonJS `require`. Import from `@tanaab/co
 internal paths are unsupported. The generated [API reference](./API.md) covers public functions,
 types, results, and side effects.
 
+### Use with an agent
+
+Install the Codex Tools plugin into Codex or OpenClaw, then ask:
+
+- **Setup:** “Use `$tanaab-codex-tools-setup` to preview and install the plugin at `/path/to/plugin`.”
+- **Maintenance:** “Use `$tanaab-codex-tools-maintenance` to inspect this plugin and explain any cache drift.”
+
+See [plugin installation](./PLUGINS.md) for host requirements and installation commands.
+
 ## Advanced usage
 
-See [advanced usage](./ADVANCED.md) for marketplace and cache ownership, npm pinning, recovery,
-and the optional Codex skills.
+See [advanced usage](./ADVANCED.md) for marketplace and cache ownership, npm pinning, and recovery.
 
 ## Development
 
