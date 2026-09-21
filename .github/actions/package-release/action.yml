@@ -1,0 +1,38 @@
+name: Package Codex Tools release
+description: Build and verify an npm tarball and prepare a plugin archive from its allowed payload.
+outputs:
+  tarball:
+    description: Verified npm tarball path.
+    value: ${{ steps.package.outputs.tarball }}
+  plugin-archive:
+    description: Prepared plugin archive path.
+    value: ${{ steps.plugin.outputs.archive-path }}
+runs:
+  using: composite
+  steps:
+    - name: Build and verify prepared package
+      shell: bash
+      run: |
+        bun run build
+        bun run check:package --pack-destination=.temp/release
+    - id: package
+      name: Extract the verified plugin payload
+      shell: bash
+      run: |
+        tarballs=(.temp/release/*.tgz)
+        test "${#tarballs[@]}" -eq 1
+        mkdir -p .temp/plugin
+        tar -xzf "${tarballs[0]}" -C .temp/plugin --strip-components=1
+        echo "tarball=${tarballs[0]}" >> "$GITHUB_OUTPUT"
+        echo "version=$(bun -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+    - uses: tanaabased/actions/validate-codex-plugin@v1
+      with:
+        plugin-directory: .temp/plugin
+    - id: plugin
+      uses: tanaabased/actions/publish-codex-plugin@v1
+      with:
+        dry-run: 'true'
+        plugin-directory: .temp/plugin
+        archive-name: codex-tools-${{ steps.package.outputs.version }}.tar.gz
+        dependency-policy: exclude-node-modules
+        release-tag: v${{ steps.package.outputs.version }}

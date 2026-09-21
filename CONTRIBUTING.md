@@ -60,3 +60,33 @@ before editing them. Local Leia execution requires an explicit request.
 The fake commands verify orchestration. The Native Codex Verification workflow separately installs
 the packed plugin, checks fresh-session skill discovery, and invokes its cached runtime on Linux
 and macOS. PR CI also validates the plugin with `tanaabased/actions/validate-codex-plugin@v1`.
+
+## Releases
+
+Keep upcoming changes in [CHANGELOG.md](./CHANGELOG.md), beneath its tokenized unreleased heading.
+Publishing a GitHub Release runs `.github/workflows/release.yml` from the event's fixed commit.
+Use a semver prerelease tag with GitHub's prerelease flag for `edge`; stable versions go to `latest`.
+The workflow rejects a mismatch. It does not move `edge` when publishing a stable version.
+
+Preparation stamps the package, plugin, and changelog together, formats them, then builds and checks
+the npm tarball. The plugin archive contains that tarball's allowed payload, including the bundled
+runtime and notices; it needs no `node_modules` to run. Independent npm and plugin jobs publish the
+retained artifacts without rebuilding. A separate job syncs the checked metadata to `main` and moves
+the release tag. It stops if `main` has advanced. Inspect each destination before retrying a partial
+release: npm versions are immutable, while plugin uploads replace the named archive.
+
+Before the first release:
+
+- Configure and verify npm trusted publishing for `@tanaab/codex-tools`, GitHub owner `tanaabased`,
+  repository `codex-tools`, workflow `release.yml`, no environment, with direct publication allowed.
+  If the package does not exist yet, arrange the initial authenticated candidate publication before
+  configuring trust. See [npm's prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/).
+- Make `TANAAB_COAXIUM_INJECTOR` available to this repository for the bot's protected-branch sync.
+  The default GitHub token uploads the plugin; npm publication uses OIDC and no registry token.
+- Complete issue [#5](https://github.com/tanaabased/codex-tools/issues/5)'s prepared-artifact scenario
+  and macOS/Linux native verification before publishing a candidate. Consumer adoption gates stable
+  publication. The current release workflow does not yet enforce those remaining gates.
+
+PR Release Tests stamp a disposable candidate, exercise the package, and dry-run npm and plugin
+archive preparation without publication credentials. These checks cannot prove npm trust or live
+GitHub synchronization; verify the saved settings and installed candidate separately.

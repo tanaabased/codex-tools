@@ -8,11 +8,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-26]
+        os: [ubuntu-24.04, macos-26]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: tanaabased/actions/setup-node@v1
       - uses: tanaabased/actions/setup-bun@v1
       - run: bun install --frozen-lockfile --ignore-scripts
-      - run: bun run build && bun run check:package
+      - uses: ./.github/actions/prepare-release
+        with:
+          version: v0.0.0-pr.${{ github.event.pull_request.number }}.${{ github.run_attempt }}
+          release-date: ${{ github.event.pull_request.updated_at }}
+          release-url: ${{ github.event.pull_request.html_url }}
+          prerelease: 'true'
+      - if: runner.os == 'macOS'
+        run: bun run build && bun run check:package
+      - id: package
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/package-release
+      - name: Dry-run npm publication
+        if: runner.os == 'Linux'
+        uses: tanaabased/actions/publish-npm@v1
+        with:
+          dry-run: 'true'
+          tarball: ${{ steps.package.outputs.tarball }}

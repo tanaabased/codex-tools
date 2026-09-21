@@ -72,6 +72,7 @@ try {
     'API.md',
     'ADVANCED.md',
     'CLI.md',
+    'CHANGELOG.md',
     'CONTRIBUTING.md',
     'README.md',
     'LICENSE',

@@ -1,0 +1,58 @@
+name: Prepare Codex Tools release
+description: Stamp package, plugin, and changelog metadata before building release artifacts.
+inputs:
+  version:
+    description: Exact release tag.
+    required: true
+  release-date:
+    description: Release timestamp.
+    required: true
+  release-url:
+    description: Release URL for the changelog.
+    required: true
+  prerelease:
+    description: Whether the release belongs on edge.
+    required: true
+outputs:
+  version:
+    description: Normalized package and plugin version.
+    value: ${{ steps.version.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - name: Check release version and channel
+      shell: bash
+      env:
+        RELEASE_VERSION: ${{ inputs.version }}
+        RELEASE_PRERELEASE: ${{ inputs.prerelease }}
+      run: |
+        bun -e '
+          import assert from "node:assert/strict";
+          import semver from "semver";
+          const version = semver.valid(process.env.RELEASE_VERSION);
+          assert.ok(version, "Release tag must be a valid version");
+          assert.equal(String(Boolean(semver.prerelease(version))), process.env.RELEASE_PRERELEASE,
+            "Release prerelease flag must agree with its version");
+        '
+    - uses: tanaabased/actions/prepare-release@v1
+      with:
+        version: ${{ inputs.version }}
+        release-date: ${{ inputs.release-date }}
+        release-url: ${{ inputs.release-url }}
+        commands: version-injector .codex-plugin/plugin.json --style json --version "$PREPARE_RELEASE_VERSION"
+    - name: Format and check prepared metadata
+      shell: bash
+      run: |
+        bun --bun prettier package.json .codex-plugin/plugin.json CHANGELOG.md --write
+        bun run format:check
+    - id: version
+      name: Verify coordinated versions
+      shell: bash
+      run: |
+        bun -e '
+          import assert from "node:assert/strict";
+          import pkg from "./package.json";
+          import plugin from "./.codex-plugin/plugin.json";
+          assert.equal(pkg.version, plugin.version);
+          process.stdout.write(`value=${pkg.version}\n`);
+        ' >> "$GITHUB_OUTPUT"
