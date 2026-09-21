@@ -5,10 +5,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;label=release" alt="Latest GitHub release, including prereleases" /></a>
-  <a href="https://www.npmjs.com/package/@tanaab/codex-tools"><img src="https://img.shields.io/npm/v/@tanaab/codex-tools/latest?label=npm" alt="npm stable version" /></a>
-  <a href="https://www.npmjs.com/package/@tanaab/codex-tools?activeTab=versions"><img src="https://img.shields.io/npm/v/@tanaab/codex-tools/edge?label=npm%20edge" alt="npm prerelease version" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/tanaabased/codex-tools" alt="License" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;sort=semver" alt="Latest release, including prereleases" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-linter.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-linter.yml?event=pull_request&amp;label=Lint" alt="Lint" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-unit-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-unit-tests.yml?event=pull_request&amp;label=Unit%20Tests" alt="Unit Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-examples-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-examples-tests.yml?event=pull_request&amp;label=Example%20Tests" alt="Example Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-plugin-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-plugin-tests.yml?event=pull_request&amp;label=Plugin%20Tests" alt="Plugin Tests" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-release-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-release-tests.yml?event=pull_request&amp;label=Release%20Tests" alt="Release Tests" /></a>
 </p>
 
 Develop Codex plugins and install them with less setup. Codex Tools handles marketplace registration,
