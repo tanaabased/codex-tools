@@ -6,6 +6,8 @@ import type { Stats } from 'node:fs';
 
 import { asError, hasErrorCode } from '../utils/errors.ts';
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
+import { InstallPaths } from './install-paths.ts';
+import { selection } from '../utils/selection.ts';
 import parseToml from '../utils/parse-toml.ts';
 
 export type UnknownRecord = Record<string, unknown>;
@@ -66,6 +68,10 @@ export interface MarketplaceCatalog extends UnknownRecord {
 }
 
 export interface MarketplaceContext {
+  paths: InstallPaths;
+  catalogTarget: string;
+  physicalRoot: string;
+  physicalCodexHome: string;
   home: string;
   codexHome: string;
   createCodexHome: boolean;
@@ -80,6 +86,7 @@ export interface MarketplaceContext {
 
 export interface InstallContext extends MarketplaceContext {
   source: ValidatedSource;
+  packageSnapshot: FileSnapshot | null;
   mapping: string | null;
   mappingStats: { ino: number; dev: number } | null;
   directories: string[];
@@ -297,12 +304,12 @@ export async function resolveMarketplace(
   for (const key of unsupported) {
     if (options[key] !== undefined) throw new Error(key + ' is not an install option.');
   }
-  const home = await realpath(env.HOME ?? homedir());
+  const paths = new InstallPaths();
+  const home = path.resolve(env.HOME ?? homedir());
+  await paths.resolve(home, 'directory');
   const codexHome = path.resolve(options.codexHome ?? env.CODEX_HOME ?? path.join(home, '.codex'));
-  const codexHomeStats = await optional(() => lstat(codexHome));
-  if (codexHomeStats && !codexHomeStats.isDirectory()) {
-    throw new Error('Selected Codex home must be a real directory.');
-  }
+  const physicalCodexHome = await paths.resolve(codexHome, 'directory');
+  const codexHomeStats = await optional(() => stat(codexHome));
   const configFile = path.join(codexHome, 'config.toml');
   const configSnapshot = await snapshot(configFile);
   const configValue = parseToml(configSnapshot?.text ?? '');
@@ -325,9 +332,10 @@ export async function resolveMarketplace(
     }
     root = configured.source;
   }
-  root = await realpath(root);
+  const physicalRoot = await paths.resolve(root, 'directory');
   const catalogFile = path.join(root, '.agents/plugins/marketplace.json');
-  const catalogSnapshot = await snapshot(catalogFile);
+  const catalogTarget = await paths.resolve(catalogFile, 'file');
+  const catalogSnapshot = await snapshot(catalogTarget);
   const catalogValue: unknown = catalogSnapshot
     ? (JSON.parse(catalogSnapshot.text) as unknown)
     : {
@@ -356,11 +364,27 @@ export async function resolveMarketplace(
   const configured = marketplaces[catalog.name];
   if (
     configured !== undefined &&
-    (!localMarketplace(configured) || (await realpath(configured.source)) !== root)
+    (!localMarketplace(configured) || (await realpath(configured.source)) !== physicalRoot)
   ) {
     throw new Error('Marketplace name/source collision: ' + catalog.name);
   }
+  if (localMarketplace(configured)) await paths.resolve(configured.source, 'directory');
+  for (const [name, value] of Object.entries(marketplaces)) {
+    if (name === catalog.name || !localMarketplace(value)) continue;
+    if (
+      (await optional(() => realpath(value.source))) === physicalRoot ||
+      (await optional(() =>
+        realpath(path.join(value.source, '.agents/plugins/marketplace.json')),
+      )) === catalogTarget
+    )
+      throw new Error('Marketplace source is configured under another name: ' + name);
+  }
+  await paths.unchanged();
   return {
+    paths,
+    catalogTarget,
+    physicalRoot,
+    physicalCodexHome,
     home,
     codexHome,
     createCodexHome: !codexHomeStats,
@@ -382,7 +406,18 @@ export async function resolveInstall(
   const source = preparedSource ?? (await validateSource(options.repoRoot ?? process.cwd()));
   const context = await resolveMarketplace(options, env);
   const { root, codexHome, catalog, catalogFile } = context;
-  if (inside(source.root, catalogFile) || inside(source.root, codexHome)) {
+  await context.paths.resolve(source.root, 'directory');
+  const packageSnapshot = await snapshot(path.join(source.root, 'package.json'));
+  const payload = await installationPayload(source, packageSnapshot);
+  const catalogOverlaps = [catalogFile, context.catalogTarget].some((target) =>
+    payload.some((selected) => inside(selected, target) || inside(target, selected)),
+  );
+  if (
+    inside(source.root, codexHome) ||
+    inside(source.root, context.physicalCodexHome) ||
+    inside(context.physicalCodexHome, source.root) ||
+    catalogOverlaps
+  ) {
     throw new Error('Plugin source overlaps installation state or marketplace catalog.');
   }
   const npm = source.npm;
@@ -468,6 +503,7 @@ export async function resolveInstall(
     return {
       ...context,
       source,
+      packageSnapshot,
       mapping: null,
       mappingStats: null,
       directories,
@@ -487,14 +523,33 @@ export async function resolveInstall(
   ) {
     throw new Error('Source mapping is already cataloged under another plugin name.');
   }
-  if (inside(source.root, mapping) && mapping !== source.root) {
-    throw new Error('Source mapping would be inside the plugin source.');
+  const mappingParent = await context.paths.resolve(path.dirname(mapping), 'directory');
+  const physicalMapping = path.join(mappingParent, path.basename(mapping));
+  for (const candidate of localSources) {
+    if (candidate.name === source.manifest.name) continue;
+    const parent = await context.paths.resolve(path.dirname(candidate.path), 'directory');
+    if (path.join(parent, path.basename(candidate.path)) === physicalMapping)
+      throw new Error('Source mapping is already cataloged under another plugin name.');
+  }
+  if (
+    mapping !== source.root &&
+    physicalMapping !== source.root &&
+    payload.some(
+      (selected) =>
+        inside(selected, mapping) ||
+        inside(selected, physicalMapping) ||
+        inside(mapping, selected) ||
+        inside(physicalMapping, selected),
+    )
+  ) {
+    throw new Error('Source mapping would be inside the plugin source payload.');
   }
   const mappingStats: Stats | null = await optional(() => lstat(mapping));
   const mappedSource = await optional(() => realpath(mapping));
   if (mappingStats && mappedSource !== source.root) {
     throw new Error('Refusing to replace existing source mapping: ' + mapping);
   }
+  if (mappingStats) await context.paths.resolve(mapping, 'directory');
   const directories = await marketplaceDirectories(root, [
     path.dirname(mapping),
     path.dirname(catalogFile),
@@ -513,6 +568,7 @@ export async function resolveInstall(
   return {
     source,
     ...context,
+    packageSnapshot,
     mapping,
     mappingStats: mappingStats ? { ino: mappingStats.ino, dev: mappingStats.dev } : null,
     directories,
@@ -527,12 +583,51 @@ async function marketplaceDirectories(root: string, targets: readonly string[]):
     let current = root;
     for (const part of path.relative(root, target).split(path.sep).filter(Boolean)) {
       current = path.join(current, part);
-      const stats = await optional(() => lstat(current));
+      const stats = await optional(() => stat(current));
       if (stats && !stats.isDirectory()) {
-        throw new Error('Marketplace parent must be a real directory: ' + current);
+        throw new Error('Marketplace parent must resolve to a directory: ' + current);
       }
       if (!stats && !directories.includes(current)) directories.push(current);
     }
   }
   return directories;
+}
+
+async function installationPayload(
+  source: ValidatedSource,
+  packageFile: FileSnapshot | null,
+): Promise<string[]> {
+  const pkg: unknown = JSON.parse(packageFile?.text ?? '{}');
+  if (!object(pkg) || (pkg.codexTools !== undefined && !object(pkg.codexTools)))
+    throw new Error('Invalid package.json codexTools configuration.');
+  const declared = object(pkg.codexTools) ? pkg.codexTools : {};
+  const { managedPaths } = selection({
+    managedPaths: (declared.managedPaths ?? null) as readonly string[] | null,
+    excludeNames: (declared.excludeNames ?? []) as readonly string[],
+  });
+  if (!managedPaths) return [source.root];
+  const selected = new Set([
+    source.file,
+    path.join(source.root, '.codex-plugin'),
+    ...managedPaths.map((part) => path.join(source.root, part)),
+  ]);
+  for (const key of ['skills', 'apps', 'mcpServers', 'hooks']) {
+    const value = source.manifest[key];
+    if (typeof value === 'string' && value.startsWith('./'))
+      selected.add(path.resolve(source.root, value));
+  }
+  const interfaceValue = object(source.manifest.interface) ? source.manifest.interface : {};
+  for (const value of [
+    interfaceValue.composerIcon,
+    interfaceValue.logo,
+    ...(Array.isArray(interfaceValue.screenshots) ? interfaceValue.screenshots : []),
+  ]) {
+    if (typeof value === 'string' && value.startsWith('./'))
+      selected.add(path.resolve(source.root, value));
+  }
+  for (const target of [...selected]) {
+    const physical = await optional(() => realpath(target));
+    if (physical) selected.add(physical);
+  }
+  return [...selected];
 }

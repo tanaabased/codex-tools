@@ -7,7 +7,10 @@ Start with the [README](./README.md); use the [CLI reference](./CLI.md) for flag
 
 The default personal marketplace is `~/.agents/plugins/marketplace.json`. Existing marketplace
 metadata, policies, entry order, unrelated entries, and matching source links are preserved.
-Conflicting files, dangling links, names, sources, or policies are rejected rather than replaced.
+Valid links on marketplace paths survive installation. Repository-owned catalogs and mappings must
+remain outside the selected payload, including manifests and declared resources; without
+`managedPaths`, the whole source is selected. Installation state stays outside the source.
+`managedPaths` does not control what native Codex copies.
 
 Use an existing local marketplace by name, or register an explicit local catalog root during
 installation:

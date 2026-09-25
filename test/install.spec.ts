@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import {
+  chmod,
   lstat,
   mkdir,
   mkdtemp,
   readFile,
   realpath,
+  readlink,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -338,6 +341,26 @@ describe('lib/install', () => {
     await catalog([remote]);
     await assert.rejects(run(), /collision/);
   });
+  it('should reject physically aliased source mappings before creating either catalog entry', async () => {
+    await mkdir(path.dirname(mapping), { recursive: true });
+    await symlink(path.dirname(mapping), path.join(home, 'alias'));
+    await catalog([entry('other', './alias/sample')]);
+    const before = await readFile(catalogFile, 'utf8');
+    await assert.rejects(run(), /another plugin name/);
+    assert.equal(await readFile(catalogFile, 'utf8'), before);
+    await assert.rejects(lstat(mapping), { code: 'ENOENT' });
+    assert.deepEqual(calls, []);
+  });
+  it('should reject a mapping that would become an ancestor of selected payload', async () => {
+    await mkdir(path.join(repoRoot, 'mappings'));
+    await symlink(path.join(repoRoot, 'mappings'), path.dirname(mapping));
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      codexTools: { managedPaths: ['mappings/sample/future-resource'] },
+    });
+    await assert.rejects(run(), /source payload/);
+    assert.deepEqual(calls, []);
+    await assert.rejects(lstat(mapping), { code: 'ENOENT' });
+  });
   it('should detect a catalog source collision even when its mapping is missing', async () => {
     await catalog([entry('other', './plugins/sample')]);
     await assert.rejects(run(), /another plugin name/);
@@ -370,11 +393,297 @@ describe('lib/install', () => {
     await assert.rejects(run(), /collision/);
     assert.deepEqual(calls, []);
   });
-  it('should refuse linked catalog parents without altering their targets', async () => {
+  it('should accept linked catalog parents without replacing them', async () => {
     await symlink(root, path.join(home, '.agents'));
-    await assert.rejects(run(), /real directory/);
+    const before = await lstat(path.join(home, '.agents'));
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal((await lstat(path.join(home, '.agents'))).ino, before.ino);
+  });
+
+  const linkedLayout = async () => {
+    const tracked = path.join(root, 'tracked');
+    await mkdir(path.join(tracked, 'codex'), { recursive: true });
+    await rm(codexHome, { recursive: true });
+    await symlink(path.join(tracked, 'codex'), codexHome);
+    await mkdir(path.join(tracked, 'agents/plugins'), { recursive: true });
+    await symlink(path.join(tracked, 'agents'), path.join(home, '.agents'));
+    await mkdir(path.join(tracked, 'mappings'));
+    await symlink(path.join(tracked, 'mappings'), path.join(home, 'plugins'));
+    const target = path.join(tracked, 'catalog.json');
+    await writeJson(target, {
+      name: market,
+      plugins: [entry('other', './elsewhere')],
+      custom: true,
+    });
+    await chmod(target, 0o640);
+    await symlink(target, catalogFile);
+    return {
+      tracked,
+      target,
+      links: [codexHome, path.join(home, '.agents'), path.join(home, 'plugins'), catalogFile],
+    };
+  };
+  it('should preserve linked homes, parents, catalog mode, policy, and mappings across dry run and repeat install', async () => {
+    const { target, links } = await linkedLayout();
+    await symlink(repoRoot, mapping);
+    links.push(mapping);
+    await symlink('../missing', path.join(home, 'plugins/unrelated'));
+    links.push(path.join(home, 'plugins/unrelated'));
+    const before = await Promise.all(
+      links.map(async (file) => [await readlink(file), (await lstat(file)).ino]),
+    );
+    const bytes = await readFile(target, 'utf8');
+    const preview = await run({ dryRun: true });
+    assert.equal(preview.ok, true);
+    assert.deepEqual(calls, []);
+    assert.equal(await readFile(target, 'utf8'), bytes);
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal(result.marketplaceRoot, home);
+    assert.equal((await lstat(target)).mode & 0o777, 0o640);
+    const data = JSON.parse(await readFile(target, 'utf8'));
+    assert.deepEqual(data.plugins[0], entry('other', './elsewhere'));
+    assert.equal(data.custom, true);
+    const after = await readFile(target, 'utf8');
+    calls = [];
+    assert.equal((await run()).ok, true);
+    assert.ok(!calls.some((argv) => argv[1] === 'add' || argv[2] === 'add'));
+    assert.equal(await readFile(target, 'utf8'), after);
+    assert.deepEqual(
+      await Promise.all(links.map(async (file) => [await readlink(file), (await lstat(file)).ino])),
+      before,
+    );
+  });
+  it('should install a catalog-owning repository only with a disjoint managed payload', async () => {
+    repoRoot = path.join(root, 'self');
+    options.repoRoot = repoRoot;
+    const target = path.join(repoRoot, 'dotfiles/catalog.json');
+    await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), {
+      name: 'sample',
+      version: '1.0.0',
+      skills: './skills',
+    });
+    await mkdir(path.join(repoRoot, 'skills'));
+    await writeJson(target, { name: market, plugins: [] });
+    await mkdir(path.dirname(catalogFile), { recursive: true });
+    await symlink(target, catalogFile);
+    await mkdir(path.join(repoRoot, 'dotfiles/mappings'));
+    await symlink(path.join(repoRoot, 'dotfiles/mappings'), path.dirname(mapping));
+    await assert.rejects(run({ dryRun: true }), /overlaps/);
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      codexTools: { managedPaths: ['skills', '.codex-plugin'] },
+    });
+    assert.equal((await run({ dryRun: true })).ok, true);
+    assert.deepEqual(calls, []);
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal((await run()).ok, true);
+    assert.equal((await lstat(catalogFile)).isSymbolicLink(), true);
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      codexTools: { managedPaths: ['dotfiles'] },
+    });
+    await assert.rejects(run(), /overlaps/);
+  });
+  for (const kind of ['manifest', 'resource', 'physical-alias', 'installation-state']) {
+    it('should retain overlap protection for ' + kind + ' outside managed selection', async () => {
+      await writeJson(path.join(repoRoot, 'package.json'), {
+        codexTools: { managedPaths: ['.codex-plugin'] },
+      });
+      let target = path.join(repoRoot, '.codex-plugin/catalog.json');
+      if (kind === 'resource') {
+        target = path.join(repoRoot, 'skills/catalog.json');
+        await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), {
+          name: 'sample',
+          version: '1.0.0',
+          skills: './skills',
+        });
+      } else if (kind === 'physical-alias') {
+        target = path.join(root, 'physical/catalog.json');
+        await mkdir(path.dirname(target));
+        await symlink(path.dirname(target), path.join(repoRoot, 'payload'));
+        await writeJson(path.join(repoRoot, 'package.json'), {
+          codexTools: { managedPaths: ['payload'] },
+        });
+      } else if (kind === 'installation-state') {
+        const state = path.join(repoRoot, 'unmanaged-state');
+        await mkdir(state);
+        await rm(codexHome, { recursive: true });
+        await symlink(state, codexHome);
+        target = path.join(root, 'catalog.json');
+      }
+      await writeJson(target, { name: market, plugins: [] });
+      await mkdir(path.dirname(catalogFile), { recursive: true });
+      await symlink(target, catalogFile);
+      const before = await readFile(target, 'utf8');
+      await assert.rejects(run(), /overlaps/);
+      assert.deepEqual(calls, []);
+      assert.equal(await readFile(target, 'utf8'), before);
+    });
+  }
+  it('should resolve parent traversal after intermediate symlinks in a catalog link', async () => {
+    const { tracked, target } = await linkedLayout();
+    await mkdir(path.join(tracked, 'nested'));
+    await symlink(path.join(tracked, 'nested'), path.join(root, 'alias'));
+    await rm(catalogFile);
+    await symlink(path.join(root, 'alias') + '/../catalog.json', catalogFile);
+    assert.equal(await realpath(catalogFile), target);
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal(JSON.parse(await readFile(target, 'utf8')).plugins.length, 2);
+  });
+  it('should retain a configured logical marketplace alias and reject other-name aliases', async () => {
+    await catalog();
+    const alias = path.join(root, 'market-alias');
+    await symlink(home, alias);
+    const config = path.join(codexHome, 'config.toml');
+    await writeFile(
+      config,
+      '[marketplaces.personal]\nsource_type = "local"\nsource = ' + JSON.stringify(alias) + '\n',
+    );
+    const result = await run({ marketplace: 'personal' });
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal(result.marketplaceRoot, alias);
+    assert.ok(!result.plan.some((step) => step.operation === 'register-marketplace'));
+    await writeFile(
+      config,
+      '[marketplaces.other]\nsource_type = "local"\nsource = ' + JSON.stringify(alias) + '\n',
+    );
+    calls = [];
+    await assert.rejects(run(), /another name/);
     assert.deepEqual(calls, []);
   });
+  for (const kind of ['duplicate-name', 'duplicate-root', 'wrong-root']) {
+    it('should reject native ' + kind + ' identities before setup', async () => {
+      await catalog();
+      const bytes = await readFile(catalogFile, 'utf8');
+      const result = await installPlugin(options, {
+        env,
+        native: async (argv, nativeOptions) => {
+          if (argv[1] !== 'marketplace') return native(argv, nativeOptions);
+          const row = { name: market, root: home };
+          const rows =
+            kind === 'duplicate-name'
+              ? [row, row]
+              : kind === 'duplicate-root'
+                ? [row, { name: 'other', root: home }]
+                : [{ name: market, root }];
+          return { argv, exitCode: 0, stdout: JSON.stringify({ marketplaces: rows }), stderr: '' };
+        },
+      });
+      assert.equal(result.ok, false);
+      assert.match(result.issue ?? '', /ambiguous|another name|collision/);
+      assert.equal(await readFile(catalogFile, 'utf8'), bytes);
+      await assert.rejects(lstat(mapping), { code: 'ENOENT' });
+    });
+  }
+  it('should detect retargeting after setup before native installation', async () => {
+    const { target } = await linkedLayout();
+    let discoveries = 0;
+    hook = async (argv) => {
+      if (argv[1] === 'marketplace' && ++discoveries === 2) {
+        await rename(catalogFile, catalogFile + '.old');
+        await symlink(target, catalogFile);
+      }
+    };
+    const result = await run();
+    assert.equal(result.ok, false);
+    assert.match(result.issue ?? '', /changed/);
+    assert.ok(result.completed.some((step) => step.operation === 'write-catalog'));
+    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+  });
+  it('should reject changed payload selection before setup', async () => {
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      codexTools: { managedPaths: ['.codex-plugin'] },
+    });
+    hook = async (argv) => {
+      if (argv[0] === '--version') await writeJson(path.join(repoRoot, 'package.json'), {});
+    };
+    const result = await run();
+    assert.equal(result.ok, false);
+    assert.match(result.issue ?? '', /File changed/);
+    assert.equal(calls.length, 1);
+    await assert.rejects(lstat(mapping), { code: 'ENOENT' });
+  });
+  for (const changed of [
+    'home',
+    'parent',
+    'catalog',
+    'mapping',
+    'target-directory',
+    'target-file',
+    'chain',
+    'retarget',
+  ]) {
+    it('should detect changed ' + changed + ' before dependent effects', async () => {
+      const { tracked, target } = await linkedLayout();
+      await symlink(repoRoot, mapping);
+      const chain = path.join(tracked, 'chain');
+      if (changed === 'chain') {
+        await symlink(target, chain);
+        await rm(catalogFile);
+        await symlink(chain, catalogFile);
+      }
+      const bytes = await readFile(target, 'utf8');
+      hook = async (argv) => {
+        if (argv[0] !== '--version') return;
+        if (changed === 'target-file') {
+          await rename(target, target + '.old');
+          await writeFile(target, bytes);
+        } else if (changed === 'target-directory') {
+          await rename(path.join(tracked, 'codex'), path.join(tracked, 'old-codex'));
+          await mkdir(path.join(tracked, 'codex'));
+        } else {
+          const file =
+            changed === 'home'
+              ? codexHome
+              : changed === 'parent'
+                ? path.join(home, '.agents')
+                : changed === 'mapping'
+                  ? mapping
+                  : changed === 'chain'
+                    ? chain
+                    : catalogFile;
+          const oldTarget = await readlink(file);
+          await rename(file, file + '.old');
+          if (changed === 'retarget') await writeFile(target + '.other', bytes);
+          await symlink(changed === 'retarget' ? target + '.other' : oldTarget, file);
+        }
+      };
+      const result = await run();
+      assert.equal(result.ok, false);
+      assert.match(result.issue ?? '', /changed/);
+      assert.equal(calls.length, 1);
+      assert.equal(await readFile(target, 'utf8'), bytes);
+      assert.ok(
+        !result.completed.some((step) => ['write-catalog', 'install'].includes(step.operation)),
+      );
+    });
+  }
+  for (const location of ['home', 'parent', 'catalog']) {
+    for (const kind of ['dangling', 'loop', 'wrong-type']) {
+      it('should reject ' + kind + ' ' + location + ' links without effects', async () => {
+        const file =
+          location === 'home'
+            ? codexHome
+            : location === 'parent'
+              ? path.join(home, '.agents')
+              : catalogFile;
+        await rm(file, { recursive: true, force: true });
+        await mkdir(path.dirname(file), { recursive: true });
+        const target = path.join(root, 'bad-target');
+        if (kind === 'wrong-type') {
+          if (location === 'catalog') await mkdir(target);
+          else await writeFile(target, 'not a directory');
+        }
+        await symlink(kind === 'loop' ? file : target, file);
+        await assert.rejects(run());
+        assert.deepEqual(calls, []);
+        assert.equal((await lstat(file)).isSymbolicLink(), true);
+      });
+    }
+  }
+
   for (const phase of ['preflight', 'register', 'install', 'readback']) {
     it(
       'should report completed work, remaining operations, and child errors after ' +

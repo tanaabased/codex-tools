@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
-import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -220,6 +230,27 @@ describe('lib/npm-install', () => {
     assert.equal(result.source.name, null);
     assert.deepEqual(calls, []);
     await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
+  });
+  it('should retain a linked catalog across npm install and refresh', async () => {
+    await json(catalogFile, { name: 'personal', plugins: [] });
+    const target = path.join(root, 'linked-catalog.json');
+    await rename(catalogFile, target);
+    await symlink(target, catalogFile);
+    const before = await lstat(catalogFile);
+    const physicalHome = path.join(root, 'codex-target');
+    await rename(codexHome, physicalHome);
+    await symlink(physicalHome, codexHome);
+    const homeBefore = await lstat(codexHome);
+    const first = await installPlugin({ npmSelector: 'npm:' + packageName }, { env, native, npm });
+    assert.equal(first.ok, true, first.issue ?? undefined);
+    const refreshed = await refreshPlugin(
+      { npmSelector: 'npm:' + packageName },
+      { env, native, npm },
+    );
+    assert.equal(refreshed.ok, true, refreshed.issue ?? undefined);
+    assert.equal((await lstat(catalogFile)).ino, before.ino);
+    assert.equal((await lstat(codexHome)).ino, homeBefore.ino);
+    assert.equal((await lstat(catalogFile)).isSymbolicLink(), true);
   });
   it('should read identity from the acquired manifest and persist an exact native npm entry', async () => {
     const result = await run();
