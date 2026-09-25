@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   realpath,
+  readlink,
   rm,
   symlink,
   writeFile,
@@ -177,6 +178,125 @@ try {
     await chmod(cacheRoot, 0o755);
   }
   assert.equal(invokeCommand('refresh').ok, true);
+
+  // post-bootstrap links deliberately carry no stow-specific ownership assumptions.
+  const linkedHome = path.join(root, 'linked-home');
+  const selfSource = path.join(root, 'dotfiles-repository');
+  const linkedState = path.join(root, 'linked-state');
+  const trackedAgents = path.join(selfSource, 'dotfiles/.agents');
+  const trackedMappings = path.join(selfSource, 'dotfiles/plugins');
+  await mkdir(linkedHome);
+  await mkdir(path.join(linkedState, 'plugins'), { recursive: true });
+  await mkdir(path.join(trackedAgents, 'plugins'), { recursive: true });
+  await mkdir(trackedMappings);
+  await mkdir(path.join(selfSource, '.codex-plugin'));
+  await mkdir(path.join(selfSource, 'skills/self'), { recursive: true });
+  await writeFile(
+    path.join(selfSource, '.codex-plugin/plugin.json'),
+    JSON.stringify({ name: 'self-probe', version: '1.0.0', skills: './skills' }),
+  );
+  await writeFile(
+    path.join(selfSource, 'package.json'),
+    JSON.stringify({ codexTools: { managedPaths: ['.codex-plugin', 'skills'] } }),
+  );
+  await writeFile(
+    path.join(selfSource, 'skills/self/SKILL.md'),
+    '---\nname: self\ndescription: Self-install probe.\n---\n\nReturn self.\n',
+  );
+  const linkedCatalog = path.join(linkedHome, '.agents/plugins/marketplace.json');
+  const catalogTarget = path.join(selfSource, 'dotfiles/catalog.json');
+  const selfEntry = {
+    name: 'self-probe',
+    source: { source: 'local', path: './.codex/plugins/self-probe' },
+    policy: { installation: 'AVAILABLE', authentication: 'ON_USE' },
+  };
+  await writeFile(
+    catalogTarget,
+    JSON.stringify({
+      name: 'linked-market',
+      plugins: [selfEntry],
+      interface: { displayName: 'Keep this identity' },
+    }),
+  );
+  await chmod(catalogTarget, 0o640);
+  const bootstrapLinks: Array<[string, string]> = [
+    [path.join(linkedHome, '.codex'), linkedState],
+    [path.join(linkedHome, '.agents'), trackedAgents],
+    [path.join(linkedHome, 'plugins'), trackedMappings],
+    [linkedCatalog, catalogTarget],
+    [path.join(linkedHome, '.codex/plugins/self-probe'), selfSource],
+    [path.join(linkedHome, 'plugins/unrelated'), source],
+  ];
+  for (const [file, target] of bootstrapLinks) await symlink(target, file);
+  const linkIdentities = await Promise.all(
+    bootstrapLinks.map(async ([file]) => [(await lstat(file)).ino, await readlink(file)]),
+  );
+  const linkedEnv = { ...env, HOME: linkedHome, CODEX_HOME: path.join(linkedHome, '.codex') };
+  const linkedInvoke = (plugin: string, dryRun = false): SmokeResult => {
+    const child = spawnSync(cli, ['install', plugin, '--json', ...(dryRun ? ['--dry-run'] : [])], {
+      cwd: linkedHome,
+      env: linkedEnv,
+      encoding: 'utf8',
+      timeout: 45000,
+    });
+    assert.equal(child.status, 0, child.stderr || child.stdout || child.error?.message);
+    return JSON.parse(child.stdout) as SmokeResult;
+  };
+  const linkedBefore = await readFile(catalogTarget, 'utf8');
+  for (const plugin of [source, selfSource]) {
+    const preview = linkedInvoke(plugin, true);
+    assert.equal(preview.ok, true);
+    assert.equal(preview.native.length, 0);
+  }
+  assert.equal(await readFile(catalogTarget, 'utf8'), linkedBefore);
+  for (const plugin of [source, selfSource]) {
+    const result = linkedInvoke(plugin);
+    assert.equal(result.inspection.installed, true);
+    assert.equal(
+      result.completed.some((step) => step.operation === 'register-marketplace'),
+      false,
+    );
+    process.stdout.write(
+      'Linked post-bootstrap setup (' +
+        path.basename(plugin) +
+        '): ' +
+        result.completed.map((step) => step.operation).join(', ') +
+        '\n',
+    );
+    const repeated = linkedInvoke(plugin);
+    assert.equal(repeated.completed.find((step) => step.operation === 'install')?.skipped, true);
+  }
+  const listed = spawnSync('codex', ['plugin', 'marketplace', 'list', '--json'], {
+    cwd: linkedHome,
+    env: linkedEnv,
+    encoding: 'utf8',
+    timeout: 45000,
+  });
+  assert.equal(listed.status, 0, listed.stderr);
+  const listedMarkets = JSON.parse(listed.stdout).marketplaces as Array<{
+    name: string;
+    root: string;
+  }>;
+  assert.equal(listedMarkets.length, 1);
+  assert.equal(listedMarkets[0]?.name, 'linked-market');
+  assert.equal(await realpath(listedMarkets[0]!.root), linkedHome);
+  assert.deepEqual(
+    await Promise.all(
+      bootstrapLinks.map(async ([file]) => [(await lstat(file)).ino, await readlink(file)]),
+    ),
+    linkIdentities,
+  );
+  const linkedCatalogAfter = JSON.parse(await readFile(catalogTarget, 'utf8'));
+  assert.deepEqual(linkedCatalogAfter.plugins[0], selfEntry);
+  assert.deepEqual(linkedCatalogAfter.interface, { displayName: 'Keep this identity' });
+  assert.equal((await lstat(catalogTarget)).mode & 0o777, 0o640);
+  assert.equal(
+    await readFile(
+      path.join(linkedState, 'plugins/cache/linked-market/self-probe/1.0.0/skills/self/SKILL.md'),
+      'utf8',
+    ),
+    await readFile(path.join(selfSource, 'skills/self/SKILL.md'), 'utf8'),
+  );
 
   const packageTarball = process.env.CODEX_TOOLS_PACKAGE;
   if (packageTarball) {

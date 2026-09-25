@@ -7,6 +7,7 @@ import {
   mkdtemp,
   readFile,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -83,7 +84,11 @@ describe('lib/refresh', () => {
     else if (argv[1] === 'list') data = { installed, available: [] };
     else if (argv[1] === 'add') {
       const manifest = await readManifest();
-      const installedPath = path.join(codexHome, 'plugins/cache/personal/sample', manifest.version);
+      const installedPath = path.join(
+        await realpath(codexHome),
+        'plugins/cache/personal/sample',
+        manifest.version,
+      );
       await cp(repoRoot, installedPath, { recursive: true });
       installed[0] = { ...installed[0]!, version: manifest.version };
       data = {
@@ -162,6 +167,22 @@ describe('lib/refresh', () => {
     await rm(root, { recursive: true, force: true });
   });
 
+  it('should refresh through linked home and catalog while preserving both links', async () => {
+    const catalogTarget = path.join(root, 'catalog-target.json');
+    const homeTarget = path.join(root, 'codex-target');
+    await rename(catalogFile, catalogTarget);
+    await symlink(catalogTarget, catalogFile);
+    await rename(codexHome, homeTarget);
+    await symlink(homeTarget, codexHome);
+    const catalogBefore = await lstat(catalogFile);
+    const homeBefore = await lstat(codexHome);
+    const bytes = await readFile(catalogTarget, 'utf8');
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal((await lstat(catalogFile)).ino, catalogBefore.ino);
+    assert.equal((await lstat(codexHome)).ino, homeBefore.ino);
+    assert.equal(await readFile(catalogTarget, 'utf8'), bytes);
+  });
   it('should reinstall stale and successive payloads without release bumps or same-second cache reuse', async () => {
     const catalogBefore = await readFile(catalogFile, 'utf8');
     const configBefore = await readFile(configFile, 'utf8');

@@ -1,5 +1,15 @@
 import { isDeepStrictEqual } from 'node:util';
-import { link, lstat, mkdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  link,
+  lstat,
+  mkdir,
+  realpath,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -114,10 +124,14 @@ export async function performInstall(
     if (!mapping) throw new Error('Installation plan is missing a source mapping.');
     step('map-source', {
       path: mapping,
-      target: path.relative(path.dirname(mapping), source.root),
+      target: path.relative(
+        await context.paths.resolve(path.dirname(mapping), 'directory'),
+        source.root,
+      ),
     });
   }
-  if (context.editCatalog) step('write-catalog', { path: catalogFile, catalog });
+  if (context.editCatalog)
+    step('write-catalog', { path: catalogFile, target: context.catalogTarget, catalog });
   if (context.register)
     step('register-marketplace', { argv: ['plugin', 'marketplace', 'add', root, '--json'] });
   step('verify-marketplace', { argv: ['plugin', 'marketplace', 'list', '--json'] });
@@ -144,25 +158,18 @@ export async function performInstall(
   async function unchanged(): Promise<void> {
     const observedFiles: Array<[string, FileSnapshot | null]> = [
       [source.file, source.original],
-      [catalogFile, expectedCatalog],
+      [path.join(source.root, 'package.json'), context.packageSnapshot],
+      [context.catalogTarget, expectedCatalog],
       [context.configFile, expectedConfig],
     ];
     for (const [file, expected] of observedFiles) {
       if (JSON.stringify(await snapshot(file)) !== JSON.stringify(expected))
         throw new Error('File changed during installation; rerun to replan: ' + file);
     }
-    if ((await realpath(root)) !== root || (await realpath(source.root)) !== source.root)
-      throw new Error('Source or marketplace root changed during installation.');
-    for (const target of [...(mapping ? [path.dirname(mapping)] : []), path.dirname(catalogFile)]) {
-      let current = root;
-      for (const part of path.relative(root, target).split(path.sep).filter(Boolean)) {
-        current = path.join(current, part);
-        const stats = await optional(() => lstat(current));
-        if (stats && !stats.isDirectory())
-          throw new Error('Marketplace parent changed: ' + current);
-      }
+    if (!mapping) {
+      await context.paths.unchanged();
+      return;
     }
-    if (!mapping) return;
     const stats = await optional(() => lstat(mapping));
     if (
       expectedMapping
@@ -173,6 +180,7 @@ export async function performInstall(
         : stats
     )
       throw new Error('Source mapping changed during installation.');
+    await context.paths.unchanged();
   }
   async function child(argv: readonly string[]): Promise<NativeResult> {
     const child = await native(argv, nativeOptions);
@@ -192,12 +200,23 @@ export async function performInstall(
   async function markets(argv: readonly string[], required: boolean): Promise<void> {
     const rows = readNativeRows(await call(argv), 'marketplaces');
     const matches = rows.filter((market) => market.name === catalog.name);
+    for (const market of rows) {
+      if (
+        market.name !== catalog.name &&
+        typeof market.root === 'string' &&
+        ((await optional(() => realpath(market.root as string))) === context.physicalRoot ||
+          (await optional(() =>
+            realpath(path.join(market.root as string, '.agents/plugins/marketplace.json')),
+          )) === context.catalogTarget)
+      )
+        throw new Error('Native marketplace source is registered under another name.');
+    }
     if (matches.length > 1 || (required && matches.length !== 1))
       throw new Error('Selected marketplace is missing or ambiguous in Codex.');
     if (
       matches.length &&
       (typeof matches[0]!.root !== 'string' ||
-        (await realpath(matches[0]!.root)) !== root ||
+        (await realpath(matches[0]!.root)) !== context.physicalRoot ||
         (object(matches[0]!.marketplaceSource) &&
           matches[0]!.marketplaceSource.sourceType !== 'local'))
     )
@@ -205,43 +224,41 @@ export async function performInstall(
   }
   async function recordNativeConfig(registering = false): Promise<void> {
     const updated = await snapshot(context.configFile);
-    if (source.npm) {
-      const beforeValue = parseToml(expectedConfig?.text ?? '');
-      const afterValue = parseToml(updated?.text ?? '');
-      if (!object(beforeValue) || !object(afterValue)) {
-        throw new Error('Unsupported Codex configuration.');
-      }
-      const before = beforeValue;
-      const after = afterValue;
-      for (const config of [before, after]) {
-        const plugins = object(config.plugins) ? config.plugins : undefined;
-        const plugin = plugins && object(plugins[pluginId]) ? plugins[pluginId] : undefined;
-        if (!registering && plugins && plugin) {
-          delete plugin.enabled;
-          if (!Object.keys(plugin).length) delete plugins[pluginId];
-          if (!Object.keys(plugins).length) delete config.plugins;
-        }
-        const marketplaces = object(config.marketplaces) ? config.marketplaces : undefined;
-        if (registering && marketplaces) {
-          delete marketplaces[catalog.name];
-          if (!Object.keys(marketplaces).length) delete config.marketplaces;
-        }
-      }
-      if (!isDeepStrictEqual(before, after))
-        throw new Error('Unrelated Codex configuration changed during npm installation.');
+    const beforeValue = parseToml(expectedConfig?.text ?? '');
+    const afterValue = parseToml(updated?.text ?? '');
+    if (!object(beforeValue) || !object(afterValue)) {
+      throw new Error('Unsupported Codex configuration.');
     }
+    const before = beforeValue;
+    const after = afterValue;
+    for (const config of [before, after]) {
+      const plugins = object(config.plugins) ? config.plugins : undefined;
+      const plugin = plugins && object(plugins[pluginId]) ? plugins[pluginId] : undefined;
+      if (!registering && plugins && plugin) {
+        delete plugin.enabled;
+        if (!Object.keys(plugin).length) delete plugins[pluginId];
+        if (!Object.keys(plugins).length) delete config.plugins;
+      }
+      const marketplaces = object(config.marketplaces) ? config.marketplaces : undefined;
+      if (registering && marketplaces) {
+        delete marketplaces[catalog.name];
+        if (!Object.keys(marketplaces).length) delete config.marketplaces;
+      }
+    }
+    if (!isDeepStrictEqual(before, after))
+      throw new Error('Unrelated Codex configuration changed during installation.');
     expectedConfig = updated;
   }
   async function npmPayloadMatches(): Promise<boolean> {
     if (!source.nativeVersion) throw new Error('Installed npm payload version is unavailable.');
     const cachePath = path.join(
-      codexHome,
+      context.physicalCodexHome,
       'plugins/cache',
       catalog.name,
       source.manifest.name,
       source.nativeVersion,
     );
-    if (!inside(codexHome, cachePath))
+    if (!inside(context.physicalCodexHome, cachePath))
       throw new Error('Installed npm payload has an unexpected cache path.');
     if (!(await optional(() => lstat(cachePath)))) return false;
     if ((await realpath(cachePath)) !== cachePath)
@@ -326,6 +343,7 @@ export async function performInstall(
         }
         case 'create-codex-home':
           await mkdir(codexHome, { recursive: true });
+          await context.paths.createdDirectory(context.physicalCodexHome);
           break;
         case 'inspect-marketplaces':
           await markets(operationArgv(operation), false);
@@ -333,9 +351,12 @@ export async function performInstall(
         case 'inspect-installation':
           installed = await readback(operationArgv(operation));
           break;
-        case 'mkdir':
-          await mkdir(operationPath(operation));
+        case 'mkdir': {
+          const physical = await context.paths.resolve(operationPath(operation), 'directory');
+          await mkdir(physical);
+          await context.paths.createdDirectory(physical);
           break;
+        }
         case 'map-source': {
           if (!mapping) throw new Error('Installation plan is missing a source mapping.');
           await symlink(operationTarget(operation), mapping, 'dir');
@@ -344,20 +365,28 @@ export async function performInstall(
           break;
         }
         case 'write-catalog': {
-          const temporary = catalogFile + '.' + randomUUID() + '.tmp';
+          const temporary = context.catalogTarget + '.' + randomUUID() + '.tmp';
+          const text = JSON.stringify(catalog, null, 2) + '\n';
           try {
-            await writeFile(temporary, JSON.stringify(catalog, null, 2) + '\n', {
+            await writeFile(temporary, text, {
               flag: 'wx',
               mode: expectedCatalog?.mode ?? 0o644,
             });
+            await chmod(temporary, (expectedCatalog?.mode ?? 0o644) & 0o777);
             await unchanged();
-            if (expectedCatalog) await rename(temporary, catalogFile);
+            if (expectedCatalog) await rename(temporary, context.catalogTarget);
             else {
               // exclusive creation keeps an intervening catalog from being replaced.
-              await link(temporary, catalogFile);
+              await link(temporary, context.catalogTarget);
               await rm(temporary);
             }
-            expectedCatalog = await snapshot(catalogFile);
+            const written = await snapshot(context.catalogTarget);
+            if (
+              written?.text !== text ||
+              (written.mode & 0o777) !== ((expectedCatalog?.mode ?? 0o644) & 0o777)
+            )
+              throw new Error('Written catalog changed during installation.');
+            expectedCatalog = written;
           } finally {
             await rm(temporary, { force: true });
           }
@@ -398,13 +427,16 @@ export async function performInstall(
           if (!source.nativeVersion)
             throw new Error('Installed npm payload version is unavailable.');
           const cachePath = path.join(
-            codexHome,
+            context.physicalCodexHome,
             'plugins/cache',
             catalog.name,
             source.manifest.name,
             source.nativeVersion,
           );
-          if (!inside(codexHome, cachePath) || (await realpath(cachePath)) !== cachePath)
+          if (
+            !inside(context.physicalCodexHome, cachePath) ||
+            (await realpath(cachePath)) !== cachePath
+          )
             throw new Error('Installed npm payload has an unexpected cache path.');
           const actual = await validateSource(cachePath, { portable: true });
           if (
@@ -430,6 +462,7 @@ export async function performInstall(
           break;
         }
       }
+      await unchanged();
       result.completed.push(operation);
       result.remaining = result.plan.slice(result.completed.length);
     }

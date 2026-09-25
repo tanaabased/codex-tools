@@ -224,6 +224,7 @@ export async function refreshPlugin(
     return readNativeResult(await child(argv), { json: false });
   }
   async function unchanged(): Promise<void> {
+    await context.paths.unchanged();
     await checkCacheParents();
     const current = await resolveInstall(options, env);
     if (
@@ -302,7 +303,7 @@ export async function refreshPlugin(
             matches.length !== 1 ||
             !match ||
             typeof match.root !== 'string' ||
-            (await realpath(match.root)) !== root ||
+            (await realpath(match.root)) !== context.physicalRoot ||
             (object(match.marketplaceSource) && match.marketplaceSource.sourceType !== 'local')
           )
             throw new Error(

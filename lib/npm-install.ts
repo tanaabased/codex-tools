@@ -371,8 +371,9 @@ export async function installNpmPlugin(
     result.completed = result.plan.slice(0, 4);
     result.remaining = result.plan.slice(4);
     // acquisition must not overwrite a marketplace changed while npm was running.
+    await context.paths.unchanged();
     if (
-      !isDeepStrictEqual(await snapshot(context.catalogFile), context.catalogSnapshot) ||
+      !isDeepStrictEqual(await snapshot(context.catalogTarget), context.catalogSnapshot) ||
       !isDeepStrictEqual(await snapshot(context.configFile), context.configSnapshot)
     )
       throw new Error(

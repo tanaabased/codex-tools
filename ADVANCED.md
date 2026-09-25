@@ -7,7 +7,15 @@ Start with the [README](./README.md); use the [CLI reference](./CLI.md) for flag
 
 The default personal marketplace is `~/.agents/plugins/marketplace.json`. Existing marketplace
 metadata, policies, entry order, unrelated entries, and matching source links are preserved.
-Conflicting files, dangling links, names, sources, or policies are rejected rather than replaced.
+Valid symlinks for Codex home, marketplace parents, catalogs, and source mappings are preserved;
+catalog edits replace the verified target, not its link. Relative entries remain based on the
+selected marketplace root. Conflicting, dangling, or changed paths are rejected before dependent
+changes. These checks detect intervening changes, not arbitrary concurrent filesystem attacks.
+
+A repository may own its catalog and mappings outside its declared `codexTools.managedPaths`,
+manifest, and declared resources. Without that selection, overlap checks cover the whole source.
+Codex installation state must remain outside the source; `managedPaths` does not limit what native
+Codex copies.
 
 Use an existing local marketplace by name, or register an explicit local catalog root during
 installation:
