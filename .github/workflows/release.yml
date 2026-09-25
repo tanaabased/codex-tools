@@ -63,6 +63,7 @@ jobs:
           fetch-depth: 0
       - uses: tanaabased/actions/setup-bun@v1
       - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run format:check
       - name: Publish repo
         uses: tanaabased/actions/publish-repo@v1
         with:
@@ -71,4 +72,3 @@ jobs:
             bun --bun prettier .codex-plugin/plugin.json --write
           sync-branch: main
           sync-token: ${{ secrets.TANAAB_COAXIUM_INJECTOR }}
-      - run: bun run format:check

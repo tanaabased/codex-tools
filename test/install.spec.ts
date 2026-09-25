@@ -24,6 +24,7 @@ import type {
   MarketplaceSource,
 } from '../lib/install-context.ts';
 import type { NativeRunner } from '../lib/codex-native.ts';
+import { performInstall } from '../lib/native-install.ts';
 import { parseArgs } from '../utils/parse-args.ts';
 import { supportedCodexVersion } from '../lib/codex-native.ts';
 
@@ -215,7 +216,7 @@ describe('lib/install', () => {
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
   it('should report managed Codex provisioning failure before setup', async () => {
-    const result = await installPlugin(options, {
+    const result = await performInstall(options, {
       env,
       provision: async () => {
         throw new Error('Managed Codex CLI asset is unavailable.');
@@ -237,7 +238,7 @@ describe('lib/install', () => {
   });
   it('should make dry run entirely read-only, including no native process', async () => {
     let provisions = 0;
-    const result = await installPlugin(
+    const result = await performInstall(
       { ...options, dryRun: true },
       {
         env,
@@ -259,7 +260,7 @@ describe('lib/install', () => {
   });
   it('should provision one managed runner without consulting the host PATH', async () => {
     let provisions = 0;
-    const result = await installPlugin(options, {
+    const result = await performInstall(options, {
       env: { ...env, PATH: path.join(root, 'host-codex-999') },
       provision: async () => {
         provisions += 1;

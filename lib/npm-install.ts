@@ -21,7 +21,7 @@ import {
 import { inside, object, resolveMarketplace, snapshot, validateSource } from './install-context.ts';
 import type {
   InstallationResult,
-  InstallDependencies,
+  InternalInstallDependencies,
   InstallOptions,
   NpmPinnedEntry,
   NpmRunner,
@@ -199,7 +199,7 @@ export async function installNpmPlugin(
     native,
     provision = provisionNativeRunner,
     npm = runNpm,
-  }: InstallDependencies = {},
+  }: InternalInstallDependencies = {},
 ): Promise<InstallationResult> {
   const selection = parseNpmSelector(options.npmSelector);
   if (options.repoRoot !== undefined)

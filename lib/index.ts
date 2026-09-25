@@ -26,7 +26,6 @@ export type {
   InstallDependencies,
   InstallationResult,
   InstallOptions,
-  NativeProvisioner,
   OperationStep,
 } from './install-types.ts';
 export type { EntryMap, TreeDiff, TreeEntry } from '../utils/diff-entries.ts';

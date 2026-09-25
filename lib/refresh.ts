@@ -76,18 +76,12 @@ export async function planCachebuster(
  */
 export async function refreshPlugin(
   options: InstallOptions = {},
-  {
-    env = process.env,
-    native,
-    provision = provisionNativeRunner,
-    now = new Date(),
-    npm,
-  }: InstallDependencies = {},
+  { env = process.env, native, now = new Date(), npm }: InstallDependencies = {},
 ): Promise<InstallationResult> {
   if (options.npmSelector)
     return installNpmPlugin(
       { ...options, command: 'refresh' },
-      { env, ...(native ? { native } : {}), provision, ...(npm ? { npm } : {}) },
+      { env, ...(native ? { native } : {}), ...(npm ? { npm } : {}) },
     );
   const context = await resolveInstall(options, env);
   const { source, root, home, catalog, catalogFile, mapping } = context;
@@ -291,7 +285,7 @@ export async function refreshPlugin(
     } else beforeInstalled = installedRows;
   }
   try {
-    runCodex = native ?? (await provision(env));
+    runCodex = native ?? (await provisionNativeRunner(env));
     for (const operation of result.plan) {
       await unchanged();
       switch (operation.operation) {

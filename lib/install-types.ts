@@ -95,18 +95,22 @@ export interface InstallationResult extends Record<string, unknown> {
 }
 
 export type NpmRunner = NativeRunner;
-/** resolves the native runner used by one install or refresh operation. */
-export type NativeProvisioner = (env: NodeJS.ProcessEnv) => Promise<NativeRunner>;
 
-/** injectable environment, provisioning, process, source, and clock boundaries for installation. */
+/** injectable environment, process, source, and clock boundaries for installation. */
 export interface InstallDependencies {
   env?: NodeJS.ProcessEnv;
   native?: NativeRunner;
-  provision?: NativeProvisioner;
   npm?: NpmRunner;
   source?: ValidatedSource;
   refreshing?: boolean;
   now?: Date;
+}
+
+type NativeProvisioner = (env: NodeJS.ProcessEnv) => Promise<NativeRunner>;
+
+/** package-internal installation boundaries used to test managed Codex acquisition. */
+export interface InternalInstallDependencies extends InstallDependencies {
+  provision?: NativeProvisioner;
 }
 
 /** public operation options with an optional explicit install or refresh command marker. */

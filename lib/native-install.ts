@@ -28,7 +28,7 @@ import {
 } from './install-context.ts';
 import type {
   InstallationResult,
-  InstallDependencies,
+  InternalInstallDependencies,
   InstallOptions,
   OperationStep,
 } from './install-types.ts';
@@ -71,7 +71,7 @@ export async function performInstall(
     provision = provisionNativeRunner,
     source: preparedSource,
     refreshing = false,
-  }: InstallDependencies = {},
+  }: InternalInstallDependencies = {},
 ): Promise<InstallationResult> {
   const context = await resolveInstall(options, env, preparedSource);
   const { source, root, home, codexHome, catalog, catalogFile, mapping } = context;

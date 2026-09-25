@@ -51,18 +51,18 @@ describe('lib/operations', () => {
   });
 
   it('should keep read-only commands independent of managed Codex provisioning', async () => {
-    let provisions = 0;
+    let nativeCalls = 0;
     const runtime = {
-      provision: async () => {
-        provisions += 1;
-        throw new Error('read-only commands must not provision Codex');
+      native: async () => {
+        nativeCalls += 1;
+        throw new Error('read-only commands must not invoke Codex');
       },
     };
     for (const command of ['status', 'doctor', 'check'] as const) {
       const result = await runOperation(command, options, runtime);
       assert.equal(result.command, command);
     }
-    assert.equal(provisions, 0);
+    assert.equal(nativeCalls, 0);
   });
 
   for (const [label, override, expected] of [
