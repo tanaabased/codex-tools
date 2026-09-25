@@ -81,6 +81,12 @@ export default defineConfig([
     },
   },
   {
+    files: ['examples/package/consumer/*.{cjs,cts}'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     files: ['test/**/*.{js,mjs,cjs,ts}', '**/*.{spec,test}.{js,mjs,cjs,ts}'],
     languageOptions: {
       globals: globals.mocha,

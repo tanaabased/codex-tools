@@ -25,11 +25,20 @@ jobs:
       - run: bun run format:check && bun run build
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
-      - name: Verify package and stage plugin
+      - name: Verify packed consumers
+        uses: tanaabased/actions/run-leia@v1
+        env:
+          CODEX_TOOLS_PACKAGE: ${{ steps.pack.outputs.tarball-path }}
+          LEIA_TIMEOUT: '120'
+        with:
+          scenarios: examples/package/README.md
+          shell: bash
+          retry: 0
+          stdin: false
+      - name: Stage plugin
         env:
           TARBALL: ${{ steps.pack.outputs.tarball-path }}
         run: |
-          bun run check:package "--tarball=$TARBALL"
           mkdir -p .temp/plugin
           tar -xzf "$TARBALL" -C .temp/plugin --strip-components=1
       - uses: tanaabased/actions/validate-codex-plugin@v1

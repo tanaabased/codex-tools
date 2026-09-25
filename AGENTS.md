@@ -30,12 +30,12 @@
 ## Test ownership and validation
 
 - Unit tests own parsing, operation policy, and safety decisions. Leia owns built CLI journeys;
-  package checks own the packed payload, Node entrypoints, and ESM/CommonJS runtime and type exports.
+  `examples/package` owns the packed payload, Node entrypoints, and ESM/CommonJS runtime and type exports.
 - Native Leia scenarios own real Codex acquisition and fresh-session discovery. Fakes cannot prove these.
 - Keep ESLint and standalone Prettier separate; keep type-checking separate from lint.
 - Run `bun run check:toolchain`, `bun run docs:check`, `bun run lint`, `bun run typecheck`, and `bun run test` for source changes; add
   `bun run build && bun run check:package` for build, packaging, shipped documentation, or artifact-contract changes.
-- Leia scenarios, including native compatibility, stay in PR CI unless explicitly requested locally.
+- Leia scenarios, including `check:package` and native compatibility, stay in PR CI unless explicitly requested locally.
   See CONTRIBUTING for commands.
 
 ## Documentation and skills

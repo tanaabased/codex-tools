@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 
-import { freshSkills } from '../lib/fresh-skills.ts';
+import { freshSkills } from '../fresh-skills.ts';
 
 const cwd = '/disposable/plugin-consumer';
 const expected = [
@@ -40,7 +40,7 @@ function server(reply: unknown, initialize: unknown = { id: 1, result: {} }) {
   return { child, requests, stopped: () => stopped };
 }
 
-describe('dev/lib/fresh-skills', () => {
+describe('examples/.fixtures/fresh-skills', () => {
   it('should verify exact enabled skills in the requested directory', async () => {
     const fake = server({ id: 2, result: result() });
     await freshSkills({}, cwd, expected, () => fake.child);

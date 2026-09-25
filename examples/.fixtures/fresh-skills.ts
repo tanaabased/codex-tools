@@ -100,3 +100,10 @@ export async function freshSkills(
     });
   });
 }
+
+if (import.meta.main) {
+  const [cwd, ...expected] = process.argv.slice(2);
+  if (!cwd || !expected.length) throw new Error('expected a directory and exact skill names');
+  await freshSkills(process.env, cwd, expected);
+  process.stdout.write('Discovered enabled skills: ' + expected.join(', ') + '\n');
+}

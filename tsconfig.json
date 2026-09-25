@@ -23,6 +23,8 @@
     "utils/**/*.ts",
     "dev/**/*.ts",
     "test/**/*.ts",
-    "examples/.fixtures/**/*.ts"
+    "examples/.fixtures/**/*.ts",
+    "examples/native-npm/*.ts",
+    "examples/package/*.ts"
   ]
 }

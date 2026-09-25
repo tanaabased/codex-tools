@@ -1,0 +1,12 @@
+[
+  "collectEntries",
+  "diffEntries",
+  "inspectInstallation",
+  "inspectTrees",
+  "installPlugin",
+  "refreshPlugin",
+  "resolveContext",
+  "runCLI",
+  "runOperation",
+  "syncEntries"
+]

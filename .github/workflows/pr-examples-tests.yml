@@ -5,21 +5,25 @@ permissions:
   contents: read
 jobs:
   examples:
-    runs-on: macos-26
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
     strategy:
       fail-fast: false
       matrix:
-        example:
-          - defaults
-          - inputs
-          - install
-          - symlink
-          - refresh
-          - status
-          - cache
+        include:
+          - { example: defaults, os: macos-26 }
+          - { example: inputs, os: macos-26 }
+          - { example: install, os: macos-26 }
+          - { example: symlink, os: macos-26 }
+          - { example: refresh, os: macos-26 }
+          - { example: status, os: macos-26 }
+          - { example: cache, os: macos-26 }
+          - { example: native, os: ubuntu-latest, native: true }
+          - { example: native, os: macos-26, native: true }
+          - { example: native-npm, os: ubuntu-latest, native: true }
+          - { example: native-npm, os: macos-26, native: true }
     steps:
       - uses: actions/checkout@v7
       - uses: tanaabased/actions/setup-node@v1
@@ -28,44 +32,28 @@ jobs:
       - run: bun run build
       - name: Put built CLI on PATH
         run: echo "$PWD/dist" >> "$GITHUB_PATH"
-      - name: Run Leia scenario
-        run: |
-          mkdir -p examples/.tmp
-          tmpdir=$(cd examples/.tmp && pwd -P)
-          TMPDIR="$tmpdir" bun run test:leia "examples/${{ matrix.example }}/README.md" --shell bash
-  native-codex:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-26]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: tanaabased/actions/setup-node@v1
-      - uses: tanaabased/actions/setup-bun@v1
-      - run: bun install --frozen-lockfile --ignore-scripts
       - name: Install the supported Codex contract
-        shell: bash
+        if: matrix.native
         run: |
           codex_version="$(bun -e "import { supportedCodexVersion } from './lib/codex-native.ts'; process.stdout.write(supportedCodexVersion)")"
           npm install --global "@openai/codex@$codex_version"
-          test "$(codex --version)" = "codex-cli $codex_version"
-      - name: Pack and install the prepared package
-        shell: bash
+      - id: pack
+        if: matrix.native
+        uses: tanaabased/actions/npm-pack@v1
+      - name: Install the packed CLI
+        if: matrix.native
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball-path }}
         run: |
-          package_dir="$RUNNER_TEMP/codex-tools-package"
-          consumer_dir="$RUNNER_TEMP/codex-tools-consumer"
-          mkdir -p "$package_dir" "$consumer_dir"
-          bun run build
-          npm pack --ignore-scripts --pack-destination "$package_dir"
-          npm install --prefix "$consumer_dir" --ignore-scripts --no-audit --no-fund "$package_dir/"*.tgz
-          package_tarball="$(find "$package_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
-          test -n "$package_tarball"
-          echo "CODEX_TOOLS_PACKAGE=$package_tarball" >> "$GITHUB_ENV"
-      - name: Run native Leia scenarios
-        shell: bash
-        run: |
-          export PATH="$RUNNER_TEMP/codex-tools-consumer/node_modules/.bin:$PATH"
-          mkdir -p examples/.tmp
-          tmpdir=$(cd examples/.tmp && pwd -P)
-          TMPDIR="$tmpdir" bun run test:leia "examples/native*/README.md" --shell bash
+          consumer="$RUNNER_TEMP/codex-tools-consumer"
+          npm install --prefix "$consumer" --ignore-scripts --no-audit --no-fund "$TARBALL"
+          echo "$consumer/node_modules/.bin" >> "$GITHUB_PATH"
+      - uses: tanaabased/actions/run-leia@v1
+        env:
+          CODEX_TOOLS_PACKAGE: ${{ steps.pack.outputs.tarball-path }}
+          LEIA_TIMEOUT: '120'
+        with:
+          scenarios: examples/${{ matrix.example }}/README.md
+          shell: bash
+          retry: 0
+          stdin: false

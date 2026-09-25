@@ -17,16 +17,14 @@ bun run codex-tools --help
 
 ## Develop and validate
 
-| Command                | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `bun run lint`         | ESLint and Prettier                                  |
-| `bun run format:write` | Apply formatting                                     |
-| `bun run typecheck`    | Check TypeScript source                              |
-| `bun run test`         | Run application and development-tool unit tests      |
-| `bun run test:app`     | Runtime policy, parsing, and safety tests in `test/` |
-| `bun run test:dev`     | Maintainer-helper tests in `dev/test/`               |
-| `bun run docs:check`   | Generated API drift, local links, and images         |
-| `bun run docs:api`     | Generate API.md from public TypeScript docblocks     |
+| Command                | Purpose                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `bun run lint`         | ESLint and Prettier                                     |
+| `bun run format:write` | Apply formatting                                        |
+| `bun run typecheck`    | Check TypeScript source                                 |
+| `bun run test`         | Run runtime, development, and example-helper unit tests |
+| `bun run docs:check`   | Generated API drift, local links, and images            |
+| `bun run docs:api`     | Generate API.md from public TypeScript docblocks        |
 
 Run lint, typecheck, and tests after source changes. Run `docs:check` after documentation or public
 API changes. Edit public docblocks, including `@example`, rather than the generated API reference.
@@ -41,9 +39,10 @@ bun run check:package --pack-destination=.temp/package
 ```
 
 The build emits the Node CLI, ESM/CommonJS bundles, and matching declarations. The package check
-packs and exercises the exact payload in a disposable Node consumer, including both module
-formats, type exports, documentation examples, skills, and assets. Run it for changes to build,
-packaging, shipped documentation, or the artifact contract. Nothing is published.
+runs `examples/package/README.md` through Leia against the prepared tarball in a disposable Node
+consumer. It covers both module formats, type exports, documentation examples, skills, and assets.
+Run it for changes to build, packaging, shipped documentation, or the artifact contract. Nothing
+is published.
 Pass `--tarball=/path/to/package.tgz` to check an existing tarball without repacking it.
 
 ## Install a local release candidate
@@ -69,11 +68,11 @@ See [plugin usage](./PLUGINS.md) for both hosts. Local installations do not foll
 
 ## Leia scenarios
 
-PR CI runs Leia against the built CLI with `bun run test:leia <scenario> --shell bash`.
+PR CI runs Leia against the built CLI with `bun run leia <scenario> --shell bash`.
 Sample plugins live beside their scenarios; shared helpers and fake commands live in
 `examples/.fixtures/`. The `native` and `native-npm` scenarios use real Codex on Linux and macOS,
 including packed-plugin skill discovery and a disposable HTTPS registry.
-Local Leia execution requires an explicit request. Read
+Local Leia execution, including `check:package`, requires an explicit request. Read
 [examples/AGENTS.md](https://github.com/tanaabased/codex-tools/blob/main/examples/AGENTS.md)
 before editing scenarios.
 
