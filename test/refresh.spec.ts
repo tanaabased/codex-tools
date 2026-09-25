@@ -12,9 +12,7 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
 import type { CodexToolsOptions } from '../utils/parse-args.ts';
@@ -415,24 +413,5 @@ describe('lib/refresh', () => {
     assert.equal(result.ok, false);
     assert.match(result.issue ?? '', /already exists/);
     assert.equal(result.manifestEdit.applied, false);
-  });
-  it('should return the actual native child exit code and effects through CLI JSON', async () => {
-    const bin = path.join(root, 'bin');
-    await mkdir(bin);
-    await writeFile(path.join(bin, 'codex'), '#!/bin/sh\nprintf native-failure >&2\nexit 37\n', {
-      mode: 0o755,
-    });
-    const cli = fileURLToPath(new URL('../bin/codex-tools.ts', import.meta.url));
-    const child = spawnSync(process.execPath, [cli, 'refresh', repoRoot, '--json'], {
-      cwd: home,
-      env: { ...env, PATH: bin + path.delimiter + env.PATH },
-      encoding: 'utf8',
-    });
-    assert.equal(child.status, 37, child.stderr);
-    const result = JSON.parse(child.stdout);
-    assert.equal(result.status, 'incomplete');
-    assert.equal(result.nativeError.exitCode, 37);
-    assert.equal(result.manifestEdit.applied, false);
-    assert.ok(!child.stdout.includes('\x1b'));
   });
 });

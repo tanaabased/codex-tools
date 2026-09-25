@@ -4,17 +4,6 @@ import { readFile } from 'node:fs/promises';
 
 const external = /^[a-z][a-z+.-]*:/i;
 
-/** extracts the fenced code block immediately following one named documentation marker. */
-export function documentationExample(markdown: string, name: string): string {
-  const marker = `<!-- codex-tools-example:${name} -->`;
-  const offset = markdown.indexOf(marker);
-  assert.notEqual(offset, -1, `Missing documentation example marker ${marker}`);
-  const body = markdown.slice(offset + marker.length);
-  const match = /^\s*```[^\n]*\n([\s\S]*?)\n```/.exec(body);
-  assert.ok(match, `Missing fenced code after documentation example marker ${marker}`);
-  return match[1]!.trimEnd() + '\n';
-}
-
 function anchor(value: string): string {
   return value
     .trim()

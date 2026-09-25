@@ -1,0 +1,3 @@
+#!/bin/sh
+printf 'unexpected codex invocation\n' >>"$CODEX_TOOLS_FIXTURE_LOG"
+exit 99

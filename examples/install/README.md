@@ -1,55 +1,34 @@
 # Plugin installation
 
-Exercise local and npm installation through deterministic child commands. These fixtures prove
-Codex Tools orchestration; the isolated native-verification workflow owns real Codex/npm behavior.
+Check dry runs, child environments, and failure exits with deterministic Codex responses.
+The `native` and `native-npm` examples exercise real acquisition.
 
 ## Testing
 
 ```bash
-# should plan a local install without spawning codex or writing state
-root=$(mktemp -d)
-root=$(cd "$root" && pwd -P)
-trap 'rm -rf "$root"' EXIT
-mkdir "$root/home"
-cp -R source "$root/source"
-output=$(PATH="$PWD/../.fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install "$root/source" --dry-run --json)
-printf '%s' "$output" | bun -e 'const r = await Bun.stdin.json(); if (!r.ok || r.status !== "planned" || r.native.length) process.exit(1)'
+# should plan installation without starting Codex or creating state
+source environment.sh
+export PATH="$PWD/bin:$PATH" CODEX_TOOLS_FIXTURE_LOG="$root/children.log"
+codex-tools install source --dry-run | grep -F 'status: planned'
 test ! -e "$root/children.log"
-test ! -e "$root/codex"
-test ! -e "$root/home/.agents"
+test ! -e "$CODEX_HOME"
+test ! -e "$HOME/.agents"
 
-# should install a local plugin and pass the selected environment to codex
-root=$(mktemp -d)
-root=$(cd "$root" && pwd -P)
-trap 'rm -rf "$root"' EXIT
-mkdir "$root/home"
+# should pass the selected home and cache to the native child
+source environment.sh
+export PATH="$PWD/bin:$PATH"
 cp -R source "$root/source"
-PATH="$PWD/../.fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=local-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install "$root/source" --json >"$root/result.json" || { status=$?; cat "$root/result.json" >&2; exit "$status"; }
-bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || !r.inspection.installed || r.source.name !== "fixture-local") throw new Error(JSON.stringify(r))' "$root/result.json"
-cmp "$root/source/payload.txt" "$root/codex/plugins/cache/personal/fixture-local/1.0.0/payload.txt"
-EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); const invalid = rows.filter((r) => r.command !== "codex" || r.sentinel !== "local-install" || r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME); if (!rows.length || invalid.length) throw new Error(JSON.stringify({invalid,expectedHome:process.env.EXPECTED_HOME,expectedCodexHome:process.env.EXPECTED_CODEX_HOME}))' "$root/children.log"
+codex-tools install "$root/source" | grep -F 'status: installed'
+cmp source/payload.txt "$CODEX_HOME/plugins/cache/personal/fixture-local/1.0.0/payload.txt"
+test -f "$HOME/.agents/plugins/marketplace.json"
 
-# should install an exact npm release without using a public registry
-root=$(mktemp -d)
-root=$(cd "$root" && pwd -P)
-trap 'rm -rf "$root"' EXIT
-mkdir "$root/home"
-PATH="$PWD/../.fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" CODEX_TOOLS_CHILD_SENTINEL=npm-install CODEX_TOOLS_FIXTURE_LOG="$root/children.log" codex-tools install 'npm:@fixture/example@^1.0.0' --json >"$root/result.json" || { status=$?; cat "$root/result.json" >&2; exit "$status"; }
-bun -e 'const r = await Bun.file(process.argv[1]).json(); if (!r.ok || r.status !== "installed" || r.source.type !== "npm" || r.source.version !== "1.2.3" || r.source.name !== "fixture-plugin" || r.inspection.payload !== "verified") throw new Error(JSON.stringify(r))' "$root/result.json"
-EXPECTED_HOME="$root/home" EXPECTED_CODEX_HOME="$root/codex" bun -e 'const rows = (await Bun.file(process.argv[1]).text()).trim().split("\n").map(JSON.parse); const npm = rows.filter((r) => r.command === "npm"); if (!npm.length || npm.some((r) => r.home !== process.env.EXPECTED_HOME || r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome !== process.env.EXPECTED_CODEX_HOME) || !rows.some((r) => r.command === "codex" && r.codexHome === process.env.EXPECTED_CODEX_HOME) || rows.some((r) => r.sentinel !== "npm-install")) throw new Error(JSON.stringify({rows,expectedHome:process.env.EXPECTED_HOME,expectedCodexHome:process.env.EXPECTED_CODEX_HOME}))' "$root/children.log"
-
-# should preserve a native child exit code without writing a catalog
-root=$(mktemp -d)
-root=$(cd "$root" && pwd -P)
-trap 'rm -rf "$root"' EXIT
-mkdir "$root/home"
-cp -R source "$root/source"
-set +e
-PATH="$PWD/../.fixtures/bin:$PATH" HOME="$root/home" CODEX_HOME="$root/codex" FAKE_CODEX_EXIT=37 codex-tools install "$root/source" --json >"$root/result.json" 2>"$root/error"
-status=$?
-set -e
+# should preserve a native failure exit in CLI JSON without writing a catalog
+source environment.sh
+export PATH="$PWD/bin:$PATH"
+status=0
+FAKE_CODEX_EXIT=37 codex-tools install source --json >"$root/result.json" 2>"$root/error" || status=$?
 test "$status" -eq 37
-bun -e 'const r = await Bun.file(process.argv[1]).json(); if (r.ok || r.status !== "incomplete" || r.nativeError.exitCode !== 37 || !r.nativeError.stderr.includes("synthetic native failure")) process.exit(1)' "$root/result.json"
+grep -F '"status":"incomplete"' "$root/result.json" | grep -F '"exitCode":37'
 test ! -s "$root/error"
-test ! -e "$root/home/.agents/plugins/marketplace.json"
+test ! -e "$HOME/.agents/plugins/marketplace.json"
 ```

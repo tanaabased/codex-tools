@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
 import {
   chmod,
   lstat,
@@ -14,7 +13,6 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
 import { asError, hasErrorCode } from '../utils/errors.ts';
@@ -29,7 +27,6 @@ import type { NativeRunner } from '../lib/codex-native.ts';
 import { parseArgs } from '../utils/parse-args.ts';
 import { supportedCodexVersion } from '../lib/codex-native.ts';
 
-const cli = fileURLToPath(new URL('../bin/codex-tools.ts', import.meta.url));
 const writeJson = async (file: string, data: unknown): Promise<void> => {
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify(data));
@@ -762,22 +759,5 @@ describe('lib/install', () => {
     assert.throws(() => parseArgs(['install', '/one', '/two'], {}));
     assert.throws(() => parseArgs(['install', '/one', '--repo-root', '/two'], {}));
     assert.throws(() => parseArgs(['status', '--marketplace-path', catalogFile], {}));
-  });
-  it('should execute a fake Codex through argv and preserve the actual child exit code in CLI JSON', async () => {
-    const bin = path.join(root, 'bin');
-    await mkdir(bin);
-    await writeFile(path.join(bin, 'codex'), '#!/bin/sh\nprintf native-failure >&2\nexit 37\n', {
-      mode: 0o755,
-    });
-    const result = spawnSync(process.execPath, [cli, 'install', repoRoot, '--json'], {
-      cwd: home,
-      env: { ...env, PATH: bin + path.delimiter + env.PATH },
-      encoding: 'utf8',
-    });
-    assert.equal(result.status, 37, result.stderr);
-    const data = JSON.parse(result.stdout);
-    assert.equal(data.nativeError.exitCode, 37);
-    assert.equal(data.status, 'incomplete');
-    assert.ok(!result.stdout.includes('\x1b'));
   });
 });

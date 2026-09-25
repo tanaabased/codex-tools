@@ -11,8 +11,6 @@ See the [README](./README.md#library) for ESM usage.
 
 ### CommonJS
 
-<!-- codex-tools-example:api-commonjs -->
-
 ```js
 const { runOperation } = require('@tanaab/codex-tools');
 

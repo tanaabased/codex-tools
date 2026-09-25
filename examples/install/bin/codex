@@ -22,7 +22,6 @@ if (logFile) {
       argv,
       home,
       codexHome,
-      sentinel: process.env.CODEX_TOOLS_CHILD_SENTINEL ?? null,
     }) + '\n',
   );
 }
@@ -80,59 +79,29 @@ if (!entry || marketplaceName !== catalog.name) {
   process.exit(2);
 }
 
-const npmSource = entry.source.source === 'npm';
-const actualName = npmSource ? 'fixture-plugin' : entry.name;
-if (npmSource && requestedName === 'codex-tools-identity-probe') {
-  process.stderr.write(
-    'plugin.json name `' +
-      actualName +
-      '` does not match marketplace plugin name `codex-tools-identity-probe`\n',
-  );
-  process.exit(1);
-}
-
-let version;
-let sourceRoot = null;
-if (npmSource) {
-  version = entry.source.version;
-} else {
-  sourceRoot = fs.realpathSync(path.resolve(home, entry.source.path));
-  version = readJson(path.join(sourceRoot, '.codex-plugin/plugin.json')).version;
-}
-
-const installedPath = path.join(codexHome, 'plugins/cache', catalog.name, actualName, version);
+const sourceRoot = fs.realpathSync(path.resolve(home, entry.source.path));
+const version = readJson(path.join(sourceRoot, '.codex-plugin/plugin.json')).version;
+const installedPath = path.join(codexHome, 'plugins/cache', catalog.name, entry.name, version);
 fs.rmSync(installedPath, { recursive: true, force: true });
 fs.mkdirSync(path.dirname(installedPath), { recursive: true });
-if (npmSource) {
-  fs.mkdirSync(path.join(installedPath, '.codex-plugin'), { recursive: true });
-  fs.writeFileSync(
-    path.join(installedPath, '.codex-plugin/plugin.json'),
-    JSON.stringify({ name: actualName, version }) + '\n',
-  );
-  fs.writeFileSync(
-    path.join(installedPath, 'package.json'),
-    JSON.stringify({ name: entry.source.package, version: entry.source.version }) + '\n',
-  );
-} else {
-  fs.cpSync(sourceRoot, installedPath, { recursive: true });
-}
+fs.cpSync(sourceRoot, installedPath, { recursive: true });
 
 const installed = {
-  pluginId: actualName + '@' + catalog.name,
-  name: actualName,
+  pluginId: entry.name + '@' + catalog.name,
+  name: entry.name,
   marketplaceName: catalog.name,
   version,
   installed: true,
   enabled: true,
   authPolicy: 'ON_INSTALL',
-  source: npmSource ? entry.source : { source: 'local', path: sourceRoot },
+  source: { source: 'local', path: sourceRoot },
 };
 state.installed = state.installed.filter((candidate) => candidate.pluginId !== installed.pluginId);
 state.installed.push(installed);
 fs.mkdirSync(codexHome, { recursive: true });
 fs.writeFileSync(stateFile, JSON.stringify(state));
 respond({
-  name: actualName,
+  name: entry.name,
   pluginId: installed.pluginId,
   marketplaceName: catalog.name,
   version,

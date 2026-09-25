@@ -23,6 +23,6 @@
     "utils/**/*.ts",
     "dev/**/*.ts",
     "test/**/*.ts",
-    "examples/.fixtures/**/*.ts"
+    "examples/**/*.ts"
   ]
 }

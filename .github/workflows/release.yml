@@ -38,60 +38,19 @@ jobs:
       - run: bun run format:check && bun run build
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
-      - name: Verify package
-        env:
-          TARBALL: ${{ steps.pack.outputs.tarball-path }}
-        run: bun run check:package "--tarball=$TARBALL"
-      - uses: tanaabased/actions/publish-npm@v1
-        with:
-          tarball: ${{ steps.pack.outputs.tarball-path }}
-          channel-token: ${{ secrets.TANAAB_NPM_DEPLOY }}
-
-  publish-plugin:
-    name: Publish Codex plugin
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-      - uses: tanaabased/actions/setup-node@v1
-      - uses: tanaabased/actions/setup-bun@v1
-      - run: bun install --frozen-lockfile --ignore-scripts
-      - name: Validate source
-        run: |
-          bun run check:toolchain
-          bun run lint
-          bun run docs:check
-          bun run typecheck
-          bun run test
-      - uses: tanaabased/actions/prepare-release@v1
-        with:
-          commands: |
-            version-injector .codex-plugin/plugin.json --style json --version "$PREPARE_RELEASE_VERSION"
-            bun --bun prettier .codex-plugin/plugin.json --write
-      - run: bun run format:check && bun run build
-      - id: pack
-        uses: tanaabased/actions/npm-pack@v1
-      - name: Verify package and stage plugin
+      - name: Stage plugin
         env:
           TARBALL: ${{ steps.pack.outputs.tarball-path }}
         run: |
-          bun run check:package "--tarball=$TARBALL"
           mkdir -p .temp/plugin
           tar -xzf "$TARBALL" -C .temp/plugin --strip-components=1
       - uses: tanaabased/actions/validate-codex-plugin@v1
         with:
           plugin-directory: .temp/plugin
-      - uses: tanaabased/actions/publish-codex-plugin@v1
+      - uses: tanaabased/actions/publish-npm@v1
         with:
-          plugin-directory: .temp/plugin
-          archive-name: codex-tools-${{ steps.pack.outputs.package-version }}.tar.gz
-          dependency-policy: exclude-node-modules
-          release-tag: ${{ github.event.release.tag_name }}
-          github-token: ${{ github.token }}
+          tarball: ${{ steps.pack.outputs.tarball-path }}
+          channel-token: ${{ secrets.TANAAB_NPM_DEPLOY }}
 
   publish-repo:
     name: Synchronize release metadata

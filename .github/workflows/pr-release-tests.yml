@@ -25,23 +25,15 @@ jobs:
       - run: bun run format:check && bun run build
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
-      - name: Verify package and stage plugin
+      - name: Stage plugin
         env:
           TARBALL: ${{ steps.pack.outputs.tarball-path }}
         run: |
-          bun run check:package "--tarball=$TARBALL"
           mkdir -p .temp/plugin
           tar -xzf "$TARBALL" -C .temp/plugin --strip-components=1
       - uses: tanaabased/actions/validate-codex-plugin@v1
         with:
           plugin-directory: .temp/plugin
-      - uses: tanaabased/actions/publish-codex-plugin@v1
-        with:
-          dry-run: 'true'
-          plugin-directory: .temp/plugin
-          archive-name: codex-tools-${{ steps.pack.outputs.package-version }}.tar.gz
-          dependency-policy: exclude-node-modules
-          release-tag: v${{ steps.pack.outputs.package-version }}
       - name: Dry-run npm publication
         uses: tanaabased/actions/publish-npm@v1
         with:

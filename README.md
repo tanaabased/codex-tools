@@ -9,7 +9,6 @@
   <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-linter.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-linter.yml?event=pull_request&amp;label=Lint" alt="Lint" /></a>
   <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-unit-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-unit-tests.yml?event=pull_request&amp;label=Unit%20Tests" alt="Unit Tests" /></a>
   <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-examples-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-examples-tests.yml?event=pull_request&amp;label=Example%20Tests" alt="Example Tests" /></a>
-  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-plugin-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-plugin-tests.yml?event=pull_request&amp;label=Plugin%20Tests" alt="Plugin Tests" /></a>
   <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-release-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-release-tests.yml?event=pull_request&amp;label=Release%20Tests" alt="Release Tests" /></a>
 </p>
 
@@ -65,8 +64,6 @@ preserve unrelated state. Local refresh edits the source manifest version; revie
 See the [CLI reference](./CLI.md) for all commands, options, environment variables, and exit codes.
 
 ### Library
-
-<!-- codex-tools-example:api -->
 
 ```ts
 import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';
