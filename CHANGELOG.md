@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+## v1.0.1 - [September 25, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.1)
+
 - Fixed local plugin installation through symlinked home and marketplace paths. [#32](https://github.com/tanaabased/codex-tools/pull/32)
 - Fixed stable npm releases to update `edge` alongside `latest`. [#31](https://github.com/tanaabased/codex-tools/pull/31)
 - Removed separate GitHub Release plugin archives; the Codex plugin ships in the npm package. [#34](https://github.com/tanaabased/codex-tools/pull/34)
