@@ -23,6 +23,7 @@ execution requires an explicit request.
 - `inputs` owns help, version, option forms, environment precedence, booleans, JSON/debug output,
   and invalid input.
 - `install` owns local and npm installation journeys.
+- `symlink` owns linked marketplace preservation, repository self-install, and invalid-link rejection.
 - `refresh` owns local cachebuster refresh and pinned npm refresh.
 - `status` owns the read-only `status` and `doctor` interface.
 - `cache` owns drift reporting, dry runs, synchronization, and convergence.

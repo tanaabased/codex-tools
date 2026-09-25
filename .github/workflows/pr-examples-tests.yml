@@ -16,6 +16,7 @@ jobs:
           - defaults
           - inputs
           - install
+          - symlink
           - refresh
           - status
           - cache

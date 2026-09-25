@@ -74,7 +74,7 @@ See [plugin usage](./PLUGINS.md) for both hosts. Local installations do not foll
 ## Leia scenarios
 
 PR CI runs Leia 2 against `dist/codex-tools` through `bun run test:leia <scenario> --shell bash`.
-The six groups cover defaults, inputs, install, refresh, status, and cache behavior. Fixtures live
+The groups cover defaults, inputs, install, symlink, refresh, status, and cache behavior. Fixtures live
 beside their scenarios, with shared fake child commands in `examples/fixtures/bin`.
 Read [examples/AGENTS.md](https://github.com/tanaabased/codex-tools/blob/main/examples/AGENTS.md)
 before editing them. Local Leia execution requires an explicit request.
