@@ -50,6 +50,21 @@ describe('lib/operations', () => {
     await rm(root, { recursive: true, force: true });
   });
 
+  it('should keep read-only commands independent of managed Codex provisioning', async () => {
+    let nativeCalls = 0;
+    const runtime = {
+      native: async () => {
+        nativeCalls += 1;
+        throw new Error('read-only commands must not invoke Codex');
+      },
+    };
+    for (const command of ['status', 'doctor', 'check'] as const) {
+      const result = await runOperation(command, options, runtime);
+      assert.equal(result.command, command);
+    }
+    assert.equal(nativeCalls, 0);
+  });
+
   for (const [label, override, expected] of [
     ['inherit repository selection when omitted', {}, ['managed.txt']],
     [

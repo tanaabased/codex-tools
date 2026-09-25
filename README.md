@@ -26,8 +26,7 @@ and agent skills.
 
 ## Install
 
-Requires Node `^24.15.0 || >=26.0.0`. Install and refresh also need a
-[supported Codex version](./CLI.md#invocation).
+Requires Node `^24.15.0 || >=26.0.0`.
 
 ```sh
 npm install --global @tanaab/codex-tools
@@ -58,8 +57,8 @@ codex-tools cache check --repo-root /path/to/plugin
 codex-tools cache sync --repo-root /path/to/plugin --dry-run
 ```
 
-Dry runs write nothing and start no child processes. Commands refuse ambiguous targets and
-preserve unrelated state. Local refresh edits the source manifest version; review and commit that edit.
+Dry runs write nothing and start no child processes. Commands refuse ambiguous targets and preserve
+unrelated state. Local refresh edits the source manifest version; review and commit that edit.
 
 See the [CLI reference](./CLI.md) for all commands, options, environment variables, and exit codes.
 

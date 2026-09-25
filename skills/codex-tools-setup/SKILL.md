@@ -15,7 +15,6 @@ metadata:
     requires:
       bins:
         - node
-        - codex
 ---
 
 # Codex Plugin Setup
@@ -39,7 +38,7 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 
 - Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
   executable; never substitute a checkout or global executable.
-- Require Node, a supported Codex CLI, and npm for npm selectors; see [CLI invocation](../../CLI.md#invocation).
+- Require Node and npm for npm selectors.
 - Preserve the caller's home, npm configuration, and explicit marketplace and Codex-home options.
 
 ## Workflow

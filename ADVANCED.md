@@ -24,6 +24,14 @@ codex-tools install /path/to/plugin \
 `--codex-home` selects Codex configuration and cache state; the personal marketplace still belongs
 to `HOME`.
 
+## Codex CLI cache
+
+Codex Tools stores its internal CLI under
+`$XDG_CACHE_HOME/codex-tools/codex/<version>/<target>` when `$XDG_CACHE_HOME` is set, otherwise
+`$HOME/.cache/codex-tools/codex/<version>/<target>`. No routine maintenance is required. To force a
+repair, remove only the affected version and target directory; the next install or refresh rebuilds
+it.
+
 ## npm acquisition
 
 npm aliases, Git or URL dependencies, filesystem acquisition, empty selectors, and malformed

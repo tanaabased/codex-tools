@@ -478,7 +478,7 @@ interface InstallationResult extends Record<string, unknown> {
 
 ### `InstallDependencies`
 
-injectable environment, process, source, and clock boundaries for installation operations.
+injectable environment, process, source, and clock boundaries for installation.
 
 ```ts
 interface InstallDependencies {

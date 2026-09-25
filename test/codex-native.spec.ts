@@ -6,11 +6,14 @@ import {
   readNativeResult,
   readNativeRows,
   runNative,
-  supportedCodexFamily,
   supportedCodexVersion,
 } from '../lib/codex-native.ts';
 
 describe('lib/codex-native', () => {
+  it('should refuse an unbound native executable', async () => {
+    await assert.rejects(runNative([]), /Native executable is required/);
+  });
+
   it('should execute a bounded child and decode its JSON response', async () => {
     const child = await runNative(['-e', 'process.stdout.write(JSON.stringify({ok:true}))'], {
       cwd: process.cwd(),
@@ -50,7 +53,7 @@ describe('lib/codex-native', () => {
       () => assertSupportedCodexVersion('codex-cli 999.0.0'),
       new RegExp(
         'Supported native contract is Codex ' +
-          supportedCodexFamily.replaceAll('.', '\\.') +
+          supportedCodexVersion.replaceAll('.', '\\.') +
           '; found codex-cli 999\\.0\\.0',
       ),
     );

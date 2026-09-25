@@ -2,8 +2,7 @@
 
 Use the setup and maintenance skills in Codex or OpenClaw to manage Codex plugins.
 Start with the [README](./README.md#use-with-an-agent) for example requests.
-The agent needs file and command execution tools, Node, and the
-[supported Codex CLI](./CLI.md#invocation) for installation and refresh. npm sources also require npm.
+The agent needs file and command execution tools and Node. npm sources also require npm.
 
 The npm commands below require a published package. For unpublished builds, use
 [local candidate installation](./CONTRIBUTING.md#install-a-local-release-candidate).

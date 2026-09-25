@@ -25,15 +25,15 @@ execution requires an explicit request.
 - `defaults` owns the unoverridden source and Codex-home defaults.
 - `inputs` owns help, version, option forms, environment precedence, booleans, JSON/debug output,
   and invalid input.
-- `install` owns dry runs, native child environments, and install failure exits.
+- `install` owns offline, side-effect-free install dry runs.
 - `symlink` owns linked-marketplace previews and invalid-link rejection.
-- `refresh` owns native failure exits before source edits.
+- `refresh` owns precondition failures before provisioning or source edits.
 - `status` owns the read-only `status` and `doctor` interface.
 - `cache` owns drift reporting, dry runs, synchronization, and convergence.
 
-The fake child commands prove Codex Tools orchestration, not native Codex or registry compatibility.
-`native` and `native-npm` own real Codex acquisition, preservation, and fresh-session discovery
-under Leia on Linux and macOS. Never put fake commands on their PATH.
+Unit tests own injected native failures and process orchestration. `native` and `native-npm` own
+real Codex acquisition, preservation, and fresh-session discovery under Leia on Linux and macOS.
+The `native` scenario keeps an incompatible host command on `PATH` solely to prove it is ignored.
 
 CI runs every scenario on Ubuntu and macOS with the same preparation and one README per matrix
 entry. Keep the matrix as explicit `os` and `example` lists, without includes or conditional steps.

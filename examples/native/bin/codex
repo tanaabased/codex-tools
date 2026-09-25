@@ -1,0 +1,7 @@
+#!/bin/sh
+if test "$1" = "--version"; then
+  printf 'codex-cli 999.0.0\n'
+  exit 0
+fi
+printf 'host Codex must not be used\n' >&2
+exit 99

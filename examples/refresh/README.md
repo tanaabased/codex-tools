@@ -1,19 +1,18 @@
-# Refresh failure
+# Refresh preconditions
 
-Check the CLI's native failure exit and unchanged source when refresh fails preflight.
-Successful local and pinned npm refreshes live in `native` and `native-npm`.
+Check that refresh rejects missing installation state before native acquisition or editing the
+source. Successful local and pinned npm refreshes live in `native` and `native-npm`.
 
 ## Testing
 
 ```bash
-# should preserve the native failure exit without editing the source manifest
+# should reject missing marketplace state without acquisition or source edits
 source environment.sh
-export PATH="$PWD/bin:$PATH"
 cp -R source "$root/source"
-codex-tools install "$root/source"
 status=0
-FAKE_CODEX_EXIT=37 codex-tools refresh "$root/source" --json >"$root/result.json" || status=$?
-test "$status" -eq 37
-grep -F '"status":"incomplete"' "$root/result.json" | grep -F '"exitCode":37'
+codex-tools refresh "$root/source" >"$root/result.txt" 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F 'Refresh requires an existing local marketplace' "$root/error"
 cmp source/.codex-plugin/plugin.json "$root/source/.codex-plugin/plugin.json"
+test ! -e "$XDG_CACHE_HOME"
 ```

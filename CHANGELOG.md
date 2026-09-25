@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+- Fixed plugin installation and refresh when the host Codex CLI is missing or incompatible. [#37](https://github.com/tanaabased/codex-tools/pull/37)
+
 ## v1.0.1 - [September 25, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.1)
 
 - Fixed local plugin installation through symlinked home and marketplace paths. [#32](https://github.com/tanaabased/codex-tools/pull/32)

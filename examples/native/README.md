@@ -1,7 +1,8 @@
 # Native Codex installation
 
-Install and refresh real plugins with the built Codex Tools CLI and supported Codex on `PATH`.
-Each case copies a sample plugin into a disposable home; CI supplies `CODEX_TOOLS_PACKAGE`.
+Install and refresh real plugins with the built Codex Tools CLI. Each case copies a sample plugin
+into a disposable home; CI supplies `CODEX_TOOLS_PACKAGE`. An incompatible fake command stays first
+on `PATH` and must never be used.
 
 ## Testing
 
@@ -15,7 +16,7 @@ test ! -e "$HOME/.agents"
 # should acquire a local plugin through real Codex
 source setup.sh
 codex-tools install "$plugin" | grep -F 'status: installed'
-codex plugin list --json | grep -F 'codex-tools-smoke'
+"$CODEX_TOOLS_TEST_CODEX" plugin list --json | grep -F 'codex-tools-smoke'
 cmp "$plugin/skills/probe/SKILL.md" "$CODEX_HOME/plugins/cache/personal/codex-tools-smoke/1.0.0/skills/probe/SKILL.md"
 
 # should leave a repeated installation unchanged
@@ -96,7 +97,7 @@ for plugin in external source; do
   codex-tools install "$root/linked/$plugin" | grep -F 'status: installed'
   codex-tools install "$root/linked/$plugin" | grep -F 'unchanged: install'
 done
-codex plugin marketplace list --json | bun -e 'import assert from "node:assert/strict"; assert.deepEqual((await Bun.stdin.json()).marketplaces.map(m => m.name), ["linked-market"])'
+"$CODEX_TOOLS_TEST_CODEX" plugin marketplace list --json | bun -e 'import assert from "node:assert/strict"; assert.deepEqual((await Bun.stdin.json()).marketplaces.map(m => m.name), ["linked-market"])'
 bun symlink.js preserved "$root/linked"
 cmp "$root/linked/source/payload.txt" "$root/linked/state/plugins/cache/linked-market/fixture-self/1.0.0/payload.txt"
 cmp "$root/linked/external/payload.txt" "$root/linked/state/plugins/cache/linked-market/fixture-external/1.0.0/payload.txt"
