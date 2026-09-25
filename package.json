@@ -67,7 +67,7 @@
     "lint:eslint": "bun --bun eslint .",
     "format:check": "bun --bun prettier . --check --ignore-unknown",
     "format:write": "bun --bun prettier . --write --ignore-unknown",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun --bun tsc --noEmit",
     "docs:api": "bun dev/scripts/generate-api-task.ts",
     "docs:api:check": "bun dev/scripts/generate-api-task.ts --check",
     "docs:check": "bun run docs:api:check && bun dev/scripts/check-documentation-task.ts",
