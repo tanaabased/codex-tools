@@ -7,8 +7,8 @@ Successful local and pinned npm refreshes live in `native` and `native-npm`.
 
 ```bash
 # should preserve the native failure exit without editing the source manifest
-source ../.fixtures/environment.sh
-export PATH="$fixtures/bin:$PATH"
+source environment.sh
+export PATH="$PWD/bin:$PATH"
 cp -R source "$root/source"
 codex-tools install "$root/source"
 status=0

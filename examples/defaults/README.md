@@ -6,7 +6,7 @@ Inspect the current directory using the `HOME/.codex` fallback without selection
 
 ```bash
 # should inspect the current source and default Codex home
-source ../.fixtures/environment.sh
+source environment.sh
 unset CODEX_HOME
 target="$HOME/.codex/plugins/cache/personal/default-example/1.0.0"
 mkdir -p "$target"

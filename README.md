@@ -65,8 +65,6 @@ See the [CLI reference](./CLI.md) for all commands, options, environment variabl
 
 ### Library
 
-<!-- codex-tools-example:api -->
-
 ```ts
 import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';
 

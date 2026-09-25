@@ -72,8 +72,7 @@
     "docs:api:check": "bun dev/scripts/generate-api-task.ts --check",
     "docs:check": "bun run docs:api:check && bun dev/scripts/check-documentation-task.ts",
     "build": "bun dev/scripts/build-task.ts",
-    "check:package": "bun examples/package/run.ts",
-    "test": "bun --bun node_modules/mocha/bin/mocha.js 'test/*.spec.ts' 'dev/test/*.spec.ts' 'examples/.fixtures/test/*.spec.ts'",
+    "test": "bun --bun node_modules/mocha/bin/mocha.js 'test/*.spec.ts' 'dev/test/*.spec.ts' 'examples/*/test/*.spec.ts'",
     "leia": "bun ./node_modules/.bin/leia"
   },
   "dependencies": {

@@ -6,7 +6,7 @@ Inspect disposable installations through the read-only status and doctor command
 
 ```bash
 # should expose the same installation through status and doctor
-source ../.fixtures/environment.sh
+source environment.sh
 target="$CODEX_HOME/plugins/cache/personal/status-example/1.0.0"
 mkdir -p "$target"
 cp -R source/. "$target"
@@ -16,7 +16,7 @@ grep -F 'status: current' "$root/status.txt"
 cmp "$root/status.txt" "$root/doctor.txt"
 
 # should report neutral absence without creating a Codex home
-source ../.fixtures/environment.sh
+source environment.sh
 codex-tools status --repo-root source --absent-check neutral | grep -F 'status: not_installed'
 test ! -e "$CODEX_HOME"
 ```

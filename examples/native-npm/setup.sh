@@ -1,4 +1,4 @@
-source ../.fixtures/environment.sh
+source environment.sh
 bun registry.ts "$root" >"$root/registry.log" 2>&1 &
 registry_pid=$!
 cleanup() {

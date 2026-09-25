@@ -12,18 +12,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { example: defaults, os: macos-26 }
-          - { example: inputs, os: macos-26 }
-          - { example: install, os: macos-26 }
-          - { example: symlink, os: macos-26 }
-          - { example: refresh, os: macos-26 }
-          - { example: status, os: macos-26 }
-          - { example: cache, os: macos-26 }
-          - { example: native, os: ubuntu-latest, native: true }
-          - { example: native, os: macos-26, native: true }
-          - { example: native-npm, os: ubuntu-latest, native: true }
-          - { example: native-npm, os: macos-26, native: true }
+        os:
+          - ubuntu-latest
+          - macos-26
+        example:
+          - defaults
+          - inputs
+          - install
+          - symlink
+          - refresh
+          - status
+          - cache
+          - native
+          - native-npm
     steps:
       - uses: actions/checkout@v7
       - uses: tanaabased/actions/setup-node@v1
@@ -33,21 +34,11 @@ jobs:
       - name: Put built CLI on PATH
         run: echo "$PWD/dist" >> "$GITHUB_PATH"
       - name: Install the supported Codex contract
-        if: matrix.native
         run: |
           codex_version="$(bun -e "import { supportedCodexVersion } from './lib/codex-native.ts'; process.stdout.write(supportedCodexVersion)")"
           npm install --global "@openai/codex@$codex_version"
       - id: pack
-        if: matrix.native
         uses: tanaabased/actions/npm-pack@v1
-      - name: Install the packed CLI
-        if: matrix.native
-        env:
-          TARBALL: ${{ steps.pack.outputs.tarball-path }}
-        run: |
-          consumer="$RUNNER_TEMP/codex-tools-consumer"
-          npm install --prefix "$consumer" --ignore-scripts --no-audit --no-fund "$TARBALL"
-          echo "$consumer/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: tanaabased/actions/run-leia@v1
         env:
           CODEX_TOOLS_PACKAGE: ${{ steps.pack.outputs.tarball-path }}

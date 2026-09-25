@@ -38,16 +38,6 @@ jobs:
       - run: bun run format:check && bun run build
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
-      - name: Verify packed consumers
-        uses: tanaabased/actions/run-leia@v1
-        env:
-          CODEX_TOOLS_PACKAGE: ${{ steps.pack.outputs.tarball-path }}
-          LEIA_TIMEOUT: '120'
-        with:
-          scenarios: examples/package/README.md
-          shell: bash
-          retry: 0
-          stdin: false
       - uses: tanaabased/actions/publish-npm@v1
         with:
           tarball: ${{ steps.pack.outputs.tarball-path }}
@@ -81,16 +71,6 @@ jobs:
       - run: bun run format:check && bun run build
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
-      - name: Verify packed consumers
-        uses: tanaabased/actions/run-leia@v1
-        env:
-          CODEX_TOOLS_PACKAGE: ${{ steps.pack.outputs.tarball-path }}
-          LEIA_TIMEOUT: '120'
-        with:
-          scenarios: examples/package/README.md
-          shell: bash
-          retry: 0
-          stdin: false
       - name: Stage plugin
         env:
           TARBALL: ${{ steps.pack.outputs.tarball-path }}

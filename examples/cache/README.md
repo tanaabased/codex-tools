@@ -6,7 +6,7 @@ Check drift, preview changes, and synchronize a raw target while preserving unma
 
 ```bash
 # should report drift without changing the target
-source ../.fixtures/environment.sh
+source environment.sh
 mkdir "$root/cache"
 printf 'stale payload\n' >"$root/cache/payload.txt"
 status=0
@@ -17,12 +17,12 @@ grep -F 'changed: payload.txt' "$root/result.txt"
 grep -Fx 'stale payload' "$root/cache/payload.txt"
 
 # should leave a dry-run target absent
-source ../.fixtures/environment.sh
+source environment.sh
 codex-tools cache sync --repo-root source --cache-path "$root/cache" --missing-target create --dry-run | grep -F 'status: planned'
 test ! -e "$root/cache"
 
 # should synchronize and converge without removing unmanaged files
-source ../.fixtures/environment.sh
+source environment.sh
 mkdir "$root/cache"
 printf 'preserve\n' >"$root/cache/unmanaged.txt"
 codex-tools cache sync --repo-root source --cache-path "$root/cache" --missing-target create

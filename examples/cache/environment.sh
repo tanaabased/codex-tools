@@ -1,6 +1,5 @@
 # each case owns its home, cache, and writable fixture copies.
 set -euo pipefail
-fixtures=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 root=$(mktemp -d)
 root=$(cd "$root" && pwd -P)
 export HOME="$root/home" CODEX_HOME="$root/codex" NO_COLOR=1 npm_config_cache="$root/npm-cache"

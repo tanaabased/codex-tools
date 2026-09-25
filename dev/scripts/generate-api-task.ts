@@ -109,8 +109,6 @@ async function generateApiDocumentation(root: string): Promise<string> {
     '',
     '### CommonJS',
     '',
-    '<!-- codex-tools-example:api-commonjs -->',
-    '',
     display(example.text),
     '',
     '## Entry points',

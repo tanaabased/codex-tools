@@ -47,7 +47,7 @@ codex-tools refresh 'npm:@fixture/package-name' --marketplace selected | grep -F
 # should discover a portable plugin's skill in a fresh session
 source setup.sh
 codex-tools install 'npm:@fixture/package-name@1.3.1' | grep -F 'package version: 1.3.1'
-bun ../.fixtures/fresh-skills.ts "$HOME" native-npm-probe:native-npm-fixture
+bun fresh-skills.ts "$HOME" native-npm-probe:native-npm-fixture
 test ! -e "$root/LIFECYCLE-RAN"
 
 # should reject incomplete packages and malformed selectors without changing the catalog
@@ -60,6 +60,6 @@ for selector in '2.0.0' 'file:../bad'; do
   test "$status" -ne 0
   cmp "$root/catalog-before" "$HOME/.agents/plugins/marketplace.json"
 done
-bun ../.fixtures/fresh-skills.ts "$HOME" native-npm-probe:native-npm-fixture
+bun fresh-skills.ts "$HOME" native-npm-probe:native-npm-fixture
 test ! -e "$root/LIFECYCLE-RAN"
 ```

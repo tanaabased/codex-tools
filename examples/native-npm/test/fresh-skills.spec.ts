@@ -40,7 +40,7 @@ function server(reply: unknown, initialize: unknown = { id: 1, result: {} }) {
   return { child, requests, stopped: () => stopped };
 }
 
-describe('examples/.fixtures/fresh-skills', () => {
+describe('examples/native-npm/fresh-skills', () => {
   it('should verify exact enabled skills in the requested directory', async () => {
     const fake = server({ id: 2, result: result() });
     await freshSkills({}, cwd, expected, () => fake.child);
