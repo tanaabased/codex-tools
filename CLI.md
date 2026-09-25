@@ -20,10 +20,9 @@ npm exec --offline -- codex-tools <command> [source] [options]
 | `cache sync`                     | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
 
 Local plugins need `.codex-plugin/plugin.json`. npm selectors accept exact versions, tags, or
-quoted ranges; omitting the version selects `latest`. Install and refresh provision exact Codex
-`0.154.0` for the current supported host; npm acquisition also requires npm on `PATH`. Dry runs
-and read-only commands do not provision or start Codex. See
-[managed Codex CLI](./ADVANCED.md#managed-codex-cli) for cache and recovery details.
+quoted ranges; omitting the version selects `latest`. npm acquisition requires npm on `PATH`.
+Read-only commands do not start Codex. See
+[refresh and recovery](./ADVANCED.md#refresh-and-recovery) for partial effects.
 
 ## Options
 

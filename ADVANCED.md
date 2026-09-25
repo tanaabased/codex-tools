@@ -24,22 +24,13 @@ codex-tools install /path/to/plugin \
 `--codex-home` selects Codex configuration and cache state; the personal marketplace still belongs
 to `HOME`.
 
-## Managed Codex CLI
+## Codex CLI cache
 
-Install and refresh select the pinned official Codex release for macOS or Linux on arm64 or x64.
-Codex Tools downloads that platform archive from the OpenAI GitHub release, verifies its published
-SHA-256 digest, validates the exact CLI version, and atomically promotes the executable. It never
-falls back to a `codex` command on `PATH`.
-
-The cache lives under
+Codex Tools stores its internal CLI under
 `$XDG_CACHE_HOME/codex-tools/codex/<version>/<target>` when `$XDG_CACHE_HOME` is set, otherwise
-`$HOME/.cache/codex-tools/codex/<version>/<target>`. A valid cached executable is reused offline.
-If the executable is damaged but its verified archive remains valid, Codex Tools rebuilds it
-offline. Otherwise, it stages and verifies a replacement before changing the cached executable; an
-unsupported host, unavailable asset, invalid archive, or digest mismatch fails without invoking a
-host CLI. Remove only the affected version/target directory when manual cache reset is necessary.
-
-Dry runs, `status`, `doctor`, and `cache check` neither download nor invoke Codex.
+`$HOME/.cache/codex-tools/codex/<version>/<target>`. No routine maintenance is required. To force a
+repair, remove only the affected version and target directory; the next install or refresh rebuilds
+it.
 
 ## npm acquisition
 

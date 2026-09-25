@@ -38,7 +38,7 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 
 - Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
   executable; never substitute a checkout or global executable.
-- Require Node and npm for npm selectors. The packaged CLI provisions its exact Codex runtime.
+- Require Node and npm for npm selectors.
 - Preserve the caller's home, npm configuration, and explicit marketplace and Codex-home options.
 
 ## Workflow

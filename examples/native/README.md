@@ -1,8 +1,8 @@
 # Native Codex installation
 
-Install and refresh real plugins with the built Codex Tools CLI and its managed Codex executable.
-Each case copies a sample plugin into a disposable home; CI supplies `CODEX_TOOLS_PACKAGE`.
-An incompatible fake host `codex` stays first on `PATH` and must never be used.
+Install and refresh real plugins with the built Codex Tools CLI. Each case copies a sample plugin
+into a disposable home; CI supplies `CODEX_TOOLS_PACKAGE`. An incompatible fake command stays first
+on `PATH` and must never be used.
 
 ## Testing
 

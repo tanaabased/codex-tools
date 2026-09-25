@@ -525,7 +525,7 @@ interface NativeOptions {
 
 ### `NativeProvisioner`
 
-provisions the managed native Codex runner used by one install or refresh operation.
+resolves the native runner used by one install or refresh operation.
 
 ```ts
 type NativeProvisioner = (env: NodeJS.ProcessEnv) => Promise<NativeRunner>;

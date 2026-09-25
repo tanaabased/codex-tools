@@ -1,6 +1,6 @@
 # Native npm acquisition
 
-Managed Codex and npm acquire plugins from a disposable loopback HTTPS registry. No package is
+Codex Tools and npm acquire plugins from a disposable loopback HTTPS registry. No package is
 published. `setup.sh` owns registry readiness and cleanup; assertions remain here.
 
 ## Testing

@@ -32,9 +32,8 @@ execution requires an explicit request.
 - `cache` owns drift reporting, dry runs, synchronization, and convergence.
 
 Unit tests own injected native failures and process orchestration. `native` and `native-npm` own
-real managed Codex acquisition, preservation, and fresh-session discovery under Leia on Linux and
-macOS. The `native` scenario keeps an incompatible host command on `PATH` solely to prove it is
-ignored.
+real Codex acquisition, preservation, and fresh-session discovery under Leia on Linux and macOS.
+The `native` scenario keeps an incompatible host command on `PATH` solely to prove it is ignored.
 
 CI runs every scenario on Ubuntu and macOS with the same preparation and one README per matrix
 entry. Keep the matrix as explicit `os` and `example` lists, without includes or conditional steps.

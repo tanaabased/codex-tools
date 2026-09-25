@@ -38,7 +38,7 @@ Codex Tools runtime.
 
 - Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
   executable; never substitute a checkout or global executable.
-- Require Node; npm refresh also needs npm. The packaged CLI provisions its exact Codex runtime.
+- Require Node; npm refresh also needs npm.
 - Resolve the intended source and any explicit Codex home, marketplace, or cache path.
 
 ## Workflow

@@ -1,7 +1,7 @@
 # Plugin installation
 
 Check that an install dry run remains offline and side-effect free. The `native` and
-`native-npm` examples exercise real managed Codex acquisition.
+`native-npm` examples exercise real plugin acquisition.
 
 ## Testing
 

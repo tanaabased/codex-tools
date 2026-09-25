@@ -1,12 +1,12 @@
 # Refresh preconditions
 
-Check that refresh rejects missing installation state before provisioning Codex or editing the
+Check that refresh rejects missing installation state before native acquisition or editing the
 source. Successful local and pinned npm refreshes live in `native` and `native-npm`.
 
 ## Testing
 
 ```bash
-# should reject missing marketplace state without provisioning or editing the source
+# should reject missing marketplace state without acquisition or source edits
 source environment.sh
 cp -R source "$root/source"
 status=0
