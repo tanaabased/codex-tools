@@ -17,5 +17,12 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["bin/**/*.ts", "lib/**/*.ts", "utils/**/*.ts", "dev/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "bin/**/*.ts",
+    "lib/**/*.ts",
+    "utils/**/*.ts",
+    "dev/**/*.ts",
+    "test/**/*.ts",
+    "examples/.fixtures/**/*.ts"
+  ]
 }

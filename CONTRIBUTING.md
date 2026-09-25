@@ -46,10 +46,6 @@ formats, type exports, documentation examples, skills, and assets. Run it for ch
 packaging, shipped documentation, or the artifact contract. Nothing is published.
 Pass `--tarball=/path/to/package.tgz` to check an existing tarball without repacking it.
 
-`bun run test:native` checks installation, refresh, and preservation through real Codex;
-`bun run test:native:npm` checks acquisition through a disposable HTTPS registry. Both build first.
-Run these when changing native compatibility or the probes themselves.
-
 ## Install a local release candidate
 
 After building and checking the package above, extract its tarball into an empty directory:
@@ -73,15 +69,13 @@ See [plugin usage](./PLUGINS.md) for both hosts. Local installations do not foll
 
 ## Leia scenarios
 
-PR CI runs Leia 2 against `dist/codex-tools` through `bun run test:leia <scenario> --shell bash`.
-The groups cover defaults, inputs, install, symlink, refresh, status, and cache behavior. Fixtures live
-beside their scenarios, with shared fake child commands in `examples/fixtures/bin`.
-Read [examples/AGENTS.md](https://github.com/tanaabased/codex-tools/blob/main/examples/AGENTS.md)
-before editing them. Local Leia execution requires an explicit request.
-
-The fake commands verify orchestration. The Native Codex Verification workflow separately installs
-the packed plugin, checks fresh-session skill discovery, and invokes its cached runtime on Linux
-and macOS. PR CI also validates the plugin with `tanaabased/actions/validate-codex-plugin@v1`.
+PR CI runs Leia against the built CLI with `bun run test:leia <scenario> --shell bash`.
+Sample plugins live beside their scenarios; shared helpers and fake commands live in
+`examples/.fixtures/`. The `native` and `native-npm` scenarios use real Codex on Linux and macOS,
+including packed-plugin skill discovery and a disposable HTTPS registry.
+Local Leia execution requires an explicit request. Read
+[examples/AGENTS.md](https://github.com/tanaabased/codex-tools/blob/main/examples/AGENTS.md)
+before editing scenarios.
 
 ## Releases
 
