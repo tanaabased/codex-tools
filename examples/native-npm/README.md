@@ -1,6 +1,6 @@
 # Native npm acquisition
 
-Real Codex and npm acquire plugins from a disposable loopback HTTPS registry. No package is
+Managed Codex and npm acquire plugins from a disposable loopback HTTPS registry. No package is
 published. `setup.sh` owns registry readiness and cleanup; assertions remain here.
 
 ## Testing
@@ -15,7 +15,7 @@ test ! -e "$CODEX_HOME"
 # should acquire an exact release without running package lifecycle scripts
 source setup.sh
 codex-tools install 'npm:@fixture/package-name@1.2.3' | grep -F 'package version: 1.2.3'
-codex plugin list --json | grep -F 'native-npm-probe'
+"$CODEX_TOOLS_TEST_CODEX" plugin list --json | grep -F 'native-npm-probe'
 test ! -e "$root/LIFECYCLE-RAN"
 
 # should retain the catalog on repeat installation

@@ -14,12 +14,8 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 import { asError } from '../utils/errors.ts';
-import {
-  assertSupportedCodexVersion,
-  readNativeResult,
-  readNativeRows,
-  runNative,
-} from './codex-native.ts';
+import { assertSupportedCodexVersion, readNativeResult, readNativeRows } from './codex-native.ts';
+import { provisionNativeRunner } from './codex-provision.ts';
 import { collectEntries } from './cache.ts';
 import type { FileSnapshot, UnknownRecord } from './install-context.ts';
 import {
@@ -36,7 +32,7 @@ import type {
   InstallOptions,
   OperationStep,
 } from './install-types.ts';
-import type { NativeResult } from './codex-native.ts';
+import type { NativeResult, NativeRunner } from './codex-native.ts';
 import parseToml from '../utils/parse-toml.ts';
 
 interface NativeInstalled extends UnknownRecord {
@@ -71,7 +67,8 @@ export async function performInstall(
   options: InstallOptions = {},
   {
     env = process.env,
-    native = runNative,
+    native,
+    provision = provisionNativeRunner,
     source: preparedSource,
     refreshing = false,
   }: InstallDependencies = {},
@@ -151,6 +148,7 @@ export async function performInstall(
   let expectedMapping = context.mappingStats;
   let installed: NativeInstalled | undefined;
   let beforeInstalled: NativeInstalled[] | undefined;
+  let runCodex: NativeRunner | undefined;
   const unrelated = (rows: readonly NativeInstalled[]) =>
     rows
       .filter((row) => row.pluginId !== pluginId)
@@ -183,7 +181,8 @@ export async function performInstall(
     await context.paths.unchanged();
   }
   async function child(argv: readonly string[]): Promise<NativeResult> {
-    const child = await native(argv, nativeOptions);
+    if (!runCodex) throw new Error('Managed Codex CLI is unavailable.');
+    const child = await runCodex(argv, nativeOptions);
     result.native.push(child);
     if (child.exitCode !== 0) {
       result.nativeError = child;
@@ -332,6 +331,7 @@ export async function performInstall(
     return found;
   }
   try {
+    runCodex = native ?? (await provision(env));
     for (const operation of result.plan) {
       await unchanged();
       switch (operation.operation) {

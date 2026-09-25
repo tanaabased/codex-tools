@@ -31,8 +31,15 @@ export async function freshSkills(
   env: NodeJS.ProcessEnv,
   cwd: string,
   expected: readonly string[],
-  start: () => AppServer = () =>
-    spawn('codex', ['app-server'], { env, cwd, stdio: ['pipe', 'pipe', 'pipe'] }),
+  start: () => AppServer = () => {
+    if (!env.CODEX_TOOLS_TEST_CODEX)
+      throw new Error('Managed Codex test executable is unavailable.');
+    return spawn(env.CODEX_TOOLS_TEST_CODEX, ['app-server'], {
+      env,
+      cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  },
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const child = start();

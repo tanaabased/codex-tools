@@ -33,10 +33,6 @@ jobs:
       - run: bun run build
       - name: Put built CLI on PATH
         run: echo "$PWD/dist" >> "$GITHUB_PATH"
-      - name: Install the supported Codex contract
-        run: |
-          codex_version="$(bun -e "import { supportedCodexVersion } from './lib/codex-native.ts'; process.stdout.write(supportedCodexVersion)")"
-          npm install --global "@openai/codex@$codex_version"
       - id: pack
         uses: tanaabased/actions/npm-pack@v1
       - uses: tanaabased/actions/run-leia@v1

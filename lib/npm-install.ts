@@ -9,8 +9,9 @@ import {
   readNativePluginInspection,
   readNativeResult,
   runNative,
-  supportedCodexFamily,
+  supportedCodexVersion,
 } from './codex-native.ts';
+import { provisionNativeRunner } from './codex-provision.ts';
 import {
   exactVersion,
   parseNpmSelector,
@@ -193,7 +194,12 @@ function preview(
 
 export async function installNpmPlugin(
   options: InstallOptions,
-  { env = process.env, native = runNative, npm = runNpm }: InstallDependencies = {},
+  {
+    env = process.env,
+    native,
+    provision = provisionNativeRunner,
+    npm = runNpm,
+  }: InstallDependencies = {},
 ): Promise<InstallationResult> {
   const selection = parseNpmSelector(options.npmSelector);
   if (options.repoRoot !== undefined)
@@ -230,7 +236,8 @@ export async function installNpmPlugin(
     });
   }
   try {
-    const version = await native(['--version'], { env, cwd: context.home });
+    const runCodex = native ?? (await provision(env));
+    const version = await runCodex(['--version'], { env, cwd: context.home });
     if (version.exitCode !== 0) result.exitCode = version.exitCode || 2;
     result.codexVersion = assertSupportedCodexVersion(
       readNativeResult(version, {
@@ -240,7 +247,7 @@ export async function installNpmPlugin(
       {
         unsupportedMessage:
           'Supported native contract is Codex ' +
-          supportedCodexFamily +
+          supportedCodexVersion +
           '; found an unsupported Codex version.',
       },
     );
@@ -309,12 +316,12 @@ export async function installNpmPlugin(
         }),
       );
     await writeCatalog();
-    let installed = await native(
+    let installed = await runCodex(
       ['plugin', 'add', '--json', '--', name + '@inspection'],
       stageOptions,
     );
     if (installed.exitCode !== 0 && !pinned) {
-      // codex 0.154.x exposes a manifest-name mismatch before installation. this is
+      // codex 0.154.0 exposes a manifest-name mismatch before installation. this is
       // only a discovery hint; the acquired manifest below is the identity authority.
       const discovered = installed.stderr.match(
         /plugin\.json name `([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)` does not match marketplace plugin name `codex-tools-identity-probe`/,
@@ -322,7 +329,7 @@ export async function installNpmPlugin(
       if (discovered?.[1] && discovered[1].length <= 100) {
         name = discovered[1];
         await writeCatalog();
-        installed = await native(
+        installed = await runCodex(
           ['plugin', 'add', '--json', '--', name + '@inspection'],
           stageOptions,
         );
@@ -381,7 +388,7 @@ export async function installNpmPlugin(
       );
     const completed = await performInstall(options, {
       env,
-      native: safeNpmNative(native, provenance),
+      native: safeNpmNative(runCodex, provenance),
       source,
       refreshing,
     });

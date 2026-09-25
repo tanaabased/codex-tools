@@ -3,10 +3,7 @@ import { spawn } from 'node:child_process';
 import { asError } from '../utils/errors.ts';
 
 export const supportedCodexVersion = '0.154.0';
-export const supportedCodexFamily = supportedCodexVersion.replace(/\.\d+$/, '.x');
-const supportedVersion = new RegExp(
-  '^codex-cli ' + supportedCodexFamily.replaceAll('.', '\\.').replace('x', '\\d+') + '$',
-);
+const supportedVersion = 'codex-cli ' + supportedCodexVersion;
 
 export type NativeRecord = Record<string, unknown>;
 
@@ -44,8 +41,9 @@ export type NativeRunner = (
 /** runs one bounded native codex command without interpreting its response. */
 export async function runNative(
   argv: readonly string[],
-  { env, cwd, executable = 'codex', timeoutMs = 30000 }: NativeOptions = {},
+  { env, cwd, executable, timeoutMs = 30000 }: NativeOptions = {},
 ): Promise<NativeResult> {
+  if (!executable) throw new Error('Native executable is required.');
   return new Promise((resolve) => {
     const grouped = process.platform !== 'win32';
     const child = spawn(executable, [...argv], {
@@ -181,10 +179,10 @@ export function assertSupportedCodexVersion(
   version: string,
   { unsupportedMessage }: { unsupportedMessage?: string } = {},
 ): string {
-  if (!supportedVersion.test(version))
+  if (version !== supportedVersion)
     throw new Error(
       unsupportedMessage ??
-        'Supported native contract is Codex ' + supportedCodexFamily + '; found ' + version,
+        'Supported native contract is Codex ' + supportedCodexVersion + '; found ' + version,
     );
   return version;
 }

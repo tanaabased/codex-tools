@@ -143,7 +143,7 @@ back after a partial failure.
 ```ts
 const refreshPlugin: (
   options?: InstallOptions,
-  { env, native, now, npm }?: InstallDependencies,
+  { env, native, provision, now, npm }?: InstallDependencies,
 ) => Promise<InstallationResult>;
 ```
 
@@ -478,12 +478,13 @@ interface InstallationResult extends Record<string, unknown> {
 
 ### `InstallDependencies`
 
-injectable environment, process, source, and clock boundaries for installation operations.
+injectable environment, provisioning, process, source, and clock boundaries for installation.
 
 ```ts
 interface InstallDependencies {
   env?: NodeJS.ProcessEnv;
   native?: NativeRunner;
+  provision?: NativeProvisioner;
   npm?: NpmRunner;
   source?: ValidatedSource;
   refreshing?: boolean;
@@ -520,6 +521,14 @@ interface NativeOptions {
   executable?: string;
   timeoutMs?: number;
 }
+```
+
+### `NativeProvisioner`
+
+provisions the managed native Codex runner used by one install or refresh operation.
+
+```ts
+type NativeProvisioner = (env: NodeJS.ProcessEnv) => Promise<NativeRunner>;
 ```
 
 ### `NativeResult`

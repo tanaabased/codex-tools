@@ -4,12 +4,8 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 import { asError } from '../utils/errors.ts';
-import {
-  assertSupportedCodexVersion,
-  readNativeResult,
-  readNativeRows,
-  runNative,
-} from './codex-native.ts';
+import { assertSupportedCodexVersion, readNativeResult, readNativeRows } from './codex-native.ts';
+import { provisionNativeRunner } from './codex-provision.ts';
 import { collectEntries } from './cache.ts';
 import diffEntries from '../utils/diff-entries.ts';
 import hasDiff from '../utils/has-diff.ts';
@@ -23,7 +19,7 @@ import type {
   OperationStep,
 } from './install-types.ts';
 import { installNpmPlugin } from './npm-install.ts';
-import type { NativeResult } from './codex-native.ts';
+import type { NativeResult, NativeRunner } from './codex-native.ts';
 import parseToml from '../utils/parse-toml.ts';
 import type { UnknownRecord } from './install-context.ts';
 
@@ -80,12 +76,18 @@ export async function planCachebuster(
  */
 export async function refreshPlugin(
   options: InstallOptions = {},
-  { env = process.env, native = runNative, now = new Date(), npm }: InstallDependencies = {},
+  {
+    env = process.env,
+    native,
+    provision = provisionNativeRunner,
+    now = new Date(),
+    npm,
+  }: InstallDependencies = {},
 ): Promise<InstallationResult> {
   if (options.npmSelector)
     return installNpmPlugin(
       { ...options, command: 'refresh' },
-      { env, native, ...(npm ? { npm } : {}) },
+      { env, ...(native ? { native } : {}), provision, ...(npm ? { npm } : {}) },
     );
   const context = await resolveInstall(options, env);
   const { source, root, home, catalog, catalogFile, mapping } = context;
@@ -203,12 +205,14 @@ export async function refreshPlugin(
   const nativeOptions = { env: { ...env, HOME: home, CODEX_HOME: codexHome }, cwd: home };
   let expectedManifest = source.original;
   let beforeInstalled: NativeInstalled[] | undefined;
+  let runCodex: NativeRunner | undefined;
   const unrelated = (installedRows: readonly NativeInstalled[]) =>
     installedRows
       .filter((row) => row.pluginId !== pluginId)
       .sort((a, b) => a.pluginId.localeCompare(b.pluginId));
   async function child(argv: readonly string[]): Promise<NativeResult> {
-    const child = await native(argv, nativeOptions);
+    if (!runCodex) throw new Error('Managed Codex CLI is unavailable.');
+    const child = await runCodex(argv, nativeOptions);
     result.native.push(child);
     if (argv[1] === 'add') result.effects.nativeSucceeded = child.exitCode === 0;
     if (child.exitCode !== 0) {
@@ -287,6 +291,7 @@ export async function refreshPlugin(
     } else beforeInstalled = installedRows;
   }
   try {
+    runCodex = native ?? (await provision(env));
     for (const operation of result.plan) {
       await unchanged();
       switch (operation.operation) {

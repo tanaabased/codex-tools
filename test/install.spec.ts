@@ -214,6 +214,17 @@ describe('lib/install', () => {
     assert.match(result.issue ?? '', /Supported native contract/);
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
+  it('should report managed Codex provisioning failure before setup', async () => {
+    const result = await installPlugin(options, {
+      env,
+      provision: async () => {
+        throw new Error('Managed Codex CLI asset is unavailable.');
+      },
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.issue ?? '', /asset is unavailable/);
+    await assert.rejects(lstat(mapping), { code: 'ENOENT' });
+  });
   it('should report malformed native JSON and incompatible readback without claiming success', async () => {
     const result = await installPlugin(options, {
       env,
@@ -225,15 +236,39 @@ describe('lib/install', () => {
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
   });
   it('should make dry run entirely read-only, including no native process', async () => {
-    const result = await run({ dryRun: true });
+    let provisions = 0;
+    const result = await installPlugin(
+      { ...options, dryRun: true },
+      {
+        env,
+        provision: async () => {
+          provisions += 1;
+          return native;
+        },
+      },
+    );
     assert.equal(result.status, 'planned');
     assert.equal(result.ok, true);
+    assert.equal(provisions, 0);
     assert.deepEqual(calls, []);
     assert.ok(result.plan.some((step) => step.operation === 'map-source'));
     assert.ok(result.plan.some((step) => step.operation === 'write-catalog'));
     assert.ok(result.plan.some((step) => step.operation === 'install'));
     await assert.rejects(lstat(mapping), { code: 'ENOENT' });
     await assert.rejects(lstat(catalogFile), { code: 'ENOENT' });
+  });
+  it('should provision one managed runner without consulting the host PATH', async () => {
+    let provisions = 0;
+    const result = await installPlugin(options, {
+      env: { ...env, PATH: path.join(root, 'host-codex-999') },
+      provision: async () => {
+        provisions += 1;
+        return native;
+      },
+    });
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal(provisions, 1);
+    assert.ok(calls.length > 1);
   });
   it('should preserve metadata, policy, ordering, regular files, and unrelated links', async () => {
     await catalog([entry('other', './elsewhere')], {
