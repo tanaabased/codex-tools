@@ -482,6 +482,48 @@ describe('lib/install', () => {
     });
     await assert.rejects(run(), /overlaps/);
   });
+  it('should reject a folded Codex home inside an unmanaged source directory without effects', async () => {
+    const state = path.join(repoRoot, 'dotfiles/ai/.codex');
+    await mkdir(path.join(state, 'plugins'), { recursive: true });
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      codexTools: { managedPaths: ['.codex-plugin', 'skills'] },
+    });
+    await mkdir(path.join(repoRoot, 'skills'));
+    await rm(codexHome, { recursive: true });
+    codexHome = path.join(home, '.codex');
+    options.codexHome = codexHome;
+    env.CODEX_HOME = codexHome;
+    await symlink(state, codexHome);
+    mapping = path.join(codexHome, 'plugins/sample');
+    await symlink(repoRoot, mapping);
+    const target = path.join(repoRoot, 'dotfiles/ai/.agents/plugins/marketplace.json');
+    await writeJson(target, {
+      name: market,
+      plugins: [entry('sample', './.codex/plugins/sample')],
+    });
+    await symlink(path.join(repoRoot, 'dotfiles/ai/.agents'), path.join(home, '.agents'));
+    const links = [codexHome, mapping, path.join(home, '.agents')];
+    const before = await Promise.all(
+      links.map(async (file) => [await readlink(file), (await lstat(file)).ino]),
+    );
+    const bytes = await readFile(target, 'utf8');
+    for (const dryRun of [true, false]) {
+      await assert.rejects(
+        run({ dryRun }),
+        /overlaps.*Native Codex does not use codexTools.managedPaths/,
+      );
+      assert.deepEqual(calls, []);
+      assert.equal(await readFile(target, 'utf8'), bytes);
+      await assert.rejects(lstat(path.join(state, 'plugins/cache')), { code: 'ENOENT' });
+      await assert.rejects(lstat(path.join(state, 'config.toml')), { code: 'ENOENT' });
+      assert.deepEqual(
+        await Promise.all(
+          links.map(async (file) => [await readlink(file), (await lstat(file)).ino]),
+        ),
+        before,
+      );
+    }
+  });
   for (const kind of ['manifest', 'resource', 'physical-alias', 'installation-state']) {
     it('should retain overlap protection for ' + kind + ' outside managed selection', async () => {
       await writeJson(path.join(repoRoot, 'package.json'), {

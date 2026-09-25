@@ -415,9 +415,14 @@ export async function resolveInstall(
   if (
     inside(source.root, codexHome) ||
     inside(source.root, context.physicalCodexHome) ||
-    inside(context.physicalCodexHome, source.root) ||
-    catalogOverlaps
+    inside(context.physicalCodexHome, source.root)
   ) {
+    throw new Error(
+      'Plugin source overlaps the selected Codex home. Native Codex does not use ' +
+        'codexTools.managedPaths to exclude installation state from local source copies.',
+    );
+  }
+  if (catalogOverlaps) {
     throw new Error('Plugin source overlaps installation state or marketplace catalog.');
   }
   const npm = source.npm;
