@@ -314,19 +314,26 @@ export async function performInstall(
           (await realpath(found.source.path)) !== source.root
         )
           throw new Error('Installed plugin source does not match selected source.');
-        if (source.manifest.version !== undefined && found.version !== source.manifest.version)
-          throw new Error(
-            'Another version is installed; use codex-tools refresh to reinstall the local source.',
-          );
+        if (source.manifest.version !== undefined && found.version !== source.manifest.version) {
+          if (final)
+            throw new Error('Installed local plugin version does not match the selected source.');
+          if (found.installed && !found.enabled)
+            throw new Error(
+              'Native add enables plugins. Enable this plugin explicitly in Codex before installing the selected local version.',
+            );
+        }
       }
     }
-    if (source.npm) {
-      if (!final) {
-        beforeInstalled = installedRows;
-        if (refreshing && found?.installed !== true)
-          throw new Error('Refresh requires an existing installed npm plugin.');
-      } else if (!isDeepStrictEqual(unrelated(installedRows), unrelated(beforeInstalled ?? [])))
-        throw new Error('Unrelated native installation state changed during npm installation.');
+    if (!final) {
+      beforeInstalled = installedRows;
+      if (source.npm && refreshing && found?.installed !== true)
+        throw new Error('Refresh requires an existing installed npm plugin.');
+    } else {
+      if (!isDeepStrictEqual(unrelated(installedRows), unrelated(beforeInstalled ?? [])))
+        throw new Error('Unrelated native installation state changed during installation.');
+      const before = beforeInstalled?.find((row) => row.pluginId === pluginId);
+      if (before?.installed === true && found?.enabled !== before.enabled)
+        throw new Error('Selected plugin enablement changed during installation.');
     }
     return found;
   }
@@ -405,9 +412,11 @@ export async function performInstall(
           if (
             !refreshing &&
             installed?.installed === true &&
-            (!source.npm ||
-              (installedSource.version === source.npm.version &&
-                installed.version === source.nativeVersion))
+            (source.npm
+              ? installedSource.version === source.npm.version &&
+                installed.version === source.nativeVersion
+              : source.manifest.version === undefined ||
+                installed.version === source.manifest.version)
           ) {
             if (!source.npm || (await npmPayloadMatches())) {
               operation.skipped = true;
@@ -479,10 +488,12 @@ export async function performInstall(
     const remainingOperation = result.remaining[0]?.operation;
     if (
       remainingOperation !== undefined &&
-      ['install', 'register-marketplace'].includes(remainingOperation)
+      (['install', 'register-marketplace'].includes(remainingOperation) ||
+        (remainingOperation === 'readback' &&
+          result.completed.some((step) => step.operation === 'install' && !step.skipped)))
     )
       result.nativeState =
-        'The failed native operation may have changed Codex state; rerun to inspect and resume.';
+        'A native operation may have changed Codex state; rerun to inspect and resume.';
     result.issue = asError(error).message;
     result.exitCode ??= 2;
   }
