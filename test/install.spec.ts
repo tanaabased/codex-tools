@@ -69,6 +69,7 @@ describe('lib/install', () => {
   let options: CodexToolsOptions = {};
   let calls: Array<readonly string[]> = [];
   let installed: InstalledPlugin | null = null;
+  let unrelated: InstalledPlugin | null = null;
   let marketRoot = '';
   let market = '';
   let failure: ((argv: readonly string[]) => boolean) | null = null;
@@ -101,18 +102,22 @@ describe('lib/install', () => {
       );
       data = { marketplaceName: market, installedRoot: marketRoot };
     } else if (argv[1] === 'add') {
+      const manifest = JSON.parse(
+        await readFile(path.join(repoRoot, '.codex-plugin/plugin.json'), 'utf8'),
+      ) as { version: string };
       installed = {
         pluginId: 'sample@' + market,
         name: 'sample',
         marketplaceName: market,
-        version: '1.0.0',
+        version: manifest.version,
         installed: true,
         enabled: true,
         source: { source: 'local', path: mapping },
         authPolicy: 'ON_INSTALL',
       };
       data = { pluginId: installed.pluginId };
-    } else data = { installed: installed ? [installed] : [], available: [] };
+    } else
+      data = { installed: [installed, unrelated].filter((row) => row !== null), available: [] };
     return { argv, exitCode: 0, stdout: JSON.stringify(data), stderr: '' };
   };
   const run = (extra: CodexToolsOptions = {}) =>
@@ -136,6 +141,7 @@ describe('lib/install', () => {
     options = { repoRoot, codexHome };
     calls = [];
     installed = null;
+    unrelated = null;
     marketRoot = home;
     market = 'personal';
     failure = null;
@@ -196,15 +202,111 @@ describe('lib/install', () => {
     assert.match(result.issue ?? '', /mapping changed/);
     assert.equal(await readFile(mapping, 'utf8'), 'concurrent file');
   });
-  it('should not overwrite or reinstall a different installed version', async () => {
+  it('should replace a different local version without editing its manifest or unrelated state', async () => {
     assert.equal((await run()).ok, true);
     assert.ok(installed);
-    installed.version = '0.9.0';
+    unrelated = {
+      pluginId: 'other@personal',
+      name: 'other',
+      marketplaceName: market,
+      version: '2.0.0',
+      installed: true,
+      enabled: false,
+      source: { source: 'local', path: repoRoot },
+      authPolicy: 'ON_INSTALL',
+    };
+    const otherBefore = structuredClone(unrelated);
+    const configFile = path.join(codexHome, 'config.toml');
+    await writeFile(
+      configFile,
+      '[plugins."other@personal"]\nenabled = false\n[unrelated]\nvalue = "keep"\n',
+    );
+    const configBefore = await readFile(configFile, 'utf8');
+    const selectedCatalog = JSON.parse(await readFile(catalogFile, 'utf8')) as {
+      plugins: FixtureEntry[];
+    };
+    await catalog([entry('other', './elsewhere'), ...selectedCatalog.plugins]);
+    const catalogBefore = await readFile(catalogFile, 'utf8');
+    const manifestFile = path.join(repoRoot, '.codex-plugin/plugin.json');
+    await writeJson(manifestFile, { name: 'sample', version: '1.1.0' });
+    const manifestBefore = await readFile(manifestFile, 'utf8');
+    calls = [];
+    const result = await run();
+    assert.equal(result.ok, true, result.issue ?? undefined);
+    assert.equal(result.inspection.enabled, true);
+    assert.equal(installed.version, '1.1.0');
+    assert.equal(calls.filter((argv) => argv[1] === 'add').length, 1);
+    assert.equal(await readFile(manifestFile, 'utf8'), manifestBefore);
+    assert.equal(await readFile(catalogFile, 'utf8'), catalogBefore);
+    assert.equal(await readFile(configFile, 'utf8'), configBefore);
+    assert.deepEqual(unrelated, otherBefore);
+    calls = [];
+    assert.equal((await run()).ok, true);
+    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+  });
+  it('should refuse to enable a disabled plugin while replacing its local version', async () => {
+    assert.equal((await run()).ok, true);
+    assert.ok(installed);
+    installed.enabled = false;
+    await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), {
+      name: 'sample',
+      version: '1.1.0',
+    });
     calls = [];
     const result = await run();
     assert.equal(result.ok, false);
-    assert.match(result.issue ?? '', /Another version/);
+    assert.match(result.issue ?? '', /Enable this plugin explicitly in Codex/);
+    assert.equal(installed.enabled, false);
+    assert.equal(installed.version, '1.0.0');
     assert.ok(!calls.some((argv) => argv[1] === 'add'));
+  });
+  it('should report failed or nonconvergent native local replacement', async () => {
+    assert.equal((await run()).ok, true);
+    await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), {
+      name: 'sample',
+      version: '1.1.0',
+    });
+    failure = (argv) => argv[1] === 'add';
+    let result = await run();
+    assert.equal(result.ok, false);
+    assert.equal(result.exitCode, 37);
+    assert.equal(result.remaining[0]?.operation, 'install');
+    assert.match(result.nativeState ?? '', /may have changed/);
+    assert.equal(installed?.version, '1.0.0');
+    failure = null;
+    hook = async (argv) => {
+      if (argv[1] === 'list' && calls.some((call) => call[1] === 'add') && installed)
+        installed.version = '1.0.0';
+    };
+    calls = [];
+    result = await run();
+    assert.equal(result.ok, false);
+    assert.equal(result.remaining[0]?.operation, 'readback');
+    assert.match(result.issue ?? '', /version does not match/);
+    assert.match(result.nativeState ?? '', /may have changed/);
+  });
+  it('should detect unrelated native installation changes during local replacement', async () => {
+    assert.equal((await run()).ok, true);
+    unrelated = {
+      pluginId: 'other@personal',
+      name: 'other',
+      marketplaceName: market,
+      version: '2.0.0',
+      installed: true,
+      enabled: false,
+      source: { source: 'local', path: repoRoot },
+      authPolicy: 'ON_INSTALL',
+    };
+    await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), {
+      name: 'sample',
+      version: '1.1.0',
+    });
+    hook = async (argv) => {
+      if (argv[1] === 'add' && unrelated) unrelated.enabled = true;
+    };
+    const result = await run();
+    assert.equal(result.ok, false);
+    assert.match(result.issue ?? '', /Unrelated native installation state changed/);
   });
   it('should reject an unsupported native version before setup', async () => {
     const result = await installPlugin(options, {
@@ -783,9 +885,11 @@ describe('lib/install', () => {
     assert.equal((await run()).ok, true);
     assert.ok(installed);
     installed.enabled = false;
+    calls = [];
     const result = await run();
     assert.equal(result.ok, true);
     assert.equal(result.status, 'installed_pending_enablement');
+    assert.ok(!calls.some((argv) => argv[1] === 'add'));
   });
   it('should use strict positional/option/environment precedence', () => {
     assert.equal(
