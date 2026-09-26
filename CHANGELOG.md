@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+## v1.0.3 - [September 26, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.3)
+
 - Fixed `codex-tools install` to reconcile existing local plugins to the selected source version without rewriting the source manifest. [#38](https://github.com/tanaabased/codex-tools/issues/38) [#39](https://github.com/tanaabased/codex-tools/pull/39)
 
 ## v1.0.2 - [September 25, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.2)
