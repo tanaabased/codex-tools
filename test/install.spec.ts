@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   chmod,
+  cp,
   lstat,
   mkdir,
   mkdtemp,
@@ -74,7 +75,7 @@ describe('lib/install', () => {
   let market = '';
   let failure: ((argv: readonly string[]) => boolean) | null = null;
   let hook: ((argv: readonly string[]) => Promise<void>) | null = null;
-  const native: NativeRunner = async (argv) => {
+  const native: NativeRunner = async (argv, nativeOptions) => {
     calls.push(argv);
     if (hook) await hook(argv);
     if (failure?.(argv))
@@ -101,10 +102,23 @@ describe('lib/install', () => {
           '\n',
       );
       data = { marketplaceName: market, installedRoot: marketRoot };
-    } else if (argv[1] === 'add') {
+    } else if (argv[0] === 'app-server') {
+      const request = nativeOptions?.pluginInstall;
+      assert.equal(request?.pluginName, 'sample');
+      const payload = path.resolve(request!.marketplacePath, '../../../payload');
       const manifest = JSON.parse(
-        await readFile(path.join(repoRoot, '.codex-plugin/plugin.json'), 'utf8'),
+        await readFile(path.join(payload, '.codex-plugin/plugin.json'), 'utf8'),
       ) as { version: string };
+      const cache = path.join(
+        await realpath(codexHome),
+        'plugins/cache',
+        market,
+        'sample',
+        manifest.version,
+      );
+      await rm(cache, { recursive: true, force: true });
+      await mkdir(path.dirname(cache), { recursive: true });
+      await cp(payload, cache, { recursive: true });
       installed = {
         pluginId: 'sample@' + market,
         name: 'sample',
@@ -115,7 +129,7 @@ describe('lib/install', () => {
         source: { source: 'local', path: mapping },
         authPolicy: 'ON_INSTALL',
       };
-      data = { pluginId: installed.pluginId };
+      data = { authPolicy: 'ON_INSTALL', appsNeedingAuth: [] };
     } else
       data = { installed: [installed, unrelated].filter((row) => row !== null), available: [] };
     return { argv, exitCode: 0, stdout: JSON.stringify(data), stderr: '' };
@@ -159,8 +173,8 @@ describe('lib/install', () => {
     assert.equal(result.inspection.activation, 'unknown');
     assert.equal(await realpath(mapping), repoRoot);
     assert.deepEqual(
-      calls.find((argv) => argv[1] === 'add'),
-      ['plugin', 'add', '--json', '--', 'sample@personal'],
+      calls.find((argv) => argv[0] === 'app-server'),
+      ['app-server'],
     );
     assert.ok(!calls.some((argv) => argv[1] === 'marketplace' && argv[2] === 'add'));
     const before = await lstat(catalogFile),
@@ -169,7 +183,7 @@ describe('lib/install', () => {
     assert.equal((await run()).ok, true);
     assert.equal((await lstat(catalogFile)).mtimeMs, before.mtimeMs);
     assert.equal((await lstat(mapping)).ino, linkBefore.ino);
-    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server'));
   });
   it('should accept native defaults without rewriting an existing entry', async () => {
     await writeJson(catalogFile, { name: market });
@@ -179,6 +193,50 @@ describe('lib/install', () => {
     const before = await readFile(catalogFile, 'utf8');
     assert.equal((await run()).ok, true);
     assert.equal(await readFile(catalogFile, 'utf8'), before);
+  });
+
+  it('should report an excluded hook entrypoint before invoking Codex', async () => {
+    await writeJson(path.join(repoRoot, 'package.json'), {
+      name: 'sample',
+      version: '1.0.0',
+      files: ['.codex-plugin', 'hooks'],
+    });
+    await writeJson(path.join(repoRoot, 'hooks/hooks.json'), {
+      hooks: {
+        SessionStart: [
+          { hooks: [{ type: 'command', command: 'node "${PLUGIN_ROOT}/runtime/hook file.mjs"' }] },
+        ],
+      },
+    });
+    await mkdir(path.join(repoRoot, 'runtime'));
+    await writeFile(path.join(repoRoot, 'runtime/hook file.mjs'), '');
+    const npm: NativeRunner = async (argv) => {
+      assert.ok(argv.includes('--ignore-scripts'));
+      const files = ['.codex-plugin/plugin.json', 'hooks/hooks.json', 'package.json'];
+      return {
+        argv,
+        exitCode: 0,
+        stdout: JSON.stringify([{ files: files.map((path) => ({ path })) }]),
+        stderr: '',
+      };
+    };
+    const result = await installPlugin(options, { env, native, npm });
+    assert.equal(result.ok, false);
+    assert.match(result.issue ?? '', /excludes a hook command resource: runtime\/hook file\.mjs/);
+    assert.deepEqual(calls, []);
+  });
+
+  it('should detect development files left in the installed cache', async () => {
+    hook = async (argv) => {
+      if (argv[1] !== 'list' || !installed) return;
+      const sentinel = path.join(codexHome, 'plugins/cache/personal/sample/1.0.0/.git/sentinel');
+      await mkdir(path.dirname(sentinel), { recursive: true });
+      await writeFile(sentinel, 'unexpected');
+    };
+    const result = await run();
+    assert.equal(result.ok, false);
+    assert.equal(result.inspection.payload, 'mismatch');
+    assert.match(result.issue ?? '', /does not match the selected files/);
   });
   it('should inherit a nonempty Codex home and use the home default for an empty value', async () => {
     options = { repoRoot };
@@ -241,14 +299,14 @@ describe('lib/install', () => {
     assert.equal(result.ok, true, result.issue ?? undefined);
     assert.equal(result.inspection.enabled, true);
     assert.equal(installed.version, '1.1.0');
-    assert.equal(calls.filter((argv) => argv[1] === 'add').length, 1);
+    assert.equal(calls.filter((argv) => argv[0] === 'app-server').length, 1);
     assert.equal(await readFile(manifestFile, 'utf8'), manifestBefore);
     assert.equal(await readFile(catalogFile, 'utf8'), catalogBefore);
     assert.equal(await readFile(configFile, 'utf8'), configBefore);
     assert.deepEqual(unrelated, otherBefore);
     calls = [];
     assert.equal((await run()).ok, true);
-    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server'));
   });
   it('should refuse to enable a disabled plugin while replacing its local version', async () => {
     assert.equal((await run()).ok, true);
@@ -264,7 +322,7 @@ describe('lib/install', () => {
     assert.match(result.issue ?? '', /Enable this plugin explicitly in Codex/);
     assert.equal(installed.enabled, false);
     assert.equal(installed.version, '1.0.0');
-    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server'));
   });
   it('should report failed or nonconvergent native local replacement', async () => {
     assert.equal((await run()).ok, true);
@@ -272,7 +330,7 @@ describe('lib/install', () => {
       name: 'sample',
       version: '1.1.0',
     });
-    failure = (argv) => argv[1] === 'add';
+    failure = (argv) => argv[0] === 'app-server';
     let result = await run();
     assert.equal(result.ok, false);
     assert.equal(result.exitCode, 37);
@@ -281,7 +339,7 @@ describe('lib/install', () => {
     assert.equal(installed?.version, '1.0.0');
     failure = null;
     hook = async (argv) => {
-      if (argv[1] === 'list' && calls.some((call) => call[1] === 'add') && installed)
+      if (argv[1] === 'list' && calls.some((call) => call[0] === 'app-server') && installed)
         installed.version = '1.0.0';
     };
     calls = [];
@@ -308,7 +366,7 @@ describe('lib/install', () => {
       version: '1.1.0',
     });
     hook = async (argv) => {
-      if (argv[1] === 'add' && unrelated) unrelated.enabled = true;
+      if (argv[0] === 'app-server' && unrelated) unrelated.enabled = true;
     };
     const result = await run();
     assert.equal(result.ok, false);
@@ -589,7 +647,7 @@ describe('lib/install', () => {
     const after = await readFile(target, 'utf8');
     calls = [];
     assert.equal((await run()).ok, true);
-    assert.ok(!calls.some((argv) => argv[1] === 'add' || argv[2] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server' || argv[2] === 'add'));
     assert.equal(await readFile(target, 'utf8'), after);
     assert.deepEqual(
       await Promise.all(links.map(async (file) => [await readlink(file), (await lstat(file)).ino])),
@@ -731,7 +789,7 @@ describe('lib/install', () => {
     assert.equal(result.ok, false);
     assert.match(result.issue ?? '', /changed/);
     assert.ok(result.completed.some((step) => step.operation === 'write-catalog'));
-    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server'));
   });
   it('should reject changed payload selection before setup', async () => {
     await writeJson(path.join(repoRoot, 'package.json'), {
@@ -846,7 +904,7 @@ describe('lib/install', () => {
             : phase === 'register'
               ? argv[2] === 'add'
               : phase === 'install'
-                ? argv[1] === 'add'
+                ? argv[0] === 'app-server'
                 : argv[1] === 'list' && installed !== null;
         const result = await run();
         assert.equal(result.ok, false);
@@ -895,7 +953,7 @@ describe('lib/install', () => {
     const result = await run();
     assert.equal(result.ok, true);
     assert.equal(result.status, 'installed_pending_enablement');
-    assert.ok(!calls.some((argv) => argv[1] === 'add'));
+    assert.ok(!calls.some((argv) => argv[0] === 'app-server'));
   });
   it('should use strict positional/option/environment precedence', () => {
     assert.equal(

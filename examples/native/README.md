@@ -46,6 +46,38 @@ for payload in second third; do
   cmp "$plugin/skills/probe/SKILL.md" "$CODEX_HOME/plugins/cache/personal/codex-tools-smoke/$version/skills/probe/SKILL.md"
 done
 
+# should refresh an unfiltered local cache with only the runnable package files
+source setup.sh
+mkdir -p "$plugin/node_modules/dev" "$plugin/.temp" "$plugin/.git"
+for directory in node_modules/dev .temp .git; do
+  printf 'development only\n' >"$plugin/$directory/sentinel"
+done
+codex-tools install "$plugin" | grep -F 'payload: verified'
+cache_root="$CODEX_HOME/plugins/cache/personal/codex-tools-smoke"
+for directory in node_modules .temp .git; do
+  test ! -e "$cache_root/1.0.0/$directory"
+done
+"$CODEX_TOOLS_TEST_CODEX" plugin add --json -- codex-tools-smoke@personal
+for directory in node_modules/dev .temp .git; do
+  cmp "$plugin/$directory/sentinel" "$cache_root/1.0.0/$directory/sentinel"
+done
+mkdir -p "$CODEX_HOME/plugins/data/codex-tools-smoke-personal"
+printf 'keep\n' >"$CODEX_HOME/plugins/data/codex-tools-smoke-personal/state"
+printf '\nprocess.stdout.write("refreshed probe\\n");\n' >>"$plugin/runtime/probe.mjs"
+codex-tools refresh "$plugin" | grep -F 'payload: verified'
+version=$(bun -p 'require(process.argv[1]).version' "$plugin/.codex-plugin/plugin.json")
+active="$cache_root/$version"
+cmp "$plugin/runtime/probe.mjs" "$active/runtime/probe.mjs"
+cmp "$plugin/hooks/hooks.json" "$active/hooks/hooks.json"
+(cd "$root" && "$active/runtime/probe.mjs") | grep -Fx 'refreshed probe'
+(cd "$root" && "$active/runtime/probe.mjs") | grep -Fx 'bundled resource'
+for directory in node_modules/dev .temp .git; do
+  grep -Fx 'development only' "$plugin/$directory/sentinel"
+  test ! -e "$active/$directory/sentinel"
+done
+test ! -e "$plugin/lifecycle-ran"
+grep -Fx 'keep' "$CODEX_HOME/plugins/data/codex-tools-smoke-personal/state"
+
 # should preserve another marketplace when refreshing a stale local release
 source setup.sh
 codex-tools install "$plugin"

@@ -15,7 +15,13 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 import { asError } from '../utils/errors.ts';
-import { assertSupportedCodexVersion, readNativeResult, readNativeRows } from './codex-native.ts';
+import {
+  assertSupportedCodexVersion,
+  readNativeResult,
+  readNativeRows,
+  readStagedInstall,
+  stagedInstallArgv,
+} from './codex-native.ts';
 import { provisionNativeRunner } from './codex-provision.ts';
 import { collectEntries } from './cache.ts';
 import type { FileSnapshot, UnknownRecord } from './install-context.ts';
@@ -28,6 +34,8 @@ import type {
 } from './install-types.ts';
 import type { NativeResult, NativeRunner } from './codex-native.ts';
 import parseToml from '../utils/parse-toml.ts';
+import { checkLocalCacheParents, localCacheEntries, prepareLocalPayload } from './local-payload.ts';
+import type { LocalPayload } from './local-payload.ts';
 
 interface NativeInstalled extends UnknownRecord {
   pluginId: string;
@@ -62,6 +70,7 @@ export async function performInstall(
   {
     env = process.env,
     native,
+    npm,
     provision = provisionNativeRunner,
     source: preparedSource,
     refreshing = false,
@@ -70,6 +79,14 @@ export async function performInstall(
   const context = await resolveInstall(options, env, preparedSource);
   const { source, root, home, codexHome, catalog, catalogFile, mapping } = context;
   const pluginId = source.manifest.name + '@' + catalog.name;
+  const localVersion = source.manifest.version ?? 'local';
+  const localCachePath = path.join(
+    context.physicalCodexHome,
+    'plugins/cache',
+    catalog.name,
+    source.manifest.name,
+    localVersion,
+  );
   const nativeOptions = { env: { ...env, HOME: home, CODEX_HOME: codexHome }, cwd: home };
   const result: InstallationResult = {
     command: refreshing ? 'refresh' : 'install',
@@ -127,11 +144,12 @@ export async function performInstall(
     step('register-marketplace', { argv: ['plugin', 'marketplace', 'add', root, '--json'] });
   step('verify-marketplace', { argv: ['plugin', 'marketplace', 'list', '--json'] });
   step('install', {
-    argv: ['plugin', 'add', '--json', '--', pluginId],
-    condition: 'unless the same source/version is already installed',
+    argv: source.npm ? ['plugin', 'add', '--json', '--', pluginId] : [...stagedInstallArgv],
+    condition: 'unless the selected payload is already installed',
   });
   step('readback', { argv: ['plugin', 'list', '--json', '--marketplace=' + catalog.name] });
   if (source.npm) step('verify-package');
+  else step('verify-payload', { path: localCachePath });
   result.remaining = [...result.plan];
   if (options.dryRun) {
     result.ok = true;
@@ -143,11 +161,13 @@ export async function performInstall(
   let installed: NativeInstalled | undefined;
   let beforeInstalled: NativeInstalled[] | undefined;
   let runCodex: NativeRunner | undefined;
+  let payload: LocalPayload | undefined;
   const unrelated = (rows: readonly NativeInstalled[]) =>
     rows
       .filter((row) => row.pluginId !== pluginId)
       .sort((a, b) => a.pluginId.localeCompare(b.pluginId));
   async function unchanged(): Promise<void> {
+    if (payload) await checkLocalCacheParents(context.physicalCodexHome, localCachePath);
     const observedFiles: Array<[string, FileSnapshot | null]> = [
       [source.file, source.original],
       [path.join(source.root, 'package.json'), context.packageSnapshot],
@@ -174,9 +194,20 @@ export async function performInstall(
       throw new Error('Source mapping changed during installation.');
     await context.paths.unchanged();
   }
-  async function child(argv: readonly string[]): Promise<NativeResult> {
+  async function child(argv: readonly string[], staged?: LocalPayload): Promise<NativeResult> {
     if (!runCodex) throw new Error('Managed Codex CLI is unavailable.');
-    const child = await runCodex(argv, nativeOptions);
+    const child = await runCodex(
+      argv,
+      staged
+        ? {
+            ...nativeOptions,
+            pluginInstall: {
+              marketplacePath: staged.marketplacePath,
+              pluginName: source.manifest.name,
+            },
+          }
+        : nativeOptions,
+    );
     result.native.push(child);
     if (child.exitCode !== 0) {
       result.nativeError = child;
@@ -308,7 +339,7 @@ export async function performInstall(
           (await realpath(found.source.path)) !== source.root
         )
           throw new Error('Installed plugin source does not match selected source.');
-        if (source.manifest.version !== undefined && found.version !== source.manifest.version) {
+        if (found.version !== localVersion) {
           if (final)
             throw new Error('Installed local plugin version does not match the selected source.');
           if (found.installed && !found.enabled)
@@ -332,6 +363,7 @@ export async function performInstall(
     return found;
   }
   try {
+    if (!source.npm) payload = await prepareLocalPayload(context, env, { ...(npm ? { npm } : {}) });
     runCodex = native ?? (await provision(env));
     for (const operation of result.plan) {
       await unchanged();
@@ -409,21 +441,42 @@ export async function performInstall(
             (source.npm
               ? installedSource.version === source.npm.version &&
                 installed.version === source.nativeVersion
-              : source.manifest.version === undefined ||
-                installed.version === source.manifest.version)
+              : installed.version === localVersion)
           ) {
-            if (!source.npm || (await npmPayloadMatches())) {
+            const matches = payload
+              ? isDeepStrictEqual(
+                  await localCacheEntries(localCachePath, payload.entries),
+                  payload.entries,
+                )
+              : await npmPayloadMatches();
+            if (matches) {
               operation.skipped = true;
               break;
             }
             if (!installed.enabled)
               throw new Error(
-                'Enable this plugin explicitly in Codex before repairing its npm payload.',
+                'Enable this plugin explicitly in Codex before repairing its payload.',
               );
           }
           await mkdir(codexHome, { recursive: true });
-          await call(operationArgv(operation));
+          if (payload) {
+            await payload.unchanged();
+            readStagedInstall(await child(operationArgv(operation), payload));
+          } else await call(operationArgv(operation));
           await recordNativeConfig();
+          break;
+        }
+        case 'verify-payload': {
+          if (!payload) throw new Error('Local installation payload is unavailable.');
+          const matches = isDeepStrictEqual(
+            await localCacheEntries(localCachePath, payload.entries),
+            payload.entries,
+          );
+          result.inspection.payload = matches ? 'verified' : 'mismatch';
+          result.cachePath = localCachePath;
+          if (!matches)
+            throw new Error('Installed local payload does not match the selected files.');
+          await payload.unchanged();
           break;
         }
         case 'verify-package': {
@@ -483,13 +536,15 @@ export async function performInstall(
     if (
       remainingOperation !== undefined &&
       (['install', 'register-marketplace'].includes(remainingOperation) ||
-        (remainingOperation === 'readback' &&
+        (['readback', 'verify-payload'].includes(remainingOperation) &&
           result.completed.some((step) => step.operation === 'install' && !step.skipped)))
     )
       result.nativeState =
         'A native operation may have changed Codex state; rerun to inspect and resume.';
     result.issue = asError(error).message;
     result.exitCode ??= 2;
+  } finally {
+    await payload?.remove();
   }
   return result;
 }

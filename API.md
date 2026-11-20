@@ -519,6 +519,7 @@ interface NativeOptions {
   cwd?: string;
   executable?: string;
   timeoutMs?: number;
+  pluginInstall?: { marketplacePath: string; pluginName: string };
 }
 ```
 

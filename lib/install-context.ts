@@ -176,7 +176,10 @@ export async function snapshot(file: string): Promise<FileSnapshot | null> {
 /** validates the source identity and contained plugin resources used during installation. */
 export async function validateSource(
   sourcePath: string,
-  { portable = false }: { portable?: boolean } = {},
+  {
+    portable = false,
+    checkResources = portable,
+  }: { portable?: boolean; checkResources?: boolean } = {},
 ): Promise<ValidatedSource> {
   let root = path.resolve(sourcePath);
   try {
@@ -241,7 +244,7 @@ export async function validateSource(
       ['skills', true],
       ['apps', false],
       ['mcpServers', false],
-      ...(portable ? ([['hooks', false]] as Array<[string, boolean]>) : []),
+      ...(checkResources ? ([['hooks', false]] as Array<[string, boolean]>) : []),
     ];
     for (const [key, directory] of resourceKinds) {
       const value = resources[key];
@@ -262,7 +265,7 @@ export async function validateSource(
         if (!object(data)) throw new Error('Invalid plugin resource JSON: ' + key);
       }
     }
-    if (portable) {
+    if (checkResources) {
       const interfaceValue = object(resources.interface) ? resources.interface : {};
       const assets: unknown[] = [interfaceValue.composerIcon, interfaceValue.logo];
       if (Array.isArray(interfaceValue.screenshots)) assets.push(...interfaceValue.screenshots);

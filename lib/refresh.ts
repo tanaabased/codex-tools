@@ -5,9 +5,15 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 import { asError } from '../utils/errors.ts';
-import { assertSupportedCodexVersion, readNativeResult, readNativeRows } from './codex-native.ts';
+import {
+  assertSupportedCodexVersion,
+  readNativeResult,
+  readNativeRows,
+  readStagedInstall,
+  stagedInstallArgv,
+} from './codex-native.ts';
 import { provisionNativeRunner } from './codex-provision.ts';
-import { collectEntries } from './cache.ts';
+import { checkLocalCacheParents, localCacheEntries, prepareLocalPayload } from './local-payload.ts';
 import diffEntries from '../utils/diff-entries.ts';
 import hasDiff from '../utils/has-diff.ts';
 import { object, optional, resolveInstall, snapshot } from './install-context.ts';
@@ -107,24 +113,11 @@ export async function refreshPlugin(
     throw new Error('Plugin source overlaps the selected Codex home.');
   const pluginId = source.manifest.name + '@' + catalog.name;
   const cacheRoot = path.join(codexHome, 'plugins/cache', catalog.name, source.manifest.name);
-  async function checkCacheParents() {
-    let current = codexHome;
-    for (const part of path.relative(codexHome, cacheRoot).split(path.sep)) {
-      current = path.join(current, part);
-      const stats = await optional(() => lstat(current));
-      if (stats && !stats.isDirectory())
-        throw new Error('Native cache parent must be a real directory: ' + current);
-    }
-  }
+  const checkCacheParents = () => checkLocalCacheParents(codexHome, cacheRoot);
   await checkCacheParents();
   const nextVersion = await planCachebuster(source.manifest.version, cacheRoot, now);
   const cachePath = path.join(cacheRoot, nextVersion);
   const manifestText = JSON.stringify({ ...source.manifest, version: nextVersion }, null, 2) + '\n';
-  const expectedSource = await collectEntries(source.root);
-  if ([...expectedSource.values()].some((entry) => entry.type === 'symlink'))
-    throw new Error(
-      'Native Codex skips payload symlinks; refresh requires a regular-file payload.',
-    );
   const result: InstallationResult & {
     effects: InstallationEffects;
     manifestEdit: ManifestEdit;
@@ -178,7 +171,7 @@ export async function refreshPlugin(
         before: source.manifest.version,
         after: nextVersion,
       },
-      { operation: 'reinstall', argv: ['plugin', 'add', '--json', '--', pluginId] },
+      { operation: 'reinstall', argv: [...stagedInstallArgv] },
       {
         operation: 'readback',
         argv: ['plugin', 'list', '--json', '--marketplace=' + catalog.name],
@@ -198,6 +191,10 @@ export async function refreshPlugin(
     return result;
   }
   const nativeOptions = { env: { ...env, HOME: home, CODEX_HOME: codexHome }, cwd: home };
+  const payload = await prepareLocalPayload(context, env, {
+    manifestText,
+    ...(npm ? { npm } : {}),
+  });
   let expectedManifest = source.original;
   let beforeInstalled: NativeInstalled[] | undefined;
   let runCodex: NativeRunner | undefined;
@@ -205,11 +202,22 @@ export async function refreshPlugin(
     installedRows
       .filter((row) => row.pluginId !== pluginId)
       .sort((a, b) => a.pluginId.localeCompare(b.pluginId));
-  async function child(argv: readonly string[]): Promise<NativeResult> {
+  async function child(argv: readonly string[], staged = false): Promise<NativeResult> {
     if (!runCodex) throw new Error('Managed Codex CLI is unavailable.');
-    const child = await runCodex(argv, nativeOptions);
+    const child = await runCodex(
+      argv,
+      staged
+        ? {
+            ...nativeOptions,
+            pluginInstall: {
+              marketplacePath: payload.marketplacePath,
+              pluginName: source.manifest.name,
+            },
+          }
+        : nativeOptions,
+    );
     result.native.push(child);
-    if (argv[1] === 'add') result.effects.nativeSucceeded = child.exitCode === 0;
+    if (staged) result.effects.nativeSucceeded = child.exitCode === 0;
     if (child.exitCode !== 0) {
       result.nativeError = child;
       result.exitCode = child.exitCode;
@@ -222,7 +230,7 @@ export async function refreshPlugin(
   async function callText(argv: readonly string[]): Promise<string> {
     return readNativeResult(await child(argv), { json: false });
   }
-  async function unchanged(): Promise<void> {
+  async function unchanged(temporary?: string): Promise<void> {
     await context.paths.unchanged();
     await checkCacheParents();
     const current = await resolveInstall(options, env);
@@ -244,9 +252,10 @@ export async function refreshPlugin(
       throw new Error('Codex configuration changed during refresh; preservation is incomplete.');
     if (
       !isDeepStrictEqual(current.source.original, expectedManifest) ||
-      !isDeepStrictEqual(await collectEntries(source.root), expectedSource)
+      !isDeepStrictEqual(current.packageSnapshot, context.packageSnapshot)
     )
       throw new Error('Source changed during refresh; rerun with a stable source.');
+    await payload.unchanged(temporary);
   }
   async function readback(argv: readonly string[], refreshed: boolean): Promise<void> {
     const installedRows = readNativeRows(await call(argv), 'installed') as NativeInstalled[];
@@ -321,60 +330,34 @@ export async function refreshPlugin(
           try {
             await writeFile(temporary, manifestText, { flag: 'wx', mode: source.original.mode });
             await chmod(temporary, source.original.mode & 0o777);
-            // the temporary file is ours, not a concurrent source edit.
-            expectedSource.set(path.relative(source.root, temporary), {
-              type: 'file',
-              mode: source.original.mode & 0o777,
-              content: Buffer.from(manifestText),
-            });
-            await unchanged();
+            await unchanged(temporary);
             await rename(temporary, source.file);
             result.manifestEdit.applied = true;
           } finally {
             await rm(temporary, { force: true });
-            expectedSource.delete(path.relative(source.root, temporary));
           }
           const refreshedManifest = await snapshot(source.file);
           if (!refreshedManifest) throw new Error('Source manifest disappeared during refresh.');
           expectedManifest = refreshedManifest;
-          const manifestEntry = expectedSource.get(path.relative(source.root, source.file));
-          if (manifestEntry?.type !== 'file') {
-            throw new Error('Source manifest is not a regular file.');
-          }
-          expectedSource.set(path.relative(source.root, source.file), {
-            ...manifestEntry,
-            content: Buffer.from(manifestText),
-          });
           break;
         }
         case 'reinstall': {
           if (await optional(() => lstat(cachePath)))
             throw new Error('Planned cache version already exists; rerun to replan.');
           result.effects.reinstallAttempted = true;
-          const data = await call(operationArgv(operation));
-          if (
-            !object(data) ||
-            data.pluginId !== pluginId ||
-            data.name !== source.manifest.name ||
-            data.marketplaceName !== catalog.name ||
-            data.version !== nextVersion ||
-            data.installedPath !== cachePath
-          )
-            throw new Error(
-              'Native reinstall returned an unexpected installation identity or path.',
-            );
+          readStagedInstall(await child(operationArgv(operation), true));
           break;
         }
         case 'readback':
           await readback(operationArgv(operation), true);
           break;
         case 'verify-payload': {
-          if ((await realpath(cachePath)) !== cachePath || !(await lstat(cachePath)).isDirectory())
-            throw new Error('Refreshed cache is not a regular installation directory.');
-          result.diff = diffEntries(expectedSource, await collectEntries(cachePath));
+          const cache = await localCacheEntries(cachePath, payload.entries);
+          if (!cache) throw new Error('Refreshed cache is missing.');
+          result.diff = diffEntries(payload.entries, cache);
           result.inspection.payload = hasDiff(result.diff) ? 'mismatch' : 'verified';
           if (hasDiff(result.diff))
-            throw new Error('Refreshed payload does not match the source snapshot.');
+            throw new Error('Refreshed payload does not match the selected files.');
           await unchanged();
           break;
         }
@@ -397,6 +380,8 @@ export async function refreshPlugin(
     if (result.manifestEdit.applied)
       result.sourceEdit =
         'The source manifest was edited; no rollback was attempted. Inspect its current contents before retrying.';
+  } finally {
+    await payload.remove();
   }
   return result;
 }

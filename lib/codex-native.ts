@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createInterface } from 'node:readline';
 
 import { asError } from '../utils/errors.ts';
 
@@ -30,7 +31,10 @@ export interface NativeOptions {
   cwd?: string;
   executable?: string;
   timeoutMs?: number;
+  pluginInstall?: { marketplacePath: string; pluginName: string };
 }
+
+export const stagedInstallArgv = ['app-server'] as const;
 
 /** injectable asynchronous native-command boundary used by install and refresh. */
 export type NativeRunner = (
@@ -41,7 +45,7 @@ export type NativeRunner = (
 /** runs one bounded native codex command without interpreting its response. */
 export async function runNative(
   argv: readonly string[],
-  { env, cwd, executable, timeoutMs = 30000 }: NativeOptions = {},
+  { env, cwd, executable, timeoutMs = 30000, pluginInstall }: NativeOptions = {},
 ): Promise<NativeResult> {
   if (!executable) throw new Error('Native executable is required.');
   return new Promise((resolve) => {
@@ -50,10 +54,12 @@ export async function runNative(
       env,
       cwd,
       detached: grouped,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [pluginInstall ? 'pipe' : 'ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
     let stderr = '';
+    let response: string | undefined;
+    let requestError: string | undefined;
     const timer = setTimeout(() => {
       try {
         if (grouped && child.pid) process.kill(-child.pid, 'SIGKILL');
@@ -62,10 +68,41 @@ export async function runNative(
         /* the process may have exited as its deadline expired. */
       }
     }, timeoutMs);
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on('data', (chunk) => {
+    if (pluginInstall && child.stdin) {
+      const input = child.stdin;
+      const send = (value: NativeRecord) => input.write(JSON.stringify(value) + '\n');
+      input.on('error', (error) => {
+        requestError ??= error.message;
+      });
+      send({
+        id: 1,
+        method: 'initialize',
+        params: { clientInfo: { name: 'codex-tools', version: '1' } },
+      });
+      const lines = createInterface({ input: child.stdout! });
+      lines.on('line', (line) => {
+        if (input.writableEnded) return;
+        try {
+          const message = JSON.parse(line) as NativeRecord;
+          if (message.id === 1 && message.result) {
+            send({ method: 'initialized' });
+            send({ id: 2, method: 'plugin/install', params: pluginInstall });
+          } else if (message.id === 1 || message.id === 2) {
+            if (message.result) response = JSON.stringify(message.result);
+            else requestError = 'Codex app-server rejected the local plugin install request.';
+            input.end();
+          }
+        } catch {
+          requestError = 'Codex app-server returned an invalid response.';
+          input.end();
+        }
+      });
+    } else {
+      child.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
+    }
+    child.stderr!.on('data', (chunk) => {
       stderr += chunk;
     });
     child.on('error', (error) => {
@@ -74,15 +111,24 @@ export async function runNative(
     });
     child.on('close', (code, signal) => {
       clearTimeout(timer);
+      if (pluginInstall && response === undefined)
+        requestError ??= 'Codex app-server exited without confirming the local plugin install.';
       resolve({
         argv,
-        exitCode: code ?? 1,
+        exitCode: requestError ? code || 2 : (code ?? 1),
         ...(signal === null ? {} : { signal }),
-        stdout,
+        stdout: response ?? stdout,
         stderr,
+        ...(requestError === undefined ? {} : { error: requestError }),
       });
     });
   });
+}
+
+export function readStagedInstall(child: NativeResult): void {
+  const result = readNativeResult(child) as NativeRecord | null;
+  if (!result || !['ON_USE', 'ON_INSTALL'].includes(String(result.authPolicy)))
+    throw new Error('Codex app-server did not confirm the local plugin install.');
 }
 
 interface ReadNativeOptions {

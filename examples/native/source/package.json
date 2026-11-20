@@ -1,5 +1,15 @@
 {
+  "name": "codex-tools-smoke",
   "version": "1.0.0",
+  "files": [
+    ".codex-plugin",
+    "hooks",
+    "runtime",
+    "skills"
+  ],
+  "scripts": {
+    "prepack": "touch lifecycle-ran"
+  },
   "codexTools": {
     "managedPaths": [
       ".codex-plugin",

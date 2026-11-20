@@ -68,7 +68,7 @@ describe('lib/refresh', () => {
   const now = new Date('2026-09-16T18:30:00Z');
   const readManifest = async (): Promise<FixtureManifest> =>
     JSON.parse(await readFile(manifestFile, 'utf8')) as FixtureManifest;
-  const native: NativeRunner = async (argv) => {
+  const native: NativeRunner = async (argv, nativeOptions) => {
     calls.push(argv);
     if (hook) {
       const replacement = await hook(argv);
@@ -80,22 +80,21 @@ describe('lib/refresh', () => {
     let data;
     if (argv[1] === 'marketplace') data = { marketplaces: [{ name: 'personal', root: home }] };
     else if (argv[1] === 'list') data = { installed, available: [] };
-    else if (argv[1] === 'add') {
-      const manifest = await readManifest();
+    else if (argv[0] === 'app-server') {
+      const request = nativeOptions?.pluginInstall;
+      assert.equal(request?.pluginName, 'sample');
+      const payload = path.resolve(request!.marketplacePath, '../../../payload');
+      const manifest = JSON.parse(
+        await readFile(path.join(payload, '.codex-plugin/plugin.json'), 'utf8'),
+      ) as FixtureManifest;
       const installedPath = path.join(
         await realpath(codexHome),
         'plugins/cache/personal/sample',
         manifest.version,
       );
-      await cp(repoRoot, installedPath, { recursive: true });
+      await cp(payload, installedPath, { recursive: true });
       installed[0] = { ...installed[0]!, version: manifest.version };
-      data = {
-        pluginId: 'sample@personal',
-        name: 'sample',
-        marketplaceName: 'personal',
-        version: manifest.version,
-        installedPath,
-      };
+      data = { authPolicy: 'ON_INSTALL', appsNeedingAuth: [] };
     } else throw new Error('Unexpected native command: ' + argv.join(' '));
     return { argv, exitCode: 0, stdout: JSON.stringify(data), stderr: '' };
   };
@@ -207,13 +206,10 @@ describe('lib/refresh', () => {
     assert.equal(await readFile(catalogFile, 'utf8'), catalogBefore);
     assert.equal(await readFile(configFile, 'utf8'), configBefore);
     assert.equal((await lstat(mapping)).ino, linkBefore.ino);
-    assert.deepEqual(calls.filter((argv) => argv[1] === 'add')[0], [
-      'plugin',
-      'add',
-      '--json',
-      '--',
-      'sample@personal',
-    ]);
+    assert.deepEqual(
+      calls.find((argv) => argv[0] === 'app-server'),
+      ['app-server'],
+    );
     assert.ok(!calls.some((argv) => argv.includes('remove')));
   });
   it('should preview the manifest edit and pending validation without a process or writes', async () => {
@@ -332,8 +328,8 @@ describe('lib/refresh', () => {
         phase === 'preflight'
           ? argv[0] === '--version'
           : phase === 'reinstall'
-            ? argv[1] === 'add'
-            : argv[1] === 'list' && calls.some((call) => call[1] === 'add');
+            ? argv[0] === 'app-server'
+            : argv[1] === 'list' && calls.some((call) => call[0] === 'app-server');
       const result = await run();
       assert.equal(result.ok, false);
       assert.equal(result.exitCode, 37);
@@ -362,9 +358,9 @@ describe('lib/refresh', () => {
       'should not turn a successful native exit with ' + kind + ' into refresh success',
       async () => {
         hook = async (argv) => {
-          if (argv[1] === 'add' && kind === 'empty response') return { stdout: '{}' };
-          if (argv[1] === 'add' && kind === 'invalid add JSON') return { stdout: '{' };
-          if (argv[1] !== 'list' || !calls.some((call) => call[1] === 'add')) return;
+          if (argv[0] === 'app-server' && kind === 'empty response') return { stdout: '{}' };
+          if (argv[0] === 'app-server' && kind === 'invalid add JSON') return { stdout: '{' };
+          if (argv[1] !== 'list' || !calls.some((call) => call[0] === 'app-server')) return;
           if (kind === 'wrong version') installed[0]!.version = 'old';
           if (kind === 'stale payload')
             await writeFile(
