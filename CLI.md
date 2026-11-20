@@ -56,7 +56,8 @@ export default { entrypoints: 'scripts/*.js', copy: ['references/**', '!referenc
 ```
 
 Selectors take a glob or an array of globs over tracked paths, including dotfiles. Exclusions win. Skill discovery and
-copies use repository-relative paths. Entrypoints use skill-relative paths. Packaging skips skills
+copies use repository-relative paths. Entrypoints must be skill-relative `.js` or `.mjs` files.
+They can import TypeScript or CommonJS modules. Packaging skips skills
 without a build config. An empty config (`export default {}`) materializes tracked relative links.
 Set `symlinks: false` for a skill that ships without symlinks. Copies fill missing paths after
 link materialization.
@@ -74,7 +75,8 @@ extensions are `.c`, `.css`, `.csv`, `.h`, `.htm`, `.html`, `.js`, `.json`, `.md
 Markdown links are followed recursively, including in files such as `workflow.yml.md`.
 Markdown under `templates/` may use an uppercase URL placeholder such as `DOCS_URL`.
 For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
-intended output file. Raw files can still be command assets.
+intended output file. Every command resource listed in `runtime-files.json` must also have a
+reader-supported extension. Inline other formats into the bundle when a command needs them.
 
 ## Options
 

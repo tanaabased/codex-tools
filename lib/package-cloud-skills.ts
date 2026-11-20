@@ -18,7 +18,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { CloudProject, CloudSkill } from './cloud-config.ts';
-import { checkCloudSkill, fileRecord, instructions } from './cloud-check.ts';
+import { checkCloudSkill, instructions, runtimeFileRecord } from './cloud-check.ts';
 import type { CommandRecord, FileRecord } from './cloud-check.ts';
 
 const template = 'templates/packaged-command-execution.md';
@@ -91,7 +91,7 @@ async function bundle(
     for (const name of (await readdir(out)).sort()) {
       const bytes = await readFile(path.join(out, name));
       const relative = path.join(path.dirname(entry), name);
-      const record = fileRecord(relative, bytes);
+      const record = runtimeFileRecord(skill.dir, relative, bytes);
       if (relative === entry) {
         // bun's output metafile can omit surviving imports. scan the emitted command itself.
         const imports: { path: string }[] = JSON.parse(

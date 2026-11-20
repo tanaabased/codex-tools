@@ -9,7 +9,7 @@ const { version, commands } = JSON.parse(
 );
 assert.equal(version, '1.2.4');
 assert.deepEqual(commands.map((command) => command.path).sort(), [
-  'scripts/icons.js',
+  'scripts/icons.mjs',
   'scripts/write.js',
 ]);
 for (const command of commands) {

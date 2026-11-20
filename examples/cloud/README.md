@@ -31,7 +31,7 @@ test ! -e skills/changes/runtime-files.json
 test -f skills/inspector/runtime-files.json
 git diff --exit-code -- skills/notes skills/changes/SKILL.md
 
-# should run both verified commands with only their inventoried files from the extracted release
+# should run verified .js and .mjs commands with only their inventoried files from the extracted release
 source environment.sh
 mkdir skills/new
 printf '%s\n' '---' 'name: new' 'description: Record a note.' '---' '' '# New' '' 'Record a note.' > skills/new/SKILL.md
@@ -108,6 +108,30 @@ codex-tools cloud package skills/writer/build.config.js >"$root/log" 2>&1 || sta
 test "$status" -ne 0
 grep -F 'scripts/write.js: bundle has an external dependency: https://example.invalid/runtime.js' "$root/log"
 
+# should reject TypeScript, CommonJS and shell files selected as command entrypoints
+source environment.sh
+cd skills/notes
+for ext in ts cjs sh; do
+  touch "run.$ext"
+  echo "export default { entrypoints: 'run.$ext' }" > build.config.js
+  git add .
+  status=0
+  codex-tools cloud package >"$root/log" 2>&1 || status=$?
+  test "$status" -ne 0
+  grep -F "skills/notes/run.$ext: command entrypoints must end in .js or .mjs" "$root/log"
+done
+
+# should reject an unreadable emitted resource before overwriting the source command
+source environment.sh
+cd skills/writer
+echo 'import icon from "../assets/icon.png" with { type: "file" }; console.log(icon);' > scripts/write.js
+cp scripts/write.js "$root/original.js"
+status=0
+codex-tools cloud package >"$root/log" 2>&1 || status=$?
+test "$status" -ne 0
+grep -F '.png: the Cloud reader cannot copy this command resource' "$root/log"
+cmp "$root/original.js" scripts/write.js
+
 # should reject a transitive escape during packaging and name the broken link
 source environment.sh
 echo '[outside](../../../shared.js)' > refs/example.md
@@ -140,4 +164,18 @@ status=0
 codex-tools cloud verify --package "$root/package" >"$root/log" 2>&1 || status=$?
 test "$status" -ne 0
 grep -F 'scripts/write.js' "$root/log"
+
+# should reject an unreadable inventoried resource even when its extracted bytes match
+source environment.sh
+codex-tools cloud package
+npm pack --silent --pack-destination "$root"
+tar -xzf "$root/fictional-cloud-skills-1.2.3.tgz" -C "$root"
+writer="$root/package/skills/writer"
+resource=$(node -p "require(process.argv[1]).commands.find(c => c.path === 'scripts/write.js').resources[0].path" "$writer/runtime-files.json")
+mv "$writer/$resource" "$writer/$resource.yaml"
+sed -i.bak 's/\.txt"/.txt.yaml"/g' "$writer/runtime-files.json"
+status=0
+codex-tools cloud verify --package "$root/package" >"$root/log" 2>&1 || status=$?
+test "$status" -ne 0
+grep -F "skills/writer/$resource.yaml: the Cloud reader cannot copy this command resource" "$root/log"
 ```

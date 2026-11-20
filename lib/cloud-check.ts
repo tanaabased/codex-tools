@@ -17,14 +17,6 @@ export interface CommandRecord extends FileRecord {
   resources?: FileRecord[];
 }
 
-export function fileRecord(relative: string, bytes: Buffer): FileRecord {
-  return {
-    path: relative,
-    bytes: bytes.length,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-  };
-}
-
 const marker = '<!-- packaged-execution -->';
 const readableExtensions = new Set([
   '.c',
@@ -45,6 +37,20 @@ const readableExtensions = new Set([
   '.txt',
   '.xml',
 ]);
+
+export function runtimeFileRecord(skillDir: string, relative: string, bytes: Buffer): FileRecord {
+  if (!readableExtensions.has(path.extname(relative).toLowerCase()))
+    throw new Error(
+      path.join(skillDir, relative) +
+        ': the Cloud reader cannot copy this command resource. Inline it or emit a reader-supported format.',
+    );
+  return {
+    path: relative,
+    bytes: bytes.length,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  };
+}
+
 const execution = `### Packaged Command Execution
 
 Use the installed skill directory when available. When only reader resources are available, prepare a temporary copy before running the command.
@@ -198,7 +204,7 @@ export async function checkCloudSkill(
       )
         throw new Error(skill.dir + ': invalid runtime path ' + record.path);
       const bytes = await readFile(path.join(directory, record.path));
-      const actual = fileRecord(record.path, bytes);
+      const actual = runtimeFileRecord(skill.dir, record.path, bytes);
       if (actual.bytes !== record.bytes || actual.sha256 !== record.sha256)
         throw new Error(
           skill.dir +

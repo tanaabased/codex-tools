@@ -117,6 +117,9 @@ export async function cloudProject(explicit?: string): Promise<CloudProject> {
       throw new Error(document + ': invalid symlinks or guidance setting.');
     const local = [...tracked].filter((f) => inside(dir, f)).map((f) => path.relative(dir, f));
     const entries = select(local, build.entrypoints ?? [], 'entrypoints');
+    for (const entry of entries)
+      if (!['.js', '.mjs'].includes(path.extname(entry)))
+        throw new Error(path.join(dir, entry) + ': command entrypoints must end in .js or .mjs.');
     if (
       build.entrypoints &&
       (!Array.isArray(build.entrypoints) || build.entrypoints.length) &&

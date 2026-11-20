@@ -117,6 +117,24 @@ describe('cloud skills', () => {
     await assert.rejects(pack(), /tracked.*loose.js/);
   });
 
+  it('bundles TypeScript and CommonJS dependencies behind an mjs entrypoint', async () => {
+    await settings({ entrypoints: 'scripts/start.mjs' });
+    await file(
+      skill + '/scripts/start.mjs',
+      "import message from './message.ts'; console.log(message);",
+    );
+    await file(
+      skill + '/scripts/message.ts',
+      "import value from './value.cjs'; const message: string = value; export default message;",
+    );
+    await file(skill + '/scripts/value.cjs', "module.exports = 'bundled';");
+    track();
+    await pack();
+    const standalone = path.join(root, 'standalone.mjs');
+    await cp(path.join(root, skill, 'scripts/start.mjs'), standalone);
+    assert.equal(execFileSync('bun', [standalone], { encoding: 'utf8' }).trim(), 'bundled');
+  });
+
   it('materializes tracked file and directory links first, then fills missing paths from copy globs', async () => {
     await settings({ copy: ['refs/**', '!refs/omit.md'] });
     await file('refs/style.md', 'common');

@@ -1,1 +1,1 @@
-export default { entrypoints: ['scripts/*.js'], copy: ['refs/**', 'templates/**'] };
+export default { entrypoints: ['scripts/*.{js,mjs}'], copy: ['refs/**', 'templates/**'] };
