@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { lstatSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { isBuiltin } from 'node:module';
@@ -16,7 +17,6 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { inside } from './cloud-config.ts';
 import type { CloudProject, CloudSkill } from './cloud-config.ts';
 import { checkCloudSkill, fileRecord, instructions } from './cloud-check.ts';
 import type { CommandRecord, FileRecord } from './cloud-check.ts';

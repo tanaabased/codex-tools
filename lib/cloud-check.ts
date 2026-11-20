@@ -1,10 +1,11 @@
+import inside from '../utils/inside.ts';
 import { lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { marked } from 'marked';
 import { parse } from 'yaml';
-import { git, inside } from './cloud-config.ts';
+import { git } from './cloud-config.ts';
 import type { CloudProject, CloudSkill } from './cloud-config.ts';
 
 export interface FileRecord {
@@ -25,11 +26,15 @@ export function fileRecord(relative: string, bytes: Buffer): FileRecord {
 }
 
 const marker = '<!-- packaged-execution -->';
-const execution = `### packaged command execution
+const execution = `### Packaged Command Execution
 
-use the installed skill directory when available. if only reader resources are available, find the command in \`runtime-files.json\`. copy the command and each listed resource to its exact relative path in a fresh temporary directory. preserve every byte and verify the recorded byte length and SHA-256 before running it. stop if a file is missing or a check fails.
+Use the installed skill directory when available. When only reader resources are available, prepare a temporary copy before running the command.
 
-run the verified command with Bun from the current project, using the arguments and standard input specified by the skill. read linked instructions through the skill reader.`;
+1. Find the command in \`runtime-files.json\`.
+2. Copy the command and its listed resources into a fresh temporary directory, preserving their relative paths.
+3. Verify each file’s byte length and SHA-256 against the inventory. Stop if a file is missing or differs.
+
+Run the command with Bun from the current project, using the arguments and standard input specified by the skill. Read linked instructions through the skill reader.`;
 
 export function instructions(source: string, skill: CloudSkill): string {
   if (!skill.configured) return source;

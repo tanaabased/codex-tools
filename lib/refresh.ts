@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { chmod, lstat, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { isDeepStrictEqual } from 'node:util';
 import path from 'node:path';
@@ -9,7 +10,7 @@ import { provisionNativeRunner } from './codex-provision.ts';
 import { collectEntries } from './cache.ts';
 import diffEntries from '../utils/diff-entries.ts';
 import hasDiff from '../utils/has-diff.ts';
-import { inside, object, optional, resolveInstall, snapshot } from './install-context.ts';
+import { object, optional, resolveInstall, snapshot } from './install-context.ts';
 import type {
   InstallationEffects,
   InstallationResult,

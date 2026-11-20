@@ -1,5 +1,10 @@
-# writer
+---
+name: writer
+description: Generate a greeting using a bundled command and text asset.
+---
 
-read the [guide](refs/guide.md), then run `scripts/write.js`.
+# Writer
+
+Read the [guide](refs/guide.md), then run `bun <skill-path>/scripts/write.js`.
 
 <!-- packaged-execution -->

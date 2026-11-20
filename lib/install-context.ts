@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { homedir } from 'node:os';
 import { isDeepStrictEqual } from 'node:util';
 import { lstat, readFile, realpath, stat } from 'node:fs/promises';
@@ -146,11 +147,6 @@ function marketplaceEntry(value: unknown): value is MarketplaceEntry {
     }
   }
   return true;
-}
-
-export function inside(root: string, target: string): boolean {
-  const relative = path.relative(root, target);
-  return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
 }
 
 export async function optional<T>(fn: () => Promise<T>): Promise<T | null> {

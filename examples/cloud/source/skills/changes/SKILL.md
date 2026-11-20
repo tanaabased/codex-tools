@@ -1,3 +1,8 @@
-# changes
+---
+name: changes
+description: Consult a packaged example when drafting a change note.
+---
 
-read the [example](refs/example.md).
+# Change Notes
+
+Read the [example](refs/example.md) before writing the note.

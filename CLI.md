@@ -10,14 +10,16 @@ codex-tools <command> [source] [options]
 npm exec --offline -- codex-tools <command> [source] [options]
 ```
 
-| Command                          | Purpose                                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `install [path\|npm:<selector>]` | Install a local or published plugin; omitted path uses the current directory.                               |
-| `refresh [path\|npm:<package>]`  | Reinstall an enabled plugin; local refresh edits its manifest version, npm refresh retains its release pin. |
-| `status`                         | Inspect identity, installation state, and payload drift without writing.                                    |
-| `doctor`                         | Alias for `status`.                                                                                         |
-| `cache check`                    | Report selected cache drift without writing.                                                                |
-| `cache sync`                     | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
+| Command                                       | Purpose                                                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `install [path\|npm:<selector>]`              | Install a local or published plugin; omitted path uses the current directory.                               |
+| `refresh [path\|npm:<package>]`               | Reinstall an enabled plugin; local refresh edits its manifest version, npm refresh retains its release pin. |
+| `status`                                      | Inspect identity, installation state, and payload drift without writing.                                    |
+| `doctor`                                      | Alias for `status`.                                                                                         |
+| `cache check`                                 | Report selected cache drift without writing.                                                                |
+| `cache sync`                                  | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
+| `cloud package [config]`                      | Prepare selected skills in place in the release checkout.                                                   |
+| `cloud verify [config] --package <directory>` | Verify the selected skills in the extracted release.                                                        |
 
 Local plugins need `.codex-plugin/plugin.json`. npm selectors accept exact versions, tags, or
 quoted ranges; omitting the version selects `latest`. npm acquisition requires npm on `PATH`.
@@ -31,9 +33,9 @@ tarball and check the files that will ship, using the same checkout for source e
 
 ```sh
 codex-tools cloud package
-npm pack
-mkdir unpacked
-tar -xzf your-release.tgz -C unpacked
+tarball=$(npm pack --silent)
+mkdir -p unpacked
+tar -xzf "$tarball" -C unpacked
 codex-tools cloud verify --package ./unpacked/package
 ```
 
@@ -53,7 +55,7 @@ export default { skills: 'skills/*/SKILL.md' };
 export default { entrypoints: 'scripts/*.js', copy: ['references/**', '!references/private/**'] };
 ```
 
-Selectors take a glob or an array of globs over tracked paths. Exclusions win. Skill discovery and
+Selectors take a glob or an array of globs over tracked paths, including dotfiles. Exclusions win. Skill discovery and
 copies use repository-relative paths. Entrypoints use skill-relative paths. Packaging skips skills
 without a build config. An empty config (`export default {}`) materializes tracked relative links.
 Set `symlinks: false` for a skill that ships without symlinks. Copies fill missing paths after

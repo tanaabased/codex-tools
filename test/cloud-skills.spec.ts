@@ -107,7 +107,7 @@ describe('cloud skills', () => {
     assert.match(await readFile(path.join(root, skill + '/scripts/run.js'), 'utf8'), /hello/);
     assert.match(
       await readFile(path.join(root, skill + '/SKILL.md'), 'utf8'),
-      /packaged command execution/,
+      /Packaged Command Execution/,
     );
   });
 
@@ -173,7 +173,7 @@ describe('cloud skills', () => {
     await pack(on);
     assert.match(
       await readFile(path.join(root, skill, 'SKILL.md'), 'utf8'),
-      /packaged command execution/,
+      /Packaged Command Execution/,
     );
     await file(skill + '/SKILL.md', body);
     await settings({ guidance: 'off', entrypoints: 'scripts/run.js' }, skill + '/off.mjs');

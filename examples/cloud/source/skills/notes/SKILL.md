@@ -1,3 +1,8 @@
-# notes
+---
+name: notes
+description: Write a short prose note.
+---
 
-keep the original prose.
+# Notes
+
+Describe the change in one sentence.

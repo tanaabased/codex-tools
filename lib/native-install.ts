@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { isDeepStrictEqual } from 'node:util';
 import {
   chmod,
@@ -18,14 +19,7 @@ import { assertSupportedCodexVersion, readNativeResult, readNativeRows } from '.
 import { provisionNativeRunner } from './codex-provision.ts';
 import { collectEntries } from './cache.ts';
 import type { FileSnapshot, UnknownRecord } from './install-context.ts';
-import {
-  inside,
-  object,
-  optional,
-  resolveInstall,
-  snapshot,
-  validateSource,
-} from './install-context.ts';
+import { object, optional, resolveInstall, snapshot, validateSource } from './install-context.ts';
 import type {
   InstallationResult,
   InternalInstallDependencies,

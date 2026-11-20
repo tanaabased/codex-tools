@@ -1,8 +1,10 @@
+import inside from '../utils/inside.ts';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { Minimatch } from 'minimatch';
 
 export interface CloudSkill {
   dir: string;
@@ -24,27 +26,23 @@ export function git(root: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
-export function inside(root: string, file: string): boolean {
-  const relative = path.relative(root, file);
-  return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
-}
-
 function select(files: Iterable<string>, input: unknown, label: string): string[] {
   const patterns: unknown[] = Array.isArray(input) ? input : [input];
-  const include: string[] = [],
-    exclude: string[] = [];
+  const include: Minimatch[] = [];
+  const exclude: Minimatch[] = [];
   for (const item of patterns) {
     if (typeof item !== 'string' || !item || item === '!')
       throw new Error(label + ' expects glob strings.');
-    if (item.startsWith('!')) exclude.push(item.slice(1));
-    else include.push(item);
+    const negative = item.startsWith('!');
+    const pattern = new Minimatch(negative ? item.slice(1) : item, {
+      dot: true,
+      nonegate: true,
+      nocomment: true,
+    });
+    (negative ? exclude : include).push(pattern);
   }
   return [...files]
-    .filter(
-      (file) =>
-        include.some((g) => path.matchesGlob(file, g)) &&
-        !exclude.some((g) => path.matchesGlob(file, g)),
-    )
+    .filter((file) => include.some((g) => g.match(file)) && !exclude.some((g) => g.match(file)))
     .sort();
 }
 

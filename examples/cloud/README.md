@@ -1,15 +1,20 @@
 # Cloud skill packaging
 
+The fixture ships a writer with a command asset, an inspector with a standalone command, change notes with shared references, and a prose-only skill.
+
 ## Testing
 
 ```bash
 # should produce the same command skill from a nested directory and the repository config
 source environment.sh
+echo root=true > refs/.editorconfig
+git add refs/.editorconfig
 cp -R "$root/repo" "$root/single"
 (cd "$root/single/skills/writer/scripts" && codex-tools cloud package)
 test ! -e "$root/single/skills/inspector/runtime-files.json"
 codex-tools cloud package
 diff -r "$root/single/skills/writer" skills/writer
+cmp refs/.editorconfig skills/writer/refs/.editorconfig
 test -f skills/inspector/runtime-files.json
 test ! -L skills/changes/refs
 cmp refs/example.md skills/changes/refs/example.md
@@ -18,7 +23,7 @@ git diff --exit-code -- skills/notes
 # should discover a new prose skill and run a verified command from the extracted release
 source environment.sh
 mkdir skills/new
-echo '# new' > skills/new/SKILL.md
+printf '%s\n' '---' 'name: new' 'description: Record a note.' '---' '' '# New' '' 'Record a note.' > skills/new/SKILL.md
 git add skills/new
 codex-tools cloud package
 npm pack --silent --pack-destination "$root"
