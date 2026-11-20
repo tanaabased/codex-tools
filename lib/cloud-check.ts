@@ -26,6 +26,7 @@ export function fileRecord(relative: string, bytes: Buffer): FileRecord {
 }
 
 const marker = '<!-- packaged-execution -->';
+const readableExtensions = new Set(['.md', '.js', '.json', '.txt']);
 const execution = `### Packaged Command Execution
 
 Use the installed skill directory when available. When only reader resources are available, prepare a temporary copy before running the command.
@@ -68,13 +69,14 @@ async function checkLinks(root: string, dir: string) {
     if (!info || !info.isFile() || (await realpath(absolute)) !== absolute)
       throw fail('link a concrete packaged file inside the skill.');
     if (!reader) return;
-    if (path.extname(absolute).toLowerCase() !== '.md')
+    const extension = path.extname(absolute).toLowerCase();
+    if (!readableExtensions.has(extension))
       throw fail(
         'link an annotated Markdown file such as references/' +
           path.basename(raw) +
           '.md and include the intended output filename.',
       );
-    pending.push(path.relative(skill, absolute));
+    if (extension === '.md') pending.push(path.relative(skill, absolute));
   }
   while (pending.length) {
     const source = pending.pop()!;
@@ -85,6 +87,7 @@ async function checkLinks(root: string, dir: string) {
       if (
         (token.type === 'link' || token.type === 'image') &&
         token.href &&
+        !(source.startsWith('templates' + path.sep) && /^[A-Z][A-Z0-9_]*_URL$/.test(token.href)) &&
         !/^(?:#|\/\/|[a-z][a-z0-9+.-]*:)/i.test(token.href)
       )
         links.push(token.href);

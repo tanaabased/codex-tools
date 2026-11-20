@@ -1,1 +1,1 @@
-export const finish = (text) => text + ' from the bundle\n';
+export const suffix = () => ' from the bundle\n';

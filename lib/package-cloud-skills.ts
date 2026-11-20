@@ -1,7 +1,7 @@
 import inside from '../utils/inside.ts';
 import { lstatSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { isBuiltin } from 'node:module';
+import { createRequire, isBuiltin } from 'node:module';
 import {
   lstat,
   mkdir,
@@ -29,7 +29,11 @@ interface Output {
   asset?: boolean;
 }
 interface BuildInput {
-  imports: { path: string; external?: boolean }[];
+  imports: { path: string; kind: string; external?: boolean }[];
+}
+
+function runtimeBuiltin(name: string) {
+  return isBuiltin(name) || name === 'bun' || name.startsWith('bun:');
 }
 
 async function bundle(
@@ -61,21 +65,25 @@ async function bundle(
     const { inputs }: { inputs: Record<string, BuildInput> } = JSON.parse(
       await readFile(meta, 'utf8'),
     );
+    const sources = new Set(Object.keys(inputs));
     for (const [name, input] of Object.entries(inputs)) {
+      for (const dep of input.imports) {
+        if (!dep.external || runtimeBuiltin(dep.path)) continue;
+        // bun can rewrite require calls to aliases that an import scan cannot identify.
+        if (dep.kind !== 'import-statement')
+          throw new Error(entry + ': bundle has an external dependency: ' + dep.path);
+        // bun reports local macro modules as external imports.
+        if (dep.path.startsWith('.'))
+          sources.add(createRequire(path.resolve(project.root, name)).resolve(dep.path));
+      }
+    }
+    for (const name of sources) {
       const resolved = await realpath(path.resolve(project.root, name));
       if (
         !inside(path.join(project.root, 'node_modules'), resolved) &&
         !project.tracked.has(path.relative(project.root, resolved))
       )
         throw new Error(entry + ': bundle input must be tracked: ' + name);
-      for (const dep of input.imports)
-        if (
-          dep.external &&
-          !isBuiltin(dep.path) &&
-          dep.path !== 'bun' &&
-          !dep.path.startsWith('bun:')
-        )
-          throw new Error(entry + ': bundle has an external dependency: ' + dep.path);
     }
     const outputs: Output[] = [];
     const resources: FileRecord[] = [];
@@ -84,8 +92,29 @@ async function bundle(
       const bytes = await readFile(path.join(out, name));
       const relative = path.join(path.dirname(entry), name);
       const record = fileRecord(relative, bytes);
-      if (relative === entry) command = record;
-      else resources.push(record);
+      if (relative === entry) {
+        // bun's output metafile can omit surviving imports. scan the emitted command itself.
+        const imports: { path: string }[] = JSON.parse(
+          execFileSync(
+            'bun',
+            [
+              '--no-install',
+              '-p',
+              'JSON.stringify(new Bun.Transpiler({loader:"js"}).scanImports(await Bun.stdin.text()))',
+            ],
+            {
+              cwd: scratch,
+              env,
+              input: bytes.toString('utf8').replace(/^#![^\n]*\n/, ''),
+              encoding: 'utf8',
+            },
+          ),
+        );
+        for (const dep of imports)
+          if (!runtimeBuiltin(dep.path))
+            throw new Error(entry + ': bundle has an external dependency: ' + dep.path);
+        command = record;
+      } else resources.push(record);
       outputs.push({ path: relative, bytes, asset: relative !== entry });
     }
     if (!command) throw new Error('Missing bundled entrypoint ' + entry);

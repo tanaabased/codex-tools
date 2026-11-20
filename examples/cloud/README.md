@@ -20,7 +20,7 @@ test ! -L skills/changes/refs
 cmp refs/example.md skills/changes/refs/example.md
 git diff --exit-code -- skills/notes
 
-# should discover a new prose skill and run a verified command from the extracted release
+# should verify JS, JSON and plain-text reader links and run a macro-built command from the extracted release
 source environment.sh
 mkdir skills/new
 printf '%s\n' '---' 'name: new' 'description: Record a note.' '---' '' '# New' '' 'Record a note.' > skills/new/SKILL.md
@@ -29,7 +29,26 @@ codex-tools cloud package
 npm pack --silent --pack-destination "$root"
 tar -xzf "$root/fictional-cloud-skills-1.2.3.tgz" -C "$root"
 codex-tools cloud verify --package "$root/package" --json | grep -F '"skills/new"'
+grep -F '(DOCS_URL)' "$root/package/skills/writer/templates/greeting.md"
 test "$(node "$example/run-copied.mjs" "$root/package/skills/writer" "$root/standalone")" = 'hello from the bundle'
+
+# should still reject an unreadable file linked from a template with a URL placeholder
+source environment.sh
+echo 'name: example' > skills/writer/templates/workflow.yml
+echo '[starter](workflow.yml)' >> skills/writer/templates/greeting.md
+status=0
+codex-tools cloud package skills/writer/build.config.js >"$root/log" 2>&1 || status=$?
+test "$status" -ne 0
+grep -F 'skills/writer/templates/greeting.md → workflow.yml' "$root/log"
+grep -F 'workflow.yml.md' "$root/log"
+
+# should reject an external import retained in the emitted command
+source environment.sh
+echo 'import "https://example.invalid/runtime.js";' >> skills/writer/scripts/write.js
+status=0
+codex-tools cloud package skills/writer/build.config.js >"$root/log" 2>&1 || status=$?
+test "$status" -ne 0
+grep -F 'scripts/write.js: bundle has an external dependency: https://example.invalid/runtime.js' "$root/log"
 
 # should reject a transitive escape during packaging and name the broken link
 source environment.sh
