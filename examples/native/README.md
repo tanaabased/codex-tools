@@ -52,7 +52,8 @@ mkdir -p "$plugin/node_modules/dev" "$plugin/.temp" "$plugin/.git"
 for directory in node_modules/dev .temp .git; do
   printf 'development only\n' >"$plugin/$directory/sentinel"
 done
-codex-tools install "$plugin" | grep -F 'payload: verified'
+codex-tools install "$plugin" --json >"$root/install.json" || { cat "$root/install.json"; exit 1; }
+bun -e 'import assert from "node:assert/strict"; assert.equal((await Bun.file(process.argv[1]).json()).inspection?.payload, "verified")' "$root/install.json"
 cache_root="$CODEX_HOME/plugins/cache/personal/codex-tools-smoke"
 for directory in node_modules .temp .git; do
   test ! -e "$cache_root/1.0.0/$directory"
