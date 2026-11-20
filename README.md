@@ -27,7 +27,7 @@ and agent skills.
 
 ## Install
 
-Requires Node `^24.15.0 || >=26.0.0`.
+Requires Node `^24.15.0 || >=26.0.0`. Native plugin installation and refresh support macOS and Linux on arm64 or x64.
 
 ```sh
 npm install --global @tanaab/codex-tools
