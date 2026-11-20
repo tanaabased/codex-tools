@@ -177,7 +177,7 @@ export function parseArgs(
   if (!explicit.has('debug') && options.debug === undefined) {
     options.debug = env.RUNNER_DEBUG === '1';
   }
-  if (options.codexHome === undefined && env.CODEX_HOME !== undefined) {
+  if (options.codexHome === undefined && env.CODEX_HOME) {
     options.codexHome = env.CODEX_HOME;
   }
   let command = positionals.join(' ');

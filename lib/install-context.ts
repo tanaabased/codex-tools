@@ -303,7 +303,9 @@ export async function resolveMarketplace(
   const paths = new InstallPaths();
   const home = path.resolve(env.HOME ?? homedir());
   await paths.resolve(home, 'directory');
-  const codexHome = path.resolve(options.codexHome ?? env.CODEX_HOME ?? path.join(home, '.codex'));
+  const codexHome = path.resolve(
+    options.codexHome ?? (env.CODEX_HOME || path.join(home, '.codex')),
+  );
   const physicalCodexHome = await paths.resolve(codexHome, 'directory');
   const codexHomeStats = await optional(() => stat(codexHome));
   const configFile = path.join(codexHome, 'config.toml');

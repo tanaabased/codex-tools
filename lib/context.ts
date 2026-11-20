@@ -255,7 +255,7 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
     packageVersion,
   };
   const rawHome = path.resolve(
-    options.codexHome ?? process.env.CODEX_HOME ?? path.join(homedir(), '.codex'),
+    options.codexHome ?? (process.env.CODEX_HOME || path.join(homedir(), '.codex')),
   );
   let codexHome = rawHome;
   try {

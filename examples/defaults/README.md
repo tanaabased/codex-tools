@@ -16,6 +16,8 @@ codex-tools status --json >"$root/status.json"
 grep -F '"status":"current"' "$root/status.json"
 grep -F "\"path\":\"$PWD\"" "$root/status.json"
 grep -F "\"codexHome\":\"$HOME/.codex\"" "$root/status.json"
+CODEX_HOME='' codex-tools status --json >"$root/empty.json"
+cmp "$root/status.json" "$root/empty.json"
 
 # should stop default cloud config discovery at the checkout root
 source environment.sh
