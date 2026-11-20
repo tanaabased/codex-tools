@@ -6,8 +6,9 @@ published. `setup.sh` owns registry readiness and cleanup; assertions remain her
 ## Testing
 
 ```bash
-# should leave npm resolution pending during a dry run
-source setup.sh
+# should leave npm resolution pending during an offline dry run
+source environment.sh
+export npm_config_offline=true
 codex-tools install 'npm:@fixture/package-name@1.2.3' --dry-run | grep -F 'package version: pending'
 test ! -e "$HOME/.agents/plugins/marketplace.json"
 test ! -e "$CODEX_HOME"

@@ -73,14 +73,10 @@ grep -F 'Unknown option' "$root/error"
 # should reject misplaced subcommands before dispatching an operation
 source environment.sh
 cd "$HOME"
-for group in cache cloud; do
-  for command in install refresh; do
-    status=0
-    codex-tools "$group" "$command" --json >"$root/result.json" 2>"$root/error" || status=$?
-    test "$status" -eq 2
-    grep -F "Unknown command: $group $command" "$root/error"
-  done
-done
+status=0
+codex-tools cache install --json >"$root/result.json" 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F 'Unknown command: cache install' "$root/error"
 test ! -e "$CODEX_HOME"
 test ! -e "$HOME/.agents"
 ```

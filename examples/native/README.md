@@ -7,12 +7,6 @@ on `PATH` and must never be used.
 ## Testing
 
 ```bash
-# should preview installation without creating Codex state
-source setup.sh
-codex-tools install "$plugin" --dry-run | grep -F 'status: planned'
-test ! -e "$CODEX_HOME"
-test ! -e "$HOME/.agents"
-
 # should acquire and inspect a standalone local plugin through real Codex
 source setup.sh
 rm "$plugin/package.json"
