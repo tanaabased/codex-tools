@@ -31,6 +31,11 @@ jobs:
         run: |
           mkdir -p .temp/plugin
           tar -xzf "$TARBALL" -C .temp/plugin --strip-components=1
+      - name: Load packed library entrypoints
+        working-directory: .temp/plugin
+        run: |
+          node --input-type=module -e "import assert from 'node:assert/strict'; import { runOperation } from '@tanaab/codex-tools'; assert.equal(typeof runOperation, 'function')"
+          node --input-type=commonjs -e "const assert = require('node:assert/strict'); const { runOperation } = require('@tanaab/codex-tools'); assert.equal(typeof runOperation, 'function')"
       - uses: tanaabased/actions/validate-codex-plugin@v1
         with:
           plugin-directory: .temp/plugin

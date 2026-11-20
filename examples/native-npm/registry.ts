@@ -80,7 +80,7 @@ for (const [version, complete] of [
     path.join(folder, 'skills', skill, 'SKILL.md'),
     '---\nname: ' +
       skill +
-      '\ndescription: Disposable native npm installation probe.\n---\n\n# Probe\n\nReturn npm-probe-ok.\n',
+      `\ndescription: Disposable native npm installation probe.\n---\n\n# Probe\n\nReturn npm-probe-ok for release ${version}.\n`,
   );
   const tarFile = path.join(root, version + '.tgz');
   assert.equal(
