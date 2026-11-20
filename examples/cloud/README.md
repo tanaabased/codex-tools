@@ -153,17 +153,26 @@ codex-tools cloud verify --package "$root/package" >"$root/log" 2>&1 || status=$
 test "$status" -ne 0
 grep -F 'skills/writer/refs/guide.md → example.md' "$root/log"
 
-# should detect a missing inventory entry even when its bundled command ships
+# should require source evidence for command inventory completeness
 source environment.sh
 codex-tools cloud package
 npm pack --silent --pack-destination "$root"
 tar -xzf "$root/fictional-cloud-skills-1.2.3.tgz" -C "$root"
-node -e 'const fs=require("node:fs"), file=process.argv[1], data=JSON.parse(fs.readFileSync(file)); data.commands=data.commands.filter(c => c.path !== "scripts/write.js"); fs.writeFileSync(file,JSON.stringify(data))' "$root/package/skills/writer/runtime-files.json"
-test -f "$root/package/skills/writer/scripts/write.js"
+cp -R "$root/package" "$root/shortened"
+node -e 'const fs=require("node:fs"), file=process.argv[1], data=JSON.parse(fs.readFileSync(file)); data.commands=data.commands.filter(c => c.path !== "scripts/write.js"); fs.writeFileSync(file,JSON.stringify(data))' "$root/shortened/skills/writer/runtime-files.json"
+test -f "$root/shortened/skills/writer/scripts/write.js"
+for package in "$root/package" "$root/shortened"; do
+  status=0
+  (cd "$package" && codex-tools cloud verify --package .) >"$root/log" 2>&1 || status=$?
+  test "$status" -eq 2
+  grep -F 'Command inventory completeness could not be established' "$root/log"
+  grep -F 'Run cloud verify from the source checkout or pass its config path' "$root/log"
+done
+(cd "$root/package" && codex-tools cloud verify "$root/repo/cloud.config.js" --package .)
 status=0
-codex-tools cloud verify --package "$root/package" >"$root/log" 2>&1 || status=$?
+codex-tools cloud verify --package "$root/shortened" >"$root/log" 2>&1 || status=$?
 test "$status" -ne 0
-grep -F 'scripts/write.js' "$root/log"
+grep -F 'inventory commands differ from tracked entrypoints. Expected scripts/icons.mjs, scripts/write.js' "$root/log"
 
 # should reject an unreadable inventoried resource even when its extracted bytes match
 source environment.sh
