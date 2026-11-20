@@ -1,3 +1,7 @@
+import { realpath } from 'node:fs/promises';
+import { cloudProject } from './cloud-config.ts';
+import { checkCloudSkill } from './cloud-check.ts';
+import { packageCloudSkills } from './package-cloud-skills.ts';
 import { asError } from '../utils/errors.ts';
 import packageJson from '../package.json';
 import { parseArgs } from '../utils/parse-args.ts';
@@ -60,6 +64,23 @@ export async function runCLI(
           '\n',
       );
     if (!options.command) throw new Error('A command is required.');
+    if (options.command === 'cloud package' || options.command === 'cloud verify') {
+      const project = await cloudProject(options.configPath);
+      let skills: string[];
+      if (options.command === 'cloud package') skills = await packageCloudSkills(project, env);
+      else {
+        const root = await realpath(options.packageDirectory!);
+        for (const skill of project.skills) await checkCloudSkill(project, skill, root);
+        skills = project.skills.map((skill) => skill.dir);
+      }
+      const status = options.command === 'cloud package' ? 'packaged' : 'verified';
+      stdout.write(
+        (options.json
+          ? JSON.stringify({ ok: true, status, skills })
+          : status + ' ' + skills.length + ' skill(s): ' + skills.join(', ')) + '\n',
+      );
+      return 0;
+    }
     const result = await runOperation(options.command, options, { env });
     stdout.write((options.json ? JSON.stringify(result) : renderResult(result)) + '\n');
     if (!result.ok && !options.json)

@@ -36,7 +36,9 @@ export interface CodexToolsOptions {
 }
 
 export interface ParsedOptions extends CodexToolsOptions {
-  command: OperationCommand | '';
+  command: OperationCommand | 'cloud package' | 'cloud verify' | '';
+  configPath?: string;
+  packageDirectory?: string;
   help: boolean;
 }
 
@@ -116,6 +118,7 @@ export function parseArgs(
 ): ParsedOptions {
   const options: CodexToolsOptions = {};
   const positionals: string[] = [];
+  let packageDirectory: string | undefined;
   const explicit = new Set<keyof CodexToolsOptions>();
   const aliases: Record<string, string> = { '-h': '--help', '-V': '--version', '-v': '--version' };
   for (let i = 0; i < argv.length; i++) {
@@ -129,7 +132,12 @@ export function parseArgs(
     const value = parts.length ? parts.join('=') : undefined;
     const negative = flag.startsWith('no-');
     const boolean = flag === 'no-debug' ? undefined : booleans.get(negative ? flag.slice(3) : flag);
-    if (arg.startsWith('--') && boolean) {
+    if (arg.startsWith('--') && flag === 'package') {
+      if (packageDirectory !== undefined) throw new Error('Repeated option: --package');
+      packageDirectory = value ?? argv[++i];
+      if (!packageDirectory || packageDirectory.startsWith('-'))
+        throw new Error('--package requires an extracted directory.');
+    } else if (arg.startsWith('--') && boolean) {
       if (explicit.has(boolean)) throw new Error('Repeated option: --' + flag);
       let enabled = !negative;
       if (boolean === 'debug') {
@@ -186,6 +194,30 @@ export function parseArgs(
     } else if (positionals[1]) options.repoRoot = positionals[1];
     command = first;
   }
+  if (first === 'cloud') {
+    const command = positionals.slice(0, 2).join(' ');
+    if (command !== 'cloud package' && command !== 'cloud verify')
+      throw new Error('Unknown command: ' + command);
+    if (positionals.length > 3) throw new Error(command + ' accepts at most one config path.');
+    if (packageDirectory && command !== 'cloud verify')
+      throw new Error('--package is only valid for cloud verify.');
+    if (!options.help && !options.version && command === 'cloud verify' && !packageDirectory)
+      throw new Error('cloud verify requires --package <extracted-directory>.');
+    if (
+      options.dryRun ||
+      [...explicit].some((key) => !['json', 'debug', 'help', 'version'].includes(key))
+    )
+      throw new Error('Unsupported option for ' + command);
+    const configPath = positionals[2];
+    return {
+      ...options,
+      command,
+      help: options.help ?? false,
+      ...(configPath && { configPath }),
+      ...(packageDirectory && { packageDirectory }),
+    };
+  }
+  if (packageDirectory !== undefined) throw new Error('--package is only valid for cloud verify.');
   if (options.marketplacePath && !['install', 'refresh'].includes(command))
     throw new Error('--marketplace-path is only valid for install or refresh.');
   const normalized = command.replace('cache ', '');

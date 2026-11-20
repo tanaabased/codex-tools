@@ -24,6 +24,52 @@ quoted ranges; omitting the version selects `latest`. npm acquisition requires n
 Read-only commands do not start Codex. See
 [refresh and recovery](./ADVANCED.md#refresh-and-recovery) for partial effects.
 
+## Cloud skills
+
+In a fresh Git checkout, prepare the selected skills in place, then pack the release. Extract the
+tarball and check the files that will ship, using the same checkout for source expectations.
+
+```sh
+codex-tools cloud package
+npm pack
+mkdir unpacked
+tar -xzf your-release.tgz -C unpacked
+codex-tools cloud verify --package ./unpacked/package
+```
+
+Both commands take one optional config path. From inside a skill, they look for the closest
+`build.config.js` beside a tracked `SKILL.md` in the current directory or its ancestors.
+Otherwise they use the nearest `cloud.config.js` up to the Git root. An explicit JavaScript
+config may have a custom name. A default export with `skills` selects from the repository.
+A build config belongs beside the skill’s `SKILL.md`.
+
+```js
+// cloud.config.js
+export default { skills: 'skills/*/SKILL.md' };
+```
+
+```js
+// skills/writer/build.config.js
+export default { entrypoints: 'scripts/*.js', copy: ['references/**', '!references/private/**'] };
+```
+
+Selectors take a glob or an array of globs over tracked paths. Exclusions win. Skill discovery and
+copies use repository-relative paths. Entrypoints use skill-relative paths. Packaging skips skills
+without a build config. An empty config (`export default {}`) materializes tracked relative links.
+Set `symlinks: false` for a skill that ships without symlinks. Copies fill missing paths after
+link materialization.
+
+Put Bun on `PATH` to bundle commands. Each command keeps its path; its length, SHA-256 and emitted
+assets appear in the skill’s `runtime-files.json`. The default `guidance: 'auto'` inserts execution
+instructions at `<!-- packaged-execution -->` when there are commands. Use `'on'` to require
+both a command and exactly one marker, or `'off'` to remove the marker. Start again from a fresh
+checkout if packaging fails after making changes.
+
+Verification is read-only. It checks all discovered skills, including plain prose, against the
+extracted files. Link reader-facing instructions to concrete Markdown files inside the skill.
+For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
+intended output file. Raw files can still be command assets.
+
 ## Options
 
 Flags override `CODEX_TOOLS_*` environment defaults, then repository `package.json#codexTools`

@@ -18,6 +18,8 @@ export function renderHelp(style: StyleSet): string {
       ['install', 'install a local path or npm:package'],
       ['refresh', 'refresh an installed plugin'],
       ['status, doctor', 'inspect installation and drift'],
+      ['cloud package [config]', 'prepare selected skills in the checkout'],
+      ['cloud verify [config] --package <directory>', 'verify skills in the extracted release'],
       ['cache check', 'report cache drift'],
       ['cache sync', 'reconcile managed cache content'],
     ]),
