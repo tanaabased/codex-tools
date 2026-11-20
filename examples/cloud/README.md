@@ -20,7 +20,7 @@ test ! -L skills/changes/refs
 cmp refs/example.md skills/changes/refs/example.md
 git diff --exit-code -- skills/notes
 
-# should verify JS, JSON and plain-text reader links and run a macro-built command from the extracted release
+# should verify JS, JSON, text and shell reader links and run a macro-built command from the extracted release
 source environment.sh
 mkdir skills/new
 printf '%s\n' '---' 'name: new' 'description: Record a note.' '---' '' '# New' '' 'Record a note.' > skills/new/SKILL.md

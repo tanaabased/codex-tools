@@ -26,7 +26,7 @@ export function fileRecord(relative: string, bytes: Buffer): FileRecord {
 }
 
 const marker = '<!-- packaged-execution -->';
-const readableExtensions = new Set(['.md', '.js', '.json', '.txt']);
+const readableExtensions = new Set(['.md', '.js', '.json', '.txt', '.sh']);
 const execution = `### Packaged Command Execution
 
 Use the installed skill directory when available. When only reader resources are available, prepare a temporary copy before running the command.
