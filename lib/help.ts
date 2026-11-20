@@ -1,8 +1,12 @@
+import { stripVTControlCharacters } from 'node:util';
 import type { StyleSet } from './presentation.ts';
 
 function rows(values: ReadonlyArray<readonly [string, string]>): string[] {
-  const width = Math.max(...values.map(([label]) => label.length));
-  return values.map(([label, description]) => `  ${label.padEnd(width)}  ${description}`);
+  const widths = values.map(([label]) => stripVTControlCharacters(label).length);
+  const width = Math.max(...widths);
+  return values.map(
+    ([label, description], i) => `  ${label}${' '.repeat(width - widths[i]!)}  ${description}`,
+  );
 }
 
 export function renderHelp(style: StyleSet): string {
@@ -18,14 +22,18 @@ export function renderHelp(style: StyleSet): string {
       ['install', 'install a local path or npm:package'],
       ['refresh', 'refresh an installed plugin'],
       ['status, doctor', 'inspect installation and drift'],
-      ['cloud package [config]', 'prepare selected skills in the checkout'],
-      ['cloud verify [config] --package <directory>', 'verify skills in the extracted release'],
+      ['cloud package ' + style.dim('[config]'), 'prepare selected skills in the checkout'],
+      [
+        'cloud verify ' + style.dim('[config]') + ' --package <directory>',
+        'verify skills in the extracted release',
+      ],
       ['cache check', 'report cache drift'],
       ['cache sync', 'reconcile managed cache content'],
     ]),
     '',
     style.heading('Options') + ':',
     ...rows([
+      ['--package <directory>', 'extracted release directory for cloud verify'],
       ['--repo-root <path>', 'local source ' + style.dim('[default: current directory]')],
       ['--cache-path <path>', 'explicit cache or raw target'],
       ['--codex-home <path>', 'Codex state ' + style.dim('[default: CODEX_HOME or ~/.codex]')],

@@ -199,8 +199,7 @@ npm and native checks may remain unresolved in the plan.
 ## Environment defaults
 
 Empty path and selection environment values are unset. Boolean values must be `1`, `true`, `0`,
-or `false`; an empty boolean value is invalid. Set `CODEX_TOOLS_DEBUG=false` to suppress inherited
-CI debug enablement.
+or `false`; an empty boolean value is invalid.
 Explicit flags override their environment values, including invalid ones. `CODEX_TOOLS_CODEX_HOME`
 precedes `CODEX_HOME`; otherwise Codex Tools uses `~/.codex`. Repository settings apply only to
 cache ownership and absence behavior, as described in [advanced usage](./ADVANCED.md#cache-ownership).

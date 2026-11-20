@@ -41,7 +41,8 @@ source environment.sh
 export CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=true CODEX_TOOLS_DEBUG=true
 codex-tools status 2>"$root/debug" | grep -F '"status":"not_installed"'
 grep -F 'debug:' "$root/debug"
-codex-tools status --no-json --debug=false 2>"$root/quiet" | grep -F 'status: not_installed'
+unset CODEX_TOOLS_DEBUG
+codex-tools status --no-json 2>"$root/quiet" | grep -F 'status: not_installed'
 test ! -s "$root/quiet"
 
 # should honor CI debug without adopting unrelated debug settings

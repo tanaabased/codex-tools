@@ -40,7 +40,9 @@ npm pkg set version=1.2.4
 codex-tools cloud package
 npm pack --silent --pack-destination "$root"
 tar -xzf "$root/fictional-cloud-skills-1.2.4.tgz" -C "$root"
-codex-tools cloud verify --package "$root/package" --json | grep -F '"skills/new"'
+codex-tools cloud verify --package "$root/package" --json --debug 2>"$root/debug" | grep -F '"skills/new"'
+grep -F "\"configPath\":\"$root/repo/cloud.config.js\"" "$root/debug"
+grep -F "\"packageDirectory\":\"$root/package\"" "$root/debug"
 grep -F '(DOCS_URL)' "$root/package/skills/writer/templates/greeting.md"
 grep -F '### Packaged Command Execution' "$root/package/skills/writer/SKILL.md"
 cmp skills/writer/assets/icon.png "$root/package/skills/changes/assets/icon.png"
@@ -56,7 +58,7 @@ grep -F 'skills/changes/agents/openai.yaml → ./assets/icon.png' "$root/log"
 source environment.sh
 cd skills/notes
 echo 'export default {};' > build.config.js
-for file in sample.{c,css,csv,h,htm,html,js,json,md,mjs,py,rst,sh,svg,tsv,txt,xml} uppercase.{JS,JSON,MD,TXT} sample.png.txt sample.yml.md; do
+for file in sample.{c,css,csv,h,htm,html,js,json,md,mjs,py,rst,sh,svg,tsv,txt,xml} uppercase.{JS,JSON,MD,TXT} sample.png.txt sample.yml.md sample.svelte.html; do
   echo sample > "$file"
   printf '\n[%s](%s)\n' "$file" "$file" >> SKILL.md
 done

@@ -53,34 +53,39 @@ export async function runCLI(
       );
       return 0;
     }
-    if (options.debug)
-      stderr.write(
-        'debug: ' +
-          JSON.stringify({
-            command: options.command,
-            repoRoot: options.repoRoot,
-            cachePath: options.cachePathOverride,
-          }) +
-          '\n',
-      );
     if (!options.command) throw new Error('A command is required.');
+    const debug = (fields: Record<string, string | undefined>) => {
+      if (options?.debug)
+        stderr.write('debug: ' + JSON.stringify({ command: options.command, ...fields }) + '\n');
+    };
     if (options.command === 'cloud package' || options.command === 'cloud verify') {
       const project = await cloudProject(options.configPath);
+      const verifying = options.command === 'cloud verify';
+      const root = verifying ? await realpath(options.packageDirectory!) : project.root;
+      debug({
+        repoRoot: project.root,
+        configPath: project.configPath,
+        packageDirectory: verifying ? root : undefined,
+      });
       let skills: string[];
-      if (options.command === 'cloud package') skills = await packageCloudSkills(project, env);
-      else {
-        const root = await realpath(options.packageDirectory!);
+      if (verifying) {
         for (const skill of project.skills) await checkCloudSkill(project, skill, root);
         skills = project.skills.map((skill) => skill.dir);
-      }
-      const status = options.command === 'cloud package' ? 'packaged' : 'verified';
+      } else skills = await packageCloudSkills(project, env);
+      const status = verifying ? 'verified' : 'packaged';
+      const style = styles(stdout, options.json);
       stdout.write(
         (options.json
           ? JSON.stringify({ ok: true, status, skills })
-          : status + ' ' + skills.length + ' skill(s): ' + skills.join(', ')) + '\n',
+          : style.success(status) +
+            ' ' +
+            skills.length +
+            ' skill(s): ' +
+            skills.map((skill) => style.target(skill)).join(', ')) + '\n',
       );
       return 0;
     }
+    debug({ repoRoot: options.repoRoot, cachePath: options.cachePathOverride });
     const result = await runOperation(options.command, options, { env });
     stdout.write((options.json ? JSON.stringify(result) : renderResult(result)) + '\n');
     if (!result.ok && !options.json)
@@ -103,7 +108,7 @@ export async function runCLI(
           ...(failure.source ? { source: failure.source } : {}),
         }) + '\n',
       );
-    stderr.write('error: ' + failure.message + '\n');
+    stderr.write(styles(stderr, json).error('error') + ': ' + failure.message + '\n');
     if (options?.debug) stderr.write(String(failure.stack) + '\n');
     return 2;
   }

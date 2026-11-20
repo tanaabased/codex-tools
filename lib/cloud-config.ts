@@ -17,6 +17,7 @@ export interface CloudSkill {
 
 export interface CloudProject {
   root: string;
+  configPath: string;
   tracked: Set<string>;
   version: string;
   skills: CloudSkill[];
@@ -134,5 +135,5 @@ export async function cloudProject(explicit?: string): Promise<CloudProject> {
   const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   if (typeof version !== 'string' || !version)
     throw new Error('Expected a version in package.json.');
-  return { root, tracked, version, skills };
+  return { root, configPath: file, tracked, version, skills };
 }
