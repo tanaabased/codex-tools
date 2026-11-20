@@ -24,7 +24,12 @@ export interface CloudProject {
 }
 
 export function git(root: string, ...args: string[]): string {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return execFileSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: 'pipe',
+  });
 }
 
 function select(files: Iterable<string>, input: unknown, label: string): string[] {
@@ -55,9 +60,23 @@ async function loadConfig(file: string): Promise<Record<string, unknown>> {
   return config as Record<string, unknown>;
 }
 
-export async function cloudProject(explicit?: string): Promise<CloudProject> {
+export async function cloudProject(
+  explicit?: string,
+  command: 'cloud package' | 'cloud verify' = 'cloud package',
+): Promise<CloudProject> {
   const start = await realpath(explicit ? path.dirname(path.resolve(explicit)) : process.cwd());
-  const root = await realpath(git(start, 'rev-parse', '--show-toplevel').trimEnd());
+  let checkout: string;
+  try {
+    checkout = git(start, 'rev-parse', '--show-toplevel').trimEnd();
+  } catch (error) {
+    if (command !== 'cloud verify') throw error;
+    throw new Error(
+      'Command inventory completeness could not be established without a usable source checkout. ' +
+        'Run cloud verify from the source checkout or pass its config path before --package.',
+      { cause: error },
+    );
+  }
+  const root = await realpath(checkout);
   const ancestors = [];
   for (let dir = start; inside(root, dir); dir = path.dirname(dir)) {
     ancestors.push(dir);

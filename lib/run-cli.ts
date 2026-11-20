@@ -59,7 +59,7 @@ export async function runCLI(
         stderr.write('debug: ' + JSON.stringify({ command: options.command, ...fields }) + '\n');
     };
     if (options.command === 'cloud package' || options.command === 'cloud verify') {
-      const project = await cloudProject(options.configPath);
+      const project = await cloudProject(options.configPath, options.command);
       const verifying = options.command === 'cloud verify';
       const root = verifying ? await realpath(options.packageDirectory!) : project.root;
       debug({
