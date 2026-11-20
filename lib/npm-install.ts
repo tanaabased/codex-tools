@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { isDeepStrictEqual } from 'node:util';
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -18,7 +19,7 @@ import {
   registryUrl,
   resolvedVersion,
 } from '../utils/npm-selector.ts';
-import { inside, object, resolveMarketplace, snapshot, validateSource } from './install-context.ts';
+import { object, resolveMarketplace, snapshot, validateSource } from './install-context.ts';
 import type {
   InstallationResult,
   InternalInstallDependencies,

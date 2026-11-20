@@ -180,6 +180,12 @@ describe('lib/install', () => {
     assert.equal((await run()).ok, true);
     assert.equal(await readFile(catalogFile, 'utf8'), before);
   });
+  it('should inherit a nonempty Codex home and use the home default for an empty value', async () => {
+    options = { repoRoot };
+    assert.equal((await run({ dryRun: true })).codexHome, codexHome);
+    env.CODEX_HOME = '';
+    assert.equal((await run({ dryRun: true })).codexHome, path.join(home, '.codex'));
+  });
   it('should list fresh Codex home creation in dry run and perform it before discovery', async () => {
     await rm(codexHome, { recursive: true });
     const preview = await run({ dryRun: true });

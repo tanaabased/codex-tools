@@ -23,6 +23,7 @@ jobs:
           - refresh
           - status
           - cache
+          - cloud
           - native
           - native-npm
     steps:

@@ -6,8 +6,9 @@ published. `setup.sh` owns registry readiness and cleanup; assertions remain her
 ## Testing
 
 ```bash
-# should leave npm resolution pending during a dry run
-source setup.sh
+# should leave npm resolution pending during an offline dry run
+source environment.sh
+export npm_config_offline=true
 codex-tools install 'npm:@fixture/package-name@1.2.3' --dry-run | grep -F 'package version: pending'
 test ! -e "$HOME/.agents/plugins/marketplace.json"
 test ! -e "$CODEX_HOME"
@@ -32,10 +33,17 @@ codex-tools install 'npm:@fixture/package-name@~1.2.0' | grep -F 'package versio
 
 # should retain the release and registry pin when defaults change
 source setup.sh
+check_installed_release() {
+  local version
+  version=$("$CODEX_TOOLS_TEST_CODEX" plugin list --json | bun -p '(await Bun.stdin.json()).installed.find(p => p.pluginId === "native-npm-probe@personal" && p.installed).version')
+  grep -Fx "Return npm-probe-ok for release $1." "$CODEX_HOME/plugins/cache/personal/native-npm-probe/$version/skills/native-npm-fixture/SKILL.md"
+}
 codex-tools install 'npm:@fixture/package-name@1.2.3'
 printf '1.3.0' >"$root/latest"
 env 'npm_config_@fixture:registry=https://127.0.0.1:1' codex-tools refresh 'npm:@fixture/package-name' | grep -F 'package version: 1.2.3'
+check_installed_release 1.2.3
 codex-tools install 'npm:@fixture/package-name@latest' | grep -F 'package version: 1.3.0'
+check_installed_release 1.3.0
 test ! -e "$root/LIFECYCLE-RAN"
 
 # should refresh an npm plugin in an explicitly selected marketplace

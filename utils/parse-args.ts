@@ -36,7 +36,9 @@ export interface CodexToolsOptions {
 }
 
 export interface ParsedOptions extends CodexToolsOptions {
-  command: OperationCommand | '';
+  command: OperationCommand | 'cloud package' | 'cloud verify' | '';
+  configPath?: string;
+  packageDirectory?: string;
   help: boolean;
 }
 
@@ -67,18 +69,16 @@ const booleans = new Map<string, BooleanOption>([
   ['dry-run', 'dryRun'],
 ]);
 
-const commands = new Set<OperationCommand>([
-  'check',
-  'sync',
-  'status',
-  'doctor',
-  'install',
-  'refresh',
-]);
-
-function operationCommand(value: string): value is OperationCommand {
-  return commands.has(value as OperationCommand);
-}
+const commands = [
+  [['install'], 'install'],
+  [['refresh'], 'refresh'],
+  [['status'], 'status'],
+  [['doctor'], 'doctor'],
+  [['cache', 'check'], 'check'],
+  [['cache', 'sync'], 'sync'],
+  [['cloud', 'package'], 'cloud package'],
+  [['cloud', 'verify'], 'cloud verify'],
+] as const;
 
 function setStringOption(options: CodexToolsOptions, key: StringOption, value: string): void {
   switch (key) {
@@ -116,11 +116,16 @@ export function parseArgs(
 ): ParsedOptions {
   const options: CodexToolsOptions = {};
   const positionals: string[] = [];
+  let packageDirectory: string | undefined;
   const explicit = new Set<keyof CodexToolsOptions>();
-  const aliases: Record<string, string> = { '-h': '--help', '-V': '--version', '-v': '--version' };
+  const aliases = new Map([
+    ['-h', '--help'],
+    ['-V', '--version'],
+    ['-v', '--version'],
+  ]);
   for (let i = 0; i < argv.length; i++) {
     const original = argv[i]!;
-    const arg = aliases[original] ?? original;
+    const arg = aliases.get(original) ?? original;
     if (!arg.startsWith('-')) {
       positionals.push(arg);
       continue;
@@ -129,7 +134,12 @@ export function parseArgs(
     const value = parts.length ? parts.join('=') : undefined;
     const negative = flag.startsWith('no-');
     const boolean = flag === 'no-debug' ? undefined : booleans.get(negative ? flag.slice(3) : flag);
-    if (arg.startsWith('--') && boolean) {
+    if (arg.startsWith('--') && flag === 'package') {
+      if (packageDirectory !== undefined) throw new Error('Repeated option: --package');
+      packageDirectory = value ?? argv[++i];
+      if (!packageDirectory || packageDirectory.startsWith('-'))
+        throw new Error('--package requires an extracted directory.');
+    } else if (arg.startsWith('--') && boolean) {
       if (explicit.has(boolean)) throw new Error('Repeated option: --' + flag);
       let enabled = !negative;
       if (boolean === 'debug') {
@@ -169,41 +179,57 @@ export function parseArgs(
   if (!explicit.has('debug') && options.debug === undefined) {
     options.debug = env.RUNNER_DEBUG === '1';
   }
-  if (options.codexHome === undefined && env.CODEX_HOME !== undefined) {
+  if (options.codexHome === undefined && env.CODEX_HOME) {
     options.codexHome = env.CODEX_HOME;
   }
-  let command = positionals.join(' ');
-  const first = positionals[0];
-  if (first === 'install' || first === 'refresh') {
-    if (positionals.length > 2)
-      throw new Error(positionals[0]! + ' accepts one plugin path or npm selector.');
-    if (positionals[1] && explicit.has('repoRoot'))
+  const route = commands.find(([words]) => words.every((word, i) => positionals[i] === word));
+  if (!route && positionals.length) throw new Error('Unknown command: ' + positionals.join(' '));
+  const command = route?.[1] ?? '';
+  const operands = positionals.slice(route?.[0].length ?? 0);
+  const [operand] = operands;
+  if (command === 'install' || command === 'refresh') {
+    if (operands.length > 1 || operand === '')
+      throw new Error(command + ' accepts one plugin path or npm selector.');
+    if (operand && explicit.has('repoRoot'))
       throw new Error('Select a positional plugin path or --repo-root, not both.');
-    if (positionals[1]?.startsWith('npm:')) {
-      parseNpmSelector(positionals[1]);
-      options.npmSelector = positionals[1];
+    if (operand?.startsWith('npm:')) {
+      parseNpmSelector(operand);
+      options.npmSelector = operand;
       delete options.repoRoot;
-    } else if (positionals[1]) options.repoRoot = positionals[1];
-    command = first;
-  }
+    } else if (operand) options.repoRoot = operand;
+  } else if (command === 'cloud package' || command === 'cloud verify') {
+    if (operands.length > 1 || operand === '')
+      throw new Error(command + ' accepts at most one nonempty config path.');
+    if (packageDirectory && command !== 'cloud verify')
+      throw new Error('--package is only valid for cloud verify.');
+    if (!options.help && !options.version && command === 'cloud verify' && !packageDirectory)
+      throw new Error('cloud verify requires --package <extracted-directory>.');
+    if (
+      options.dryRun ||
+      [...explicit].some((key) => !['json', 'debug', 'help', 'version'].includes(key))
+    )
+      throw new Error('Unsupported option for ' + command);
+    return {
+      ...options,
+      command,
+      help: options.help ?? false,
+      ...(operand && { configPath: operand }),
+      ...(packageDirectory && { packageDirectory }),
+    };
+  } else if (operands.length) throw new Error(command + ' does not accept positional arguments.');
+  if (packageDirectory !== undefined) throw new Error('--package is only valid for cloud verify.');
   if (options.marketplacePath && !['install', 'refresh'].includes(command))
     throw new Error('--marketplace-path is only valid for install or refresh.');
-  const normalized = command.replace('cache ', '');
-  let parsedCommand: OperationCommand | '' = '';
-  if (normalized) {
-    if (!operationCommand(normalized)) throw new Error('Unknown command: ' + command);
-    parsedCommand = normalized;
-  }
   if (!command && !options.help && !options.version && argv.length)
     throw new Error('A command is required.');
-  if (options.dryRun && !['cache sync', 'install', 'refresh'].includes(command))
+  if (options.dryRun && !['sync', 'install', 'refresh'].includes(command))
     throw new Error('--dry-run is only valid for cache sync, install, or refresh.');
   if (options.missingTarget && !['require-installed', 'create'].includes(options.missingTarget))
     throw new Error('Invalid --missing-target value.');
   if (options.absentCheck && !['fail', 'neutral'].includes(options.absentCheck))
     throw new Error('Invalid --absent-check value.');
   return {
-    command: parsedCommand,
+    command,
     ...options,
     help: options.help || (!argv.length && !options.version),
   };

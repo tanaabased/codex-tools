@@ -1,5 +1,9 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+- Added `cloud package` and `cloud verify` to prepare skills for Codex Cloud and verify the extracted release. [#43](https://github.com/tanaabased/codex-tools/issues/43) [#44](https://github.com/tanaabased/codex-tools/pull/44)
+- Fixed `status` and `doctor` for standalone plugins without `package.json`. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+- Fixed CLI command validation so unsupported subcommands fail before any operation runs. Use `cache check` and `cache sync` for cache operations. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+
 ## v1.0.3 - [September 26, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.3)
 
 - Fixed `codex-tools install` to reconcile existing local plugins to the selected source version without rewriting the source manifest. [#38](https://github.com/tanaabased/codex-tools/issues/38) [#39](https://github.com/tanaabased/codex-tools/pull/39)

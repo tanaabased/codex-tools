@@ -35,6 +35,20 @@ describe('lib/run-cli', () => {
     ['cache', 'sync', '--json=1'],
     ['status', 'extra'],
     ['cache', 'other'],
+    ['cache', 'sync', 'extra'],
+    ['doctor', 'extra'],
+    ['install', ''],
+    ['cloud', 'package', ''],
+    ['cache sync'],
+    ['cloud package'],
+    ['unknown', 'install'],
+    ['cloud', 'package', 'one.js', 'two.js'],
+    ['cloud', 'verify'],
+    ['cloud', 'verify', '--package'],
+    ['cloud', 'verify', '--package', 'one', '--package', 'two'],
+    ['cloud', 'package', '--dry-run'],
+    ['cloud', 'package', '--package', 'release'],
+    ['status', '--package', 'release'],
     ['--help', '--unknown'],
     ['cache', 'sync', '--repo-root', 'one', '--repo-root', 'two'],
     ['status', '--dry-run'],
@@ -47,6 +61,39 @@ describe('lib/run-cli', () => {
       assert.throws(() => parseArgs(args, {}));
     });
   }
+
+  it('resolves only declared command paths in each namespace', () => {
+    const names = ['install', 'refresh', 'status', 'doctor', 'check', 'sync', 'package', 'verify'];
+    for (const [group, allowed] of Object.entries({
+      '': ['install', 'refresh', 'status', 'doctor'],
+      cache: ['check', 'sync'],
+      cloud: ['package', 'verify'],
+    })) {
+      for (const name of names) {
+        const words = group ? [group, name] : [name];
+        if (allowed.includes(name)) {
+          const parsed = parseArgs(
+            name === 'verify' ? [...words, '--package', 'release'] : words,
+            {},
+          );
+          assert.equal(parsed.command, group === 'cloud' ? words.join(' ') : name);
+        } else {
+          assert.throws(() => parseArgs(words, {}), /Unknown command/);
+        }
+      }
+    }
+    for (const name of ['cache', 'cloud', 'constructor'])
+      assert.throws(() => parseArgs([name], {}), /Unknown command/);
+    assert.equal(parseArgs(['install', 'refresh'], {}).repoRoot, 'refresh');
+    assert.equal(parseArgs(['cloud', 'package', 'verify'], {}).configPath, 'verify');
+  });
+
+  it('should keep an explicit cloud config separate from the extracted package directory', () => {
+    const parsed = parseArgs(['cloud', 'verify', 'release.mjs', '--package=packed release'], {});
+    assert.equal(parsed.command, 'cloud verify');
+    assert.equal(parsed.configPath, 'release.mjs');
+    assert.equal(parsed.packageDirectory, 'packed release');
+  });
 
   it('should apply flags over environment and support explicit boolean negation', () => {
     const parsed = parseArgs(

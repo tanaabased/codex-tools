@@ -18,24 +18,7 @@ import { collectEntries, syncEntries } from '../lib/cache.ts';
 import pathExists from '../utils/path-exists.ts';
 import type { StatPath } from '../utils/path-exists.ts';
 
-const managedPaths = [
-  '.codex-plugin',
-  '.mcp.json',
-  'ACTORS.md',
-  'AGENTS.md',
-  'AUTOMATIONS.yaml',
-  'GOALS.md',
-  'MODEL_ROUTING.yaml',
-  'WORK_REPOS.md',
-  'assets',
-  'automations',
-  'bin',
-  'lib',
-  'package.json',
-  'references',
-  'skills',
-  'utils',
-];
+const managedPaths = ['.mcp.json', 'assets', 'package.json', 'references', 'skills', 'AGENTS.md'];
 const collectManagedEntries = (root: string, _entries: unknown, statPath: StatPath) =>
   collectEntries(root, { managedPaths, statPath });
 
@@ -160,83 +143,18 @@ describe('lib/cache', () => {
     await assert.rejects(lstat(path.join(targetRoot, 'skills', 'obsolete')));
   });
 
-  it('should copy shared references used by installed skills', async () => {
+  it('should sync a managed root file and refresh a nested resource after an edit', async () => {
     const { sourceRoot, targetRoot, tempRoot } = await createRoots();
     tempRoots.push(tempRoot);
-    await mkdir(path.join(sourceRoot, 'references'), { recursive: true });
-    await mkdir(path.join(sourceRoot, 'skills', 'skill-author'), { recursive: true });
-    await writeFile(path.join(sourceRoot, 'references', 'skill-standard.md'), '# Skill Standard\n');
-    await writeFile(path.join(sourceRoot, 'skills', 'skill-author', 'SKILL.md'), 'author\n');
-
-    const diff = await syncRoots(sourceRoot, targetRoot);
-    const installedReferencePath = path.resolve(
-      targetRoot,
-      'skills',
-      'skill-author',
-      '../../references/skill-standard.md',
-    );
-
-    assert.deepEqual(diff, { changed: [], extra: [], missing: [] });
-    assert.equal(await readFile(installedReferencePath, 'utf8'), '# Skill Standard\n');
-  });
-
-  it('should copy root inputs used by installed planning skills', async () => {
-    const { sourceRoot, targetRoot, tempRoot } = await createRoots();
-    tempRoots.push(tempRoot);
-    await Promise.all([
-      writeFile(path.join(sourceRoot, 'ACTORS.md'), '# Work-Planning Actors\n'),
-      writeFile(path.join(sourceRoot, 'GOALS.md'), '# Goals\n'),
-      writeFile(path.join(sourceRoot, 'WORK_REPOS.md'), '# Work Repositories\n'),
-    ]);
-
-    const diff = await syncRoots(sourceRoot, targetRoot);
-
-    assert.deepEqual(diff, { changed: [], extra: [], missing: [] });
-    assert.deepEqual(
-      await Promise.all(
-        ['ACTORS.md', 'GOALS.md', 'WORK_REPOS.md'].map((filename) =>
-          readFile(path.join(targetRoot, filename), 'utf8'),
-        ),
-      ),
-      ['# Work-Planning Actors\n', '# Goals\n', '# Work Repositories\n'],
-    );
-  });
-
-  it('should copy the declarative automation manifest and prompt directory', async () => {
-    const { sourceRoot, targetRoot, tempRoot } = await createRoots();
-    tempRoots.push(tempRoot);
-    await writeFile(path.join(sourceRoot, 'AUTOMATIONS.yaml'), 'schema-version: 1\n');
-    await mkdir(path.join(sourceRoot, 'automations'));
-    await writeFile(path.join(sourceRoot, 'automations', 'weekly.md'), 'Run weekly.\n');
-
-    const diff = await syncRoots(sourceRoot, targetRoot);
-
-    assert.deepEqual(diff, { changed: [], extra: [], missing: [] });
-    assert.equal(
-      await readFile(path.join(targetRoot, 'AUTOMATIONS.yaml'), 'utf8'),
-      'schema-version: 1\n',
-    );
-    assert.equal(
-      await readFile(path.join(targetRoot, 'automations', 'weekly.md'), 'utf8'),
-      'Run weekly.\n',
-    );
-  });
-
-  it('should copy and refresh the shared model policy used by installed task routing', async () => {
-    const { sourceRoot, targetRoot, tempRoot } = await createRoots();
-    tempRoots.push(tempRoot);
-    const source = path.join(sourceRoot, 'MODEL_ROUTING.yaml');
-    const target = path.join(targetRoot, 'MODEL_ROUTING.yaml');
-    await writeFile(source, 'schema-version: 1\n');
-    assert.deepEqual(await syncRoots(sourceRoot, targetRoot), {
-      changed: [],
-      extra: [],
-      missing: [],
-    });
-    assert.equal(await readFile(target, 'utf8'), 'schema-version: 1\n');
-    await writeFile(source, 'schema-version: 1\n# revised operator policy\n');
-    await syncRoots(sourceRoot, targetRoot);
-    assert.equal(await readFile(target, 'utf8'), await readFile(source, 'utf8'));
+    const resource = path.join('references', 'guide.md');
+    await mkdir(path.join(sourceRoot, 'references'));
+    await writeFile(path.join(sourceRoot, 'AGENTS.md'), 'instructions');
+    for (const content of ['original guide', 'updated guide']) {
+      await writeFile(path.join(sourceRoot, resource), content);
+      await syncRoots(sourceRoot, targetRoot);
+      assert.equal(await readFile(path.join(targetRoot, 'AGENTS.md'), 'utf8'), 'instructions');
+      assert.equal(await readFile(path.join(targetRoot, resource), 'utf8'), content);
+    }
   });
 
   it('should replace entries when their filesystem type changes', async () => {

@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import {
   chmod,
   lstat,
@@ -124,14 +125,6 @@ async function resolveSyncRoot(root: string): Promise<string> {
   }
 }
 
-function containsPath(root: string, candidate: string): boolean {
-  const relative = path.relative(root, candidate);
-  return (
-    relative === '' ||
-    (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))
-  );
-}
-
 async function hasIgnored(directory: string, ignored: ReadonlySet<string>): Promise<boolean> {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (ignored.has(entry.name)) return true;
@@ -179,7 +172,7 @@ export async function inspectTrees({
 }: TreeOptions): Promise<TreeInspection> {
   const sourceRoot = await resolveSyncRoot(path.resolve(rawSource));
   const targetRoot = await resolveSyncRoot(path.resolve(rawTarget));
-  if (containsPath(sourceRoot, targetRoot) || containsPath(targetRoot, sourceRoot)) {
+  if (inside(sourceRoot, targetRoot) || inside(targetRoot, sourceRoot)) {
     throw new Error('Cache operations require disjoint source and target directories.');
   }
   const statPath = options.statPath ?? lstat;

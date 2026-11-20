@@ -1,3 +1,4 @@
+import inside from '../utils/inside.ts';
 import { homedir } from 'node:os';
 import { isDeepStrictEqual } from 'node:util';
 import { lstat, readFile, realpath, stat } from 'node:fs/promises';
@@ -146,11 +147,6 @@ function marketplaceEntry(value: unknown): value is MarketplaceEntry {
     }
   }
   return true;
-}
-
-export function inside(root: string, target: string): boolean {
-  const relative = path.relative(root, target);
-  return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
 }
 
 export async function optional<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -307,7 +303,9 @@ export async function resolveMarketplace(
   const paths = new InstallPaths();
   const home = path.resolve(env.HOME ?? homedir());
   await paths.resolve(home, 'directory');
-  const codexHome = path.resolve(options.codexHome ?? env.CODEX_HOME ?? path.join(home, '.codex'));
+  const codexHome = path.resolve(
+    options.codexHome ?? (env.CODEX_HOME || path.join(home, '.codex')),
+  );
   const physicalCodexHome = await paths.resolve(codexHome, 'directory');
   const codexHomeStats = await optional(() => stat(codexHome));
   const configFile = path.join(codexHome, 'config.toml');

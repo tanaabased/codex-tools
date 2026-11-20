@@ -105,6 +105,24 @@ describe('lib/operations', () => {
     assert.equal(context.inspection.installed, true);
     assert.equal(context.inspection.registered, null);
   });
+  it('should match a versionless standalone plugin only to an unversioned cache', async () => {
+    const file = '.codex-plugin/plugin.json';
+    const plugin = { name: manifest.name };
+    await rm(path.join(repoRoot, 'package.json'));
+    await writeJson(path.join(repoRoot, file), plugin);
+    await writeJson(path.join(cachePath, file), plugin);
+    await writeJson(path.join(cachePath, '..', 'older', file), manifest);
+    await writeJson(path.join(cachePath, '..', 'invalid', file), { ...plugin, version: null });
+    const result = await runOperation('doctor', options);
+    assert.equal(result.inspection.installed, true);
+    assert.equal(result.cachePath, cachePath);
+    assert.equal(result.source.version, null);
+    assert.equal(result.source.packageVersion, null);
+  });
+  it('should reject malformed package metadata even with a valid plugin manifest', async () => {
+    await writeJson(path.join(repoRoot, 'package.json'), null);
+    await assert.rejects(resolveContext(options), /identity is invalid/);
+  });
   it('should use plugin cachebuster identity rather than the package version', async () => {
     const value = { ...manifest, version: '1.0.0+codex.local' };
     await writeJson(path.join(repoRoot, '.codex-plugin/plugin.json'), value);

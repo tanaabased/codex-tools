@@ -45,7 +45,7 @@ Codex Tools runtime.
 
 1. Run `<plugin-root>/dist/codex-tools --version`. Stop if missing or mismatched with the plugin
    package version.
-2. Inspect with `status --repo-root <plugin-path> --json` (`doctor` is an alias), or use
+2. For a local source, inspect with `status --repo-root <plugin-path> --json` (`doctor` is an alias), or use
    `cache check --repo-root <plugin-path> --json` for managed payload drift.
 3. Select the repair:
    - `refresh <plugin-path>` reinstalls changed local source.
@@ -54,7 +54,8 @@ Codex Tools runtime.
 4. Preview the chosen command with `--dry-run --json`. Review the source, target, marketplace,
    planned writes, preservation behavior, and unresolved native checks.
 5. When the request authorizes repair, repeat the reviewed command without `--dry-run`.
-6. Re-run `status` or `cache check` as appropriate and report the observed outcome.
+6. For a local source, re-run `status` or `cache check` as appropriate.
+   For an npm refresh, report the pinned version and cached payload verification from the refresh result.
 
 ## Checkpoints
 
@@ -75,5 +76,5 @@ Codex Tools runtime.
 
 ## Validation
 
-Confirm the bundled runtime and any mutation matched the requested repair, and that final status or
-cache readback supports the reported outcome. Keep unobserved authentication and activation unknown.
+Use the local status, cache check, or npm refresh result to verify the requested repair.
+Keep unobserved authentication and activation unknown.

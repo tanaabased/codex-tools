@@ -7,6 +7,8 @@ export interface StyleSet {
   bold: (text: string) => string;
   dim: (text: string) => string;
   heading: (text: string) => string;
+  success: (text: string) => string;
+  target: (text: string) => string;
   error: (text: string) => string;
 }
 
@@ -24,6 +26,8 @@ export function styles(stream: { isTTY?: boolean }, json = false): StyleSet {
     bold: enabled ? ansis.bold : plain,
     dim: enabled ? ansis.dim : plain,
     heading: enabled ? ansis.hex('#00c88a') : plain,
+    success: enabled ? ansis.green : plain,
+    target: enabled ? ansis.hex('#db2777') : plain,
     error: enabled ? ansis.red : plain,
   };
 }

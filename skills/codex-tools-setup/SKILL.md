@@ -48,7 +48,7 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 2. Select `install <plugin-path>` or `install npm:<package>[@selector]`. Resolve relative source
    paths explicitly.
 3. Run with `--dry-run --json` and the selected options. Review source, home, marketplace, mapping,
-   planned writes, and unresolved checks. npm resolution and native compatibility remain pending.
+   planned writes, and unresolved checks. For a preview request, report the plan and stop here.
 4. When the request authorizes installation, repeat the reviewed command without `--dry-run`.
 5. Read the result against the completion criteria below. Tell the user to start a fresh Codex
    task for skill discovery; installation alone does not prove authentication or active-task loading.
@@ -61,8 +61,9 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 
 ## Completion Criteria
 
-- The result is `ok: true`, with installed and, when observable, enabled readback.
-- npm sources have an exact recorded release and verified cached payload.
+- A successful preview returns `ok: true` and `status: planned`. Report pending checks from the plan.
+- An applied installation returns `ok: true`, with installed and, when observable, enabled readback.
+  An applied npm installation also records the exact release and verifies the cached payload.
 - Unrelated marketplace entries and cache content remain preserved.
 
 ## Bundled Resources
@@ -72,5 +73,5 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 
 ## Validation
 
-Confirm the bundled runtime, reviewed dry run, authorized command, and native readback support the
-reported outcome. Keep unobserved authentication and activation state unknown.
+Use the dry-run result for a preview and native readback for an applied installation.
+Keep unobserved authentication and activation state unknown.

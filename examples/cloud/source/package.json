@@ -1,0 +1,8 @@
+{
+  "name": "fictional-cloud-skills",
+  "version": "1.2.3",
+  "type": "module",
+  "files": [
+    "skills"
+  ]
+}

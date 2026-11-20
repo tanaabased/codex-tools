@@ -23,10 +23,11 @@ and agent skills.
 - **Refresh source plugins:** update the development version and reinstall changes through Codex.
 - **Sync installed caches:** copy changes from a source repository into its selected live plugin cache while preserving unmanaged files.
 - **Inspect and preview:** report installation state and drift with `status`/`doctor`, or preview changes with a dry run.
+- **Package skills for Codex Cloud:** prepare skills in a release checkout and verify the extracted npm package. See [Cloud skills](./CLI.md#cloud-skills).
 
 ## Install
 
-Requires Node `^24.15.0 || >=26.0.0`.
+Requires Node `^24.15.0 || >=26.0.0`. Native plugin installation and refresh support macOS and Linux on arm64 or x64.
 
 ```sh
 npm install --global @tanaab/codex-tools

@@ -10,19 +10,73 @@ codex-tools <command> [source] [options]
 npm exec --offline -- codex-tools <command> [source] [options]
 ```
 
-| Command                          | Purpose                                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `install [path\|npm:<selector>]` | Install a local or published plugin; omitted path uses the current directory.                               |
-| `refresh [path\|npm:<package>]`  | Reinstall an enabled plugin; local refresh edits its manifest version, npm refresh retains its release pin. |
-| `status`                         | Inspect identity, installation state, and payload drift without writing.                                    |
-| `doctor`                         | Alias for `status`.                                                                                         |
-| `cache check`                    | Report selected cache drift without writing.                                                                |
-| `cache sync`                     | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
+| Command                                       | Purpose                                                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `install [path\|npm:<selector>]`              | Install a local or published plugin; omitted path uses the current directory.                               |
+| `refresh [path\|npm:<package>]`               | Reinstall an enabled plugin; local refresh edits its manifest version, npm refresh retains its release pin. |
+| `status`                                      | Inspect identity, installation state, and payload drift without writing.                                    |
+| `doctor`                                      | Alias for `status`.                                                                                         |
+| `cache check`                                 | Report selected cache drift without writing.                                                                |
+| `cache sync`                                  | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
+| `cloud package [config]`                      | Prepare selected skills in place in the release checkout.                                                   |
+| `cloud verify [config] --package <directory>` | Verify the selected skills in the extracted release.                                                        |
 
 Local plugins need `.codex-plugin/plugin.json`. npm selectors accept exact versions, tags, or
 quoted ranges; omitting the version selects `latest`. npm acquisition requires npm on `PATH`.
 Read-only commands do not start Codex. See
 [refresh and recovery](./ADVANCED.md#refresh-and-recovery) for partial effects.
+
+## Cloud skills
+
+In a fresh Git checkout, prepare the selected skills in place, then pack the release. Extract the
+tarball and check the files that will ship, using the same checkout for source expectations.
+
+```sh
+codex-tools cloud package
+tarball=$(npm pack --silent)
+mkdir -p unpacked
+tar -xzf "$tarball" -C unpacked
+codex-tools cloud verify --package ./unpacked/package
+```
+
+Both commands take one optional config path. From inside a skill, they look for the closest
+`build.config.js` beside a tracked `SKILL.md` in the current directory or its ancestors.
+Otherwise they use the nearest `cloud.config.js` up to the Git root. An explicit JavaScript
+config may have a custom name. A default export with `skills` selects from the repository.
+A build config belongs beside the skill’s `SKILL.md`.
+
+```js
+// cloud.config.js
+export default { skills: 'skills/*/SKILL.md' };
+```
+
+```js
+// skills/writer/build.config.js
+export default { entrypoints: 'scripts/*.js', copy: ['references/**', '!references/private/**'] };
+```
+
+Selectors take a glob or an array of globs over tracked paths, including dotfiles. Exclusions win. Skill discovery and
+copies use repository-relative paths. Entrypoints must be skill-relative `.js` or `.mjs` files.
+They can import TypeScript or CommonJS modules. Packaging skips skills
+without a build config. An empty config (`export default {}`) materializes tracked relative links.
+Set `symlinks: false` for a skill that ships without symlinks. Copies fill missing paths after
+link materialization.
+
+Put Bun on `PATH` to bundle commands. Each command keeps its path; its length, SHA-256 and emitted
+assets appear in the skill’s `runtime-files.json`. The default `guidance: 'auto'` inserts execution
+instructions at `<!-- packaged-execution -->` when there are commands. Use `'on'` to require
+both a command and exactly one marker, or `'off'` to remove the marker. Start again from a fresh
+checkout if packaging fails after making changes.
+
+Verification is read-only. It checks all discovered skills, including plain prose, against the
+extracted files. Reader links must target concrete files inside the skill. Supported final
+extensions are `.c`, `.css`, `.csv`, `.h`, `.htm`, `.html`, `.js`, `.json`, `.md`, `.mjs`,
+`.py`, `.rst`, `.sh`, `.svg`, `.tsv`, `.txt`, and `.xml`. Matching ignores case.
+Markdown links are followed recursively, including in files such as `workflow.yml.md`.
+Markdown under `templates/` may use an uppercase URL placeholder such as `DOCS_URL`.
+For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
+intended output file. Every command resource listed in `runtime-files.json` must also have a
+reader-supported extension. Inline other formats into the bundle when a command needs them.
 
 ## Options
 
@@ -147,8 +201,7 @@ npm and native checks may remain unresolved in the plan.
 ## Environment defaults
 
 Empty path and selection environment values are unset. Boolean values must be `1`, `true`, `0`,
-or `false`; an empty boolean value is invalid. Set `CODEX_TOOLS_DEBUG=false` to suppress inherited
-CI debug enablement.
+or `false`; an empty boolean value is invalid.
 Explicit flags override their environment values, including invalid ones. `CODEX_TOOLS_CODEX_HOME`
 precedes `CODEX_HOME`; otherwise Codex Tools uses `~/.codex`. Repository settings apply only to
 cache ownership and absence behavior, as described in [advanced usage](./ADVANCED.md#cache-ownership).

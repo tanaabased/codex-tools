@@ -10,10 +10,22 @@ built executable. Parser edge cases remain in the unit suite.
 source environment.sh
 expected=$(bun -p 'require("../../package.json").version')
 cd "$HOME"
-codex-tools --help | grep -F 'codex-tools <command> [source] [options]'
-codex-tools --help | grep -F '[default: current directory]'
-codex-tools --help | grep -F '[default: CODEX_HOME or ~/.codex]'
+codex-tools --help >"$root/help"
+grep -F 'codex-tools <command> [source] [options]' "$root/help"
+grep -F 'cloud package [config]' "$root/help"
+grep -F 'cloud verify [config] --package <directory>' "$root/help"
+grep -F '[default: current directory]' "$root/help"
+grep -F '[default: CODEX_HOME or ~/.codex]' "$root/help"
 test "$(codex-tools --version)" = "$expected"
+
+# should explain the required package directory before looking for a config
+source environment.sh
+cd "$HOME"
+status=0
+codex-tools cloud verify --json >"$root/result.json" 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F '"status":"error"' "$root/result.json"
+grep -F 'cloud verify requires --package <extracted-directory>' "$root/error"
 
 # should prefer the flag over scoped and native Codex environment defaults
 source environment.sh
@@ -29,7 +41,8 @@ source environment.sh
 export CODEX_TOOLS_REPO_ROOT="$PWD/source" CODEX_TOOLS_ABSENT_CHECK=neutral CODEX_TOOLS_JSON=true CODEX_TOOLS_DEBUG=true
 codex-tools status 2>"$root/debug" | grep -F '"status":"not_installed"'
 grep -F 'debug:' "$root/debug"
-codex-tools status --no-json --debug=false 2>"$root/quiet" | grep -F 'status: not_installed'
+unset CODEX_TOOLS_DEBUG
+codex-tools status --no-json 2>"$root/quiet" | grep -F 'status: not_installed'
 test ! -s "$root/quiet"
 
 # should honor CI debug without adopting unrelated debug settings
@@ -56,4 +69,14 @@ codex-tools --help --unknown --json >"$root/result.json" 2>"$root/error" || stat
 test "$status" -eq 2
 grep -F '"status":"error"' "$root/result.json"
 grep -F 'Unknown option' "$root/error"
+
+# should reject misplaced subcommands before dispatching an operation
+source environment.sh
+cd "$HOME"
+status=0
+codex-tools cache install --json >"$root/result.json" 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F 'Unknown command: cache install' "$root/error"
+test ! -e "$CODEX_HOME"
+test ! -e "$HOME/.agents"
 ```

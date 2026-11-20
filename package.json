@@ -89,12 +89,15 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "marked": "^18.0.11",
+    "minimatch": "10.2.6",
     "mocha": "11.8.0",
     "npm-package-arg": "^14.0.0",
     "prettier": "^3.9.6",
     "semver": "^7.8.5",
     "smol-toml": "^1.4.2",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.1",
+    "yaml": "^2.9.1"
   }
 }
