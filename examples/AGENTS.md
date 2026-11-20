@@ -22,7 +22,7 @@ execution requires an explicit request.
 
 ## Ownership
 
-- `defaults` owns the unoverridden source and Codex-home defaults.
+- `defaults` owns unoverridden source and Codex-home selection and the Cloud config search boundary.
 - `inputs` owns help, version, option forms, environment precedence, booleans, JSON/debug output,
   and invalid input.
 - `install` owns offline, side-effect-free install dry runs.
@@ -30,6 +30,7 @@ execution requires an explicit request.
 - `refresh` owns precondition failures before provisioning or source edits.
 - `status` owns the read-only `status` and `doctor` interface.
 - `cache` owns drift reporting, dry runs, synchronization, and convergence.
+- `cloud` owns skill selection, packaging, and verification of the extracted release.
 
 Unit tests own injected native failures and process orchestration. `native` and `native-npm` own
 real Codex acquisition, preservation, and fresh-session discovery under Leia on Linux and macOS.

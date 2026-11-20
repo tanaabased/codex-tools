@@ -15,7 +15,7 @@ echo 'local only' > refs/local.txt
 cp -R "$root/repo" "$root/single"
 (cd "$root/single/skills/writer/scripts" && codex-tools cloud package)
 test ! -e "$root/single/skills/inspector/runtime-files.json"
-codex-tools cloud package
+(cd skills/notes && codex-tools cloud package)
 diff -r "$root/single/skills/writer" skills/writer
 cmp refs/.editorconfig skills/writer/refs/.editorconfig
 test ! -e skills/writer/refs/local.txt

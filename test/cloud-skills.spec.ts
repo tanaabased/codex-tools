@@ -16,7 +16,6 @@ import path from 'node:path';
 import { cloudProject } from '../lib/cloud-config.ts';
 import { checkCloudSkill } from '../lib/cloud-check.ts';
 import { packageCloudSkills } from '../lib/package-cloud-skills.ts';
-import { parseArgs } from '../utils/parse-args.ts';
 
 describe('cloud skills', () => {
   let root: string;
@@ -87,8 +86,6 @@ describe('cloud skills', () => {
       await rm(path.join(root, skill, 'scripts/cloud.config.js'));
       await rm(path.join(root, 'cloud.config.js'));
       await assert.rejects(cloudProject(), /No build.config.js or cloud.config.js/);
-      assert.throws(() => parseArgs(['cloud', 'package', 'one.js', 'two.js']), /one config/);
-      assert.throws(() => parseArgs(['cloud', 'verify']), /requires --package/);
     } finally {
       process.chdir(cwd);
     }

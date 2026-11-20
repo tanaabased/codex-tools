@@ -10,10 +10,22 @@ built executable. Parser edge cases remain in the unit suite.
 source environment.sh
 expected=$(bun -p 'require("../../package.json").version')
 cd "$HOME"
-codex-tools --help | grep -F 'codex-tools <command> [source] [options]'
-codex-tools --help | grep -F '[default: current directory]'
-codex-tools --help | grep -F '[default: CODEX_HOME or ~/.codex]'
+codex-tools --help >"$root/help"
+grep -F 'codex-tools <command> [source] [options]' "$root/help"
+grep -F 'cloud package [config]' "$root/help"
+grep -F 'cloud verify [config] --package <directory>' "$root/help"
+grep -F '[default: current directory]' "$root/help"
+grep -F '[default: CODEX_HOME or ~/.codex]' "$root/help"
 test "$(codex-tools --version)" = "$expected"
+
+# should explain the required package directory before looking for a config
+source environment.sh
+cd "$HOME"
+status=0
+codex-tools cloud verify --json >"$root/result.json" 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F '"status":"error"' "$root/result.json"
+grep -F 'cloud verify requires --package <extracted-directory>' "$root/error"
 
 # should prefer the flag over scoped and native Codex environment defaults
 source environment.sh

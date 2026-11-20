@@ -1,6 +1,6 @@
 # Default selection
 
-Inspect the current directory using the `HOME/.codex` fallback without selection overrides.
+Exercise default source, Codex home, and Cloud config discovery without selection overrides.
 
 ## Testing
 
@@ -16,4 +16,15 @@ codex-tools status --json >"$root/status.json"
 grep -F '"status":"current"' "$root/status.json"
 grep -F "\"path\":\"$PWD\"" "$root/status.json"
 grep -F "\"codexHome\":\"$HOME/.codex\"" "$root/status.json"
+
+# should stop default cloud config discovery at the checkout root
+source environment.sh
+echo 'export default { skills: "skills/*/SKILL.md" };' > "$root/cloud.config.js"
+git init -q "$root/project"
+mkdir "$root/project/nested"
+cd "$root/project/nested"
+status=0
+codex-tools cloud package 2>"$root/error" || status=$?
+test "$status" -eq 2
+grep -F "No build.config.js or cloud.config.js found through $root/project" "$root/error"
 ```
