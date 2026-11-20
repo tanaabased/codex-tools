@@ -68,9 +68,11 @@ both a command and exactly one marker, or `'off'` to remove the marker. Start ag
 checkout if packaging fails after making changes.
 
 Verification is read-only. It checks all discovered skills, including plain prose, against the
-extracted files. Reader links can target Markdown (`.md`), JavaScript (`.js`), JSON (`.json`),
-plain text (`.txt`), and shell scripts (`.sh`) inside the skill. Markdown links are followed recursively. Markdown under `templates/`
-may use an uppercase URL placeholder such as `DOCS_URL`.
+extracted files. Reader links must target concrete files inside the skill. Supported final
+extensions are `.c`, `.css`, `.csv`, `.h`, `.htm`, `.html`, `.js`, `.json`, `.md`, `.mjs`,
+`.py`, `.rst`, `.sh`, `.svg`, `.tsv`, `.txt`, and `.xml`. Matching ignores case.
+Markdown links are followed recursively, including in files such as `workflow.yml.md`.
+Markdown under `templates/` may use an uppercase URL placeholder such as `DOCS_URL`.
 For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
 intended output file. Raw files can still be command assets.
 

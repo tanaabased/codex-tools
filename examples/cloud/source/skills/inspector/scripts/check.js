@@ -1,1 +1,3 @@
-process.stdout.write('checked\n');
+import { line } from '../lib/line.js';
+
+process.stdout.write(line('checked'));
