@@ -13,9 +13,11 @@ codex-tools install "$plugin" --dry-run | grep -F 'status: planned'
 test ! -e "$CODEX_HOME"
 test ! -e "$HOME/.agents"
 
-# should acquire a local plugin through real Codex
+# should acquire and inspect a standalone local plugin through real Codex
 source setup.sh
+rm "$plugin/package.json"
 codex-tools install "$plugin" | grep -F 'status: installed'
+codex-tools status --repo-root "$plugin" | grep -F 'status: current'
 "$CODEX_TOOLS_TEST_CODEX" plugin list --json | grep -F 'codex-tools-smoke'
 cmp "$plugin/skills/probe/SKILL.md" "$CODEX_HOME/plugins/cache/personal/codex-tools-smoke/1.0.0/skills/probe/SKILL.md"
 

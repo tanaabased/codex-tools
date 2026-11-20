@@ -161,7 +161,7 @@ not satisfy refresh preconditions.
 
 resolves a source plugin and at most one safe cache target without mutation.
 
-the source `package.json` and `.codex-plugin/plugin.json` establish identity and compatibility.
+the plugin manifest establishes identity. an optional `package.json` supplies a fallback version.
 explicit options override declared `codexTools` settings. ambiguous or unsupported cache layouts
 are returned as diagnostics rather than guessed.
 
@@ -598,8 +598,8 @@ names the source plugin, its compatibility version, and its package release.
 ```ts
 interface PluginIdentity {
   name: string;
-  version: string;
-  packageVersion: string;
+  version: string | null;
+  packageVersion: string | null;
 }
 ```
 

@@ -12,8 +12,8 @@ type UnknownRecord = Record<string, unknown>;
 /** names the source plugin, its compatibility version, and its package release. */
 export interface PluginIdentity {
   name: string;
-  version: string;
-  packageVersion: string;
+  version: string | null;
+  packageVersion: string | null;
 }
 
 /** resolved cache ownership, marketplace selection, and missing-installation policy. */
@@ -69,8 +69,13 @@ function segment(value: unknown): value is string {
   return typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._+-]*$/.test(value);
 }
 
-async function json(file: string): Promise<unknown> {
-  return JSON.parse(await readFile(file, 'utf8')) as unknown;
+async function json(file: string, optional = false): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(file, 'utf8')) as unknown;
+  } catch (error) {
+    if (optional && hasErrorCode(error, 'ENOENT')) return undefined;
+    throw error;
+  }
 }
 
 async function directories(root: string): Promise<string[]> {
@@ -168,14 +173,15 @@ export async function inspectInstallation(
     }
     throw error;
   }
+  const version = object(manifest) ? manifest.version : undefined;
   if (object(manifest)) {
     result.name = typeof manifest.name === 'string' ? manifest.name : null;
-    result.version = typeof manifest.version === 'string' ? manifest.version : null;
+    result.version = typeof version === 'string' ? version : null;
   }
   result.issue =
     result.name !== identity.name
       ? 'cached plugin name does not match source'
-      : result.version !== identity.version
+      : version !== (identity.version ?? undefined)
         ? 'cached plugin version does not match source'
         : null;
   result.compatible = result.issue === null;
@@ -185,7 +191,7 @@ export async function inspectInstallation(
 /**
  * resolves a source plugin and at most one safe cache target without mutation.
  *
- * the source `package.json` and `.codex-plugin/plugin.json` establish identity and compatibility.
+ * the plugin manifest establishes identity. an optional `package.json` supplies a fallback version.
  * explicit options override declared `codexTools` settings. ambiguous or unsupported cache layouts
  * are returned as diagnostics rather than guessed.
  *
@@ -197,16 +203,12 @@ export async function inspectInstallation(
  */
 export async function resolveContext(options: CodexToolsOptions = {}): Promise<ResolvedContext> {
   let repoRoot = path.resolve(options.repoRoot ?? process.cwd());
-  let packageJson: UnknownRecord;
-  let pluginJson: UnknownRecord;
+  let identity: PluginIdentity;
+  let declaredValue: unknown = {};
   try {
     repoRoot = await realpath(repoRoot);
-    const packageValue = await json(path.join(repoRoot, 'package.json'));
     const pluginValue = await json(path.join(repoRoot, '.codex-plugin/plugin.json'));
     if (
-      !object(packageValue) ||
-      typeof packageValue.version !== 'string' ||
-      !packageValue.version ||
       !object(pluginValue) ||
       !segment(pluginValue.name) ||
       (pluginValue.version !== undefined &&
@@ -214,15 +216,25 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
     ) {
       throw new Error('Source package/plugin identity is invalid.');
     }
-    packageJson = packageValue;
-    pluginJson = pluginValue;
+    const pkg = await json(path.join(repoRoot, 'package.json'), true);
+    let packageVersion: string | null = null;
+    if (pkg !== undefined) {
+      if (!object(pkg) || typeof pkg.version !== 'string' || !pkg.version)
+        throw new Error('Source package/plugin identity is invalid.');
+      packageVersion = pkg.version;
+      declaredValue = pkg.codexTools ?? {};
+    }
+    identity = {
+      name: pluginValue.name,
+      version: pluginValue.version ?? packageVersion,
+      packageVersion,
+    };
   } catch (error) {
     const failure = asError(error);
     failure.source = { path: repoRoot, valid: false, issue: failure.message };
     throw failure;
   }
 
-  const declaredValue = packageJson.codexTools ?? {};
   const known = new Set([
     'managedPaths',
     'excludeNames',
@@ -244,16 +256,6 @@ export async function resolveContext(options: CodexToolsOptions = {}): Promise<R
   };
   selection(config);
 
-  const packageVersion = packageJson.version;
-  const pluginName = pluginJson.name;
-  if (typeof packageVersion !== 'string' || typeof pluginName !== 'string') {
-    throw new Error('Source package/plugin identity is invalid.');
-  }
-  const identity: PluginIdentity = {
-    name: pluginName,
-    version: typeof pluginJson.version === 'string' ? pluginJson.version : packageVersion,
-    packageVersion,
-  };
   const rawHome = path.resolve(
     options.codexHome ?? (process.env.CODEX_HOME || path.join(homedir(), '.codex')),
   );
