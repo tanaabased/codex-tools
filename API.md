@@ -93,6 +93,8 @@ const entries = await collectEntries('/path/to/plugin', { managedPaths: ['skills
 console.log([...entries.keys()]);
 ```
 
+**Source:** [`cache/cache.ts:66`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L66)
+
 ### `diffEntries`
 
 compares normalized managed-tree entry maps without reading or writing the filesystem.
@@ -114,6 +116,8 @@ const source = await collectEntries('/path/to/plugin');
 const target = await collectEntries('/path/to/staged-payload');
 console.log(diffEntries(source, target).missing);
 ```
+
+**Source:** [`cache/diff-entries.ts:36`](https://github.com/tanaabased/codex-tools/blob/main/cache/diff-entries.ts#L36)
 
 ### `inspectInstallation`
 
@@ -141,6 +145,8 @@ import { inspectInstallation } from '@tanaab/codex-tools';
 const cache = await inspectInstallation('/path/to/cache', { name: 'my-plugin', version: '1.2.3' });
 if (!cache.compatible) console.error(cache.issue);
 ```
+
+**Source:** [`cache/context.ts:144`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L144)
 
 ### `inspectTrees`
 
@@ -173,6 +179,8 @@ const { targetRoot, diff } = await inspectTrees({
 console.log('Missing from', targetRoot, diff.missing);
 ```
 
+**Source:** [`cache/cache.ts:186`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L186)
+
 ### `installPlugin`
 
 installs a local or npm-backed plugin while preserving unrelated codex state.
@@ -204,6 +212,8 @@ const { plan } = await installPlugin({
 console.table(plan, ['operation', 'condition']);
 ```
 
+**Source:** [`install/install.ts:26`](https://github.com/tanaabased/codex-tools/blob/main/install/install.ts#L26)
+
 ### `refreshPlugin`
 
 refreshes an existing local or npm-backed installation while preserving unrelated codex state.
@@ -234,6 +244,8 @@ const { manifestEdit } = await refreshPlugin({ repoRoot: '/path/to/plugin', dryR
 if (manifestEdit) console.log(manifestEdit.before, '→', manifestEdit.after);
 ```
 
+**Source:** [`install/refresh.ts:83`](https://github.com/tanaabased/codex-tools/blob/main/install/refresh.ts#L83)
+
 ### `resolveContext`
 
 resolves a source plugin and at most one safe cache target without mutation.
@@ -262,6 +274,8 @@ const { cachePath, resolutionIssue } = await resolveContext({
 console.log(cachePath ?? resolutionIssue ?? 'No matching cache found.');
 ```
 
+**Source:** [`cache/context.ts:217`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L217)
+
 ### `runCLI`
 
 runs the CLI, writing output to stdout and diagnostics to stderr. the caller controls
@@ -287,6 +301,8 @@ import { runCLI } from '@tanaab/codex-tools';
 
 process.exitCode = await runCLI(['status', '--repo-root', '/path/to/plugin', '--json']);
 ```
+
+**Source:** [`cli/run-cli.ts:42`](https://github.com/tanaabased/codex-tools/blob/main/cli/run-cli.ts#L42)
 
 ### `runOperation`
 
@@ -336,6 +352,8 @@ const { changed, extra, missing } = result.diff;
 console.log({ changed, extra, missing });
 ```
 
+**Source:** [`codex/operations.ts:38`](https://github.com/tanaabased/codex-tools/blob/main/codex/operations.ts#L38)
+
 ### `syncEntries`
 
 synchronizes selected source entries into a disjoint target tree.
@@ -367,6 +385,8 @@ const { missing, changed, extra } = await syncEntries({
 console.log({ add: missing, replace: changed, remove: extra });
 ```
 
+**Source:** [`cache/cache.ts:237`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L237)
+
 ## Interfaces
 
 ### `CacheConfiguration`
@@ -382,6 +402,8 @@ interface CacheConfiguration {
   absentCheck: AbsentCheck;
 }
 ```
+
+**Source:** [`cache/context.ts:20`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L20)
 
 ### `CacheOperationResult`
 
@@ -411,6 +433,8 @@ interface CacheOperationResult {
 }
 ```
 
+**Source:** [`cache/cache-operation.ts:15`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache-operation.ts#L15)
+
 ### `CLIRuntime`
 
 injectable process boundaries used by programmatic cli callers and tests.
@@ -423,6 +447,8 @@ interface CLIRuntime {
 }
 ```
 
+**Source:** [`cli/run-cli.ts:18`](https://github.com/tanaabased/codex-tools/blob/main/cli/run-cli.ts#L18)
+
 ### `CodexToolsError`
 
 error shape used when filesystem codes or source diagnostics accompany a failure.
@@ -433,6 +459,8 @@ interface CodexToolsError extends Error {
   source?: SourceFailure;
 }
 ```
+
+**Source:** [`utils/errors.ts:9`](https://github.com/tanaabased/codex-tools/blob/main/utils/errors.ts#L9)
 
 ### `CodexToolsOptions`
 
@@ -467,6 +495,8 @@ interface CodexToolsOptions {
 }
 ```
 
+**Source:** [`codex/options.ts:9`](https://github.com/tanaabased/codex-tools/blob/main/codex/options.ts#L9)
+
 ### `CollectEntriesOptions`
 
 selects managed filesystem entries and optionally replaces `lstat` for boundary testing.
@@ -478,6 +508,8 @@ interface CollectEntriesOptions {
   statPath?: (targetPath: string) => Promise<Stats>;
 }
 ```
+
+**Source:** [`cache/cache.ts:26`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L26)
 
 ### `InstallationCandidate`
 
@@ -492,6 +524,8 @@ interface InstallationCandidate extends Omit<
   directory: string;
 }
 ```
+
+**Source:** [`cache/context.ts:43`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L43)
 
 ### `InstallationInspection`
 
@@ -511,6 +545,8 @@ interface InstallationInspection {
   enabled: boolean | null;
 }
 ```
+
+**Source:** [`cache/context.ts:29`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L29)
 
 ### `InstallationResult`
 
@@ -557,6 +593,8 @@ interface InstallationResult extends Record<string, unknown> {
 }
 ```
 
+**Source:** [`install/install-types.ts:58`](https://github.com/tanaabased/codex-tools/blob/main/install/install-types.ts#L58)
+
 ### `InstallDependencies`
 
 injectable environment, process, source, and clock boundaries for installation.
@@ -572,6 +610,8 @@ interface InstallDependencies {
 }
 ```
 
+**Source:** [`install/install-types.ts:100`](https://github.com/tanaabased/codex-tools/blob/main/install/install-types.ts#L100)
+
 ### `InstallOptions`
 
 public operation options with an optional explicit install or refresh command marker.
@@ -581,6 +621,8 @@ interface InstallOptions extends CodexToolsOptions {
   command?: 'install' | 'refresh';
 }
 ```
+
+**Source:** [`install/install-types.ts:117`](https://github.com/tanaabased/codex-tools/blob/main/install/install-types.ts#L117)
 
 ### `NativeOptions`
 
@@ -594,6 +636,8 @@ interface NativeOptions {
   timeoutMs?: number;
 }
 ```
+
+**Source:** [`install/codex-native.ts:28`](https://github.com/tanaabased/codex-tools/blob/main/install/codex-native.ts#L28)
 
 ### `NativeResult`
 
@@ -609,6 +653,8 @@ interface NativeResult {
   error?: string;
 }
 ```
+
+**Source:** [`install/codex-native.ts:18`](https://github.com/tanaabased/codex-tools/blob/main/install/codex-native.ts#L18)
 
 ### `OperationStep`
 
@@ -629,6 +675,8 @@ interface OperationStep extends Record<string, unknown> {
 }
 ```
 
+**Source:** [`install/install-types.ts:7`](https://github.com/tanaabased/codex-tools/blob/main/install/install-types.ts#L7)
+
 ### `OutputStream`
 
 minimal writable stream surface accepted by the cli wrapper.
@@ -639,6 +687,8 @@ interface OutputStream {
   isTTY?: boolean;
 }
 ```
+
+**Source:** [`cli/run-cli.ts:12`](https://github.com/tanaabased/codex-tools/blob/main/cli/run-cli.ts#L12)
 
 ### `PluginIdentity`
 
@@ -651,6 +701,8 @@ interface PluginIdentity {
   packageVersion: string | null;
 }
 ```
+
+**Source:** [`cache/context.ts:13`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L13)
 
 ### `ResolvedContext`
 
@@ -670,6 +722,8 @@ interface ResolvedContext {
 }
 ```
 
+**Source:** [`cache/context.ts:52`](https://github.com/tanaabased/codex-tools/blob/main/cache/context.ts#L52)
+
 ### `SourceFailure`
 
 identifies invalid source metadata in structured cli failures.
@@ -682,6 +736,8 @@ interface SourceFailure {
 }
 ```
 
+**Source:** [`utils/errors.ts:2`](https://github.com/tanaabased/codex-tools/blob/main/utils/errors.ts#L2)
+
 ### `TreeDiff`
 
 directional differences required to make a target match its source.
@@ -693,6 +749,8 @@ interface TreeDiff {
   missing: string[];
 }
 ```
+
+**Source:** [`cache/diff-entries.ts:10`](https://github.com/tanaabased/codex-tools/blob/main/cache/diff-entries.ts#L10)
 
 ### `TreeInspection`
 
@@ -708,6 +766,8 @@ interface TreeInspection {
 }
 ```
 
+**Source:** [`cache/cache.ts:40`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L40)
+
 ### `TreeOptions`
 
 identifies two disjoint trees for inspection or synchronization.
@@ -720,6 +780,8 @@ interface TreeOptions extends CollectEntriesOptions {
 }
 ```
 
+**Source:** [`cache/cache.ts:33`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache.ts#L33)
+
 ## Types
 
 ### `AbsentCheck`
@@ -730,6 +792,8 @@ controls whether a missing installation fails read-only inspection.
 type AbsentCheck = 'fail' | 'neutral';
 ```
 
+**Source:** [`codex/options.ts:6`](https://github.com/tanaabased/codex-tools/blob/main/codex/options.ts#L6)
+
 ### `CacheCommand`
 
 read-only and synchronizing operations that use the cache reconciliation contract.
@@ -737,6 +801,8 @@ read-only and synchronizing operations that use the cache reconciliation contrac
 ```ts
 type CacheCommand = Exclude<OperationCommand, 'install' | 'refresh'>;
 ```
+
+**Source:** [`cache/cache-operation.ts:9`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache-operation.ts#L9)
 
 ### `CacheStatus`
 
@@ -747,6 +813,8 @@ type CacheStatus =
   'not_installed' | 'unresolved' | 'planned' | 'synchronized_directory' | 'current' | 'drifted';
 ```
 
+**Source:** [`cache/cache-operation.ts:11`](https://github.com/tanaabased/codex-tools/blob/main/cache/cache-operation.ts#L11)
+
 ### `EntryMap`
 
 relative-path map representing one normalized managed tree.
@@ -754,6 +822,8 @@ relative-path map representing one normalized managed tree.
 ```ts
 type EntryMap = Map<string, TreeEntry>;
 ```
+
+**Source:** [`cache/diff-entries.ts:7`](https://github.com/tanaabased/codex-tools/blob/main/cache/diff-entries.ts#L7)
 
 ### `MissingTarget`
 
@@ -763,6 +833,8 @@ controls whether cache synchronization may create an explicit raw target.
 type MissingTarget = 'require-installed' | 'create';
 ```
 
+**Source:** [`codex/options.ts:4`](https://github.com/tanaabased/codex-tools/blob/main/codex/options.ts#L4)
+
 ### `NativeRunner`
 
 injectable asynchronous native-command boundary used by install and refresh.
@@ -770,6 +842,8 @@ injectable asynchronous native-command boundary used by install and refresh.
 ```ts
 type NativeRunner = (argv: readonly string[], options?: NativeOptions) => Promise<NativeResult>;
 ```
+
+**Source:** [`install/codex-native.ts:36`](https://github.com/tanaabased/codex-tools/blob/main/install/codex-native.ts#L36)
 
 ### `OperationCommand`
 
@@ -779,6 +853,8 @@ operation names accepted by the library after cli command normalization.
 type OperationCommand = 'check' | 'sync' | 'status' | 'doctor' | 'install' | 'refresh';
 ```
 
+**Source:** [`codex/options.ts:2`](https://github.com/tanaabased/codex-tools/blob/main/codex/options.ts#L2)
+
 ### `OperationResult`
 
 result union returned by the shared operation layer.
@@ -786,6 +862,8 @@ result union returned by the shared operation layer.
 ```ts
 type OperationResult = CacheOperationResult | InstallationResult;
 ```
+
+**Source:** [`codex/operations.ts:12`](https://github.com/tanaabased/codex-tools/blob/main/codex/operations.ts#L12)
 
 ### `TreeEntry`
 
@@ -797,3 +875,5 @@ type TreeEntry =
   | { type: 'dir' }
   | { type: 'symlink'; target: string };
 ```
+
+**Source:** [`cache/diff-entries.ts:2`](https://github.com/tanaabased/codex-tools/blob/main/cache/diff-entries.ts#L2)

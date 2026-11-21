@@ -19,7 +19,6 @@ export default defineConfig([
     '**/dist/**',
     '**/coverage/**',
     '**/temp/**',
-    '**/cache/**',
     '**/.temp/**',
     '**/.tmp/**',
     '**/_site/**',

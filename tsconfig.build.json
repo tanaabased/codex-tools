@@ -8,5 +8,5 @@
     "rootDir": ".",
     "outDir": "dist/esm"
   },
-  "include": ["lib/**/*.ts", "utils/**/*.ts"]
+  "include": ["codex/tools.ts"]
 }

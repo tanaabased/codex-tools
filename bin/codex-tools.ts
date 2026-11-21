@@ -1,4 +1,4 @@
 #!/usr/bin/env bun
-import { runCLI } from '../lib/run-cli.ts';
+import { runCLI } from '../cli/run-cli.ts';
 
 process.exitCode = await runCLI();

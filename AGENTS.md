@@ -3,11 +3,18 @@
 ## Scope and ownership
 
 - Own local and npm plugin installation, inspection, refresh, and consumer-defined cache reconciliation.
-- Keep the public launcher in `bin/`, runtime orchestration in `lib/`, narrow helpers in `utils/`,
-  and flat tests in `test/`. Export the supported API explicitly from `lib/index.ts`.
-- Keep `install.ts` as the source selector, `native-install.ts` as shared installation orchestration,
-  `codex-native.ts` as the native process contract, and npm redaction in `npm-install.ts`.
-- `dev/scripts/` owns internal commands; `dev/lib/` and `dev/utils/` own their implementation; `dev/test/` tests it. None ship.
+- Keep the public launcher in `bin/` and the explicit API exports, shared operation dispatch, and
+  public options in `codex/`. Keep cross-capability helpers in `utils/`.
+- Runtime capabilities own their implementation in `cli/`, `install/`, `cache/`, and `cloud/`.
+  Keep the source selector in `install/install.ts`, installation orchestration in
+  `install/native-install.ts`, the native process contract in `install/codex-native.ts`, and npm
+  redaction in `install/npm-install.ts`.
+- Keep small capability folders flat, with specs beside the code they exercise. Add role folders
+  when they improve navigation or isolate substantial fixtures.
+- `build/` owns API generation, distribution builds, and toolchain checks. The repository
+  Markdown link check lives under `cloud/` as a maintainer task. These tasks stay outside the
+  shipped runtime.
+- Preserve the three Cloud source re-exports in `lib/` while Canon imports those paths.
 - Keep each example's assets and helpers inside that example, including copies shared by other examples.
   Read `examples/AGENTS.md` before changing scenarios or fixtures.
 

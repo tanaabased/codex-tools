@@ -29,15 +29,15 @@
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/lib/index.d.ts",
+  "types": "./dist/esm/codex/tools.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/esm/lib/index.d.ts",
+        "types": "./dist/esm/codex/tools.d.ts",
         "default": "./dist/esm/index.js"
       },
       "require": {
-        "types": "./dist/cjs/lib/index.d.cts",
+        "types": "./dist/cjs/codex/tools.d.cts",
         "default": "./dist/cjs/index.cjs"
       }
     }
@@ -61,18 +61,18 @@
     "access": "public"
   },
   "scripts": {
-    "check:toolchain": "bun dev/scripts/check-toolchain-task.ts",
+    "check:toolchain": "bun build/check-toolchain-task.ts",
     "codex-tools": "bun run bin/codex-tools.ts",
     "lint": "bun run lint:eslint && bun run format:check",
     "lint:eslint": "bun --bun eslint .",
     "format:check": "bun --bun prettier . --check --ignore-unknown",
     "format:write": "bun --bun prettier . --write --ignore-unknown",
     "typecheck": "bun --bun tsc --noEmit",
-    "docs:api": "bun dev/scripts/generate-api-task.ts",
-    "docs:api:check": "bun dev/scripts/generate-api-task.ts --check",
-    "docs:check": "bun run docs:api:check && bun dev/scripts/check-documentation-task.ts",
-    "build": "bun dev/scripts/build-task.ts",
-    "test": "bun --bun node_modules/mocha/bin/mocha.js 'test/*.spec.ts' 'dev/test/*.spec.ts' 'examples/*/test/*.spec.ts'",
+    "docs:api": "bun build/generate-api-task.ts",
+    "docs:api:check": "bun build/generate-api-task.ts --check",
+    "docs:check": "bun run docs:api:check && bun cloud/check-documentation-task.ts",
+    "build": "bun build/build-task.ts",
+    "test": "bun --bun node_modules/mocha/bin/mocha.js '{build,cache,cli,cloud,codex,install,utils}/*.spec.ts' 'examples/*/test/*.spec.ts'",
     "leia": "bun ./node_modules/.bin/leia"
   },
   "dependencies": {
