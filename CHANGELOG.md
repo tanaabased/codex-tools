@@ -1,8 +1,26 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
-- Added `cloud package` and `cloud verify` to prepare skills for Codex Cloud and verify the extracted release. [#43](https://github.com/tanaabased/codex-tools/issues/43) [#44](https://github.com/tanaabased/codex-tools/pull/44)
-- Fixed `status` and `doctor` for standalone plugins without `package.json`. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+### New features
+
+- Added `cloud package` to prepare skills in place for Codex Cloud and `cloud verify` to check an extracted release against its source checkout. [#43](https://github.com/tanaabased/codex-tools/issues/43) [#44](https://github.com/tanaabased/codex-tools/pull/44)
+- Added the `tanaab-codex-tools` skill to guide CLI and library use, Cloud packaging, and release verification. [#49](https://github.com/tanaabased/codex-tools/issues/49) [#50](https://github.com/tanaabased/codex-tools/pull/50)
+
+### Bug fixes
+
 - Fixed CLI command validation so unsupported subcommands fail before any operation runs. Use `cache check` and `cache sync` for cache operations. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+- Fixed Cloud link checks in skill templates so placeholders such as `DOCS_URL` and `{{ docs.url }}` pass while broken file links still fail. [#47](https://github.com/tanaabased/codex-tools/issues/47) [#48](https://github.com/tanaabased/codex-tools/pull/48)
+- Fixed `status` and `doctor` for standalone plugins without `package.json`. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+- Treated an empty `CODEX_HOME` as unset so the CLI uses the default home. [#44](https://github.com/tanaabased/codex-tools/pull/44)
+
+### Improvements
+
+- Clarified how to run `cloud verify` when it cannot establish command inventory completeness without the source checkout. [#42](https://github.com/tanaabased/codex-tools/issues/42) [#45](https://github.com/tanaabased/codex-tools/pull/45)
+- Updated agent skills to prefer the project's installed CLI and use the plugin's bundled CLI when the project has no copy. [#49](https://github.com/tanaabased/codex-tools/issues/49) [#50](https://github.com/tanaabased/codex-tools/pull/50)
+
+### Developer notes
+
+- Added command-by-command CLI examples and library usage examples for ESM and CommonJS. [#49](https://github.com/tanaabased/codex-tools/issues/49) [#50](https://github.com/tanaabased/codex-tools/pull/50)
+- Included `.bun-version` and `.node-version` in the npm package so consumers can find the tested runtime versions. [#50](https://github.com/tanaabased/codex-tools/pull/50)
 
 ## v1.0.3 - [September 26, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.0.3)
 
