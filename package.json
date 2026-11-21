@@ -43,7 +43,9 @@
     }
   },
   "files": [
+    ".bun-version",
     ".codex-plugin",
+    ".node-version",
     "assets",
     "dist",
     "skills",
