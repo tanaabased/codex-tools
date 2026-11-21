@@ -3,7 +3,7 @@ import { lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { readFile, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { marked } from 'marked';
+import { Marked, Tokenizer, marked } from 'marked';
 import { parse } from 'yaml';
 import { git } from './cloud-config.ts';
 import type { CloudProject, CloudSkill } from './cloud-config.ts';
@@ -73,6 +73,73 @@ export function instructions(source: string, skill: CloudSkill): string {
   return parts.join(enabled ? execution : '');
 }
 
+const templateName = String.raw`[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*`;
+const templateDestination = [
+  ['\\{\\{', '\\}\\}'],
+  ['\\$\\{', '\\}'],
+  ['\\$\\{\\{', '\\}\\}'],
+  ['@', '@'],
+  ['<%=', '%>'],
+  ['\\[%', '%\\]'],
+  ['\\{', '\\}'],
+  ['#\\{', '\\}'],
+  ['%', '%'],
+  ['\\[\\[', '\\]\\]'],
+]
+  .map(([open, close]) => open + '[ \\t]*' + templateName + '[ \\t]*' + close)
+  .join('|');
+const wholeTemplateDestination = new RegExp(
+  '^(?:' + templateDestination + '|[A-Z][A-Z0-9_]*_URL)$',
+);
+const inlineTemplateDestination = new RegExp(
+  String.raw`\]\([ \t\n]*(` + templateDestination + String.raw`)(?=[ \t\n)])`,
+  'g',
+);
+const referenceTemplateDestination = new RegExp(
+  String.raw`\]:[ \t]*(?:\n[ \t]*)?(` + templateDestination + String.raw`)(?=[ \t\n]|$)`,
+  'g',
+);
+
+function tokenizeTemplateDestination<T extends { href: string; raw: string }>(
+  source: string,
+  candidates: RegExp,
+  tokenize: (source: string) => T | undefined,
+): T | false {
+  // let marked validate the label and title using a temporary markdown-safe destination.
+  for (const match of source.matchAll(candidates)) {
+    const destination = match[1]!;
+    const start = match.index + match[0].length - destination.length;
+    const mask = encodeURIComponent(destination);
+    const token = tokenize(
+      source.slice(0, start) + mask + source.slice(start + destination.length),
+    );
+    if (token?.href === mask && token.raw.indexOf(mask) === start)
+      return {
+        ...token,
+        href: destination,
+        raw: source.slice(0, token.raw.length - mask.length + destination.length),
+      };
+  }
+  return false;
+}
+
+const templateMarkdown = new Marked({
+  tokenizer: {
+    link(source) {
+      if (!/^!?\[/.test(source)) return false;
+      return tokenizeTemplateDestination(source, inlineTemplateDestination, (input) =>
+        Tokenizer.prototype.link.call(this, input),
+      );
+    },
+    def(source) {
+      if (!/^ {0,3}\[/.test(source)) return false;
+      return tokenizeTemplateDestination(source, referenceTemplateDestination, (input) =>
+        Tokenizer.prototype.def.call(this, input),
+      );
+    },
+  },
+});
+
 async function checkLinks(root: string, dir: string) {
   const skill = path.join(root, dir);
   const pending = ['SKILL.md'];
@@ -106,16 +173,21 @@ async function checkLinks(root: string, dir: string) {
     const source = pending.pop()!;
     if (visited.has(source)) continue;
     visited.add(source);
+    const template = source.startsWith('templates' + path.sep);
+    const markdown = template ? templateMarkdown : marked;
     const links: string[] = [];
-    marked.walkTokens(marked.lexer(await readFile(path.join(skill, source), 'utf8')), (token) => {
-      if (
-        (token.type === 'link' || token.type === 'image') &&
-        token.href &&
-        !(source.startsWith('templates' + path.sep) && /^[A-Z][A-Z0-9_]*_URL$/.test(token.href)) &&
-        !/^(?:#|\/\/|[a-z][a-z0-9+.-]*:)/i.test(token.href)
-      )
-        links.push(token.href);
-    });
+    markdown.walkTokens(
+      markdown.lexer(await readFile(path.join(skill, source), 'utf8')),
+      (token) => {
+        if (
+          (token.type === 'link' || token.type === 'image') &&
+          token.href &&
+          !(template && wholeTemplateDestination.test(token.href)) &&
+          !/^(?:#|\/\/|[a-z][a-z0-9+.-]*:)/i.test(token.href)
+        )
+          links.push(token.href);
+      },
+    );
     for (const link of links) await target(source, link, true);
   }
   const metadata = path.join(skill, 'agents/openai.yaml');
