@@ -102,7 +102,10 @@ cmp "$root/linked/external/payload.txt" "$root/linked/state/plugins/cache/linked
 source setup.sh
 tar -xzf "$CODEX_TOOLS_PACKAGE" -C "$root"
 codex-tools install "$root/package" | grep -F 'status: installed'
-bun fresh-skills.ts "$HOME" codex-tools:tanaab-codex-tools-setup codex-tools:tanaab-codex-tools-maintenance
+bun fresh-skills.ts "$HOME" \
+  codex-tools:tanaab-codex-tools \
+  codex-tools:tanaab-codex-tools-setup \
+  codex-tools:tanaab-codex-tools-maintenance
 version=$(bun -p 'require(process.argv[1]).version' "$root/package/package.json")
 cached="$CODEX_HOME/plugins/cache/personal/codex-tools/$version"
 "$cached/dist/codex-tools" install "$plugin" --dry-run | grep -F 'status: planned'

@@ -21,8 +21,12 @@
     "bin/**/*.ts",
     "lib/**/*.ts",
     "utils/**/*.ts",
-    "dev/**/*.ts",
-    "test/**/*.ts",
+    "codex/**/*.ts",
+    "build/**/*.ts",
+    "cache/**/*.ts",
+    "cli/**/*.ts",
+    "cloud/**/*.ts",
+    "install/**/*.ts",
     "examples/**/*.ts"
   ]
 }

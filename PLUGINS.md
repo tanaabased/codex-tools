@@ -1,47 +1,36 @@
 # Codex Tools for agents
 
-Use the setup and maintenance skills in Codex or OpenClaw to manage Codex plugins.
-Start with the [README](./README.md#use-with-an-agent) for example requests.
-The agent needs file and command execution tools and Node. npm sources also require npm.
-
-The npm commands below require a published package. For unpublished builds, use
-[local candidate installation](./CONTRIBUTING.md#install-a-local-release-candidate).
+Install Codex Tools in Codex or OpenClaw to let an agent manage Codex plugins and
+package skills for Codex Cloud. The skills need [Node](./README.md#install) and file and command access. npm-backed
+plugins also need npm.
 
 ## Codex
 
-Install the [CLI](./README.md#install), then use it to install its own plugin at the same version:
-
 ```sh
-version="$(codex-tools --version)"
-codex-tools install "npm:@tanaab/codex-tools@$version" --dry-run --json
-codex-tools install "npm:@tanaab/codex-tools@$version"
+npx @tanaab/codex-tools install npm:@tanaab/codex-tools
 ```
 
-Codex Tools registers the personal marketplace automatically. For a published prerelease,
-bootstrap the CLI with `npm install --global @tanaab/codex-tools@edge` before these commands.
-Start a fresh Codex task and select a skill or name it explicitly; see
-[Codex plugin usage](https://developers.openai.com/codex/plugins/).
+`npx` fetches Codex Tools as needed. Codex Tools provisions the Codex CLI and installs the plugin.
 
 ## OpenClaw
 
-Install the same package as a compatible skill bundle:
-
 ```sh
 openclaw plugins install npm:@tanaab/codex-tools
-openclaw plugins inspect codex-tools
 ```
 
-Use `npm:@tanaab/codex-tools@edge` for a published prerelease. Enable the bundle if required by
-your host policy, then start a new agent session. See
-[OpenClaw's compatible bundles](https://docs.openclaw.ai/plugins/bundles) for host requirements.
-The skills manage Codex state on the machine where they run; they do not manage OpenClaw plugins.
+Enable the bundle if your host requires it. The skills manage Codex on the machine where the agent
+runs. See [OpenClaw’s bundle requirements](https://docs.openclaw.ai/plugins/bundles).
 
-## Use the skills
+## First run
 
-- **`$tanaab-codex-tools-setup`:** preview and install local or npm-backed Codex plugins.
-- **`$tanaab-codex-tools-maintenance`:** inspect installations, refresh source plugins, and reconcile cache drift.
+Start a fresh Codex task or OpenClaw session and paste this prompt.
 
-Both skills invoke `dist/codex-tools` inside their installed bundle, so agent execution does not
-depend on a global Codex Tools command. Keep the complete bundle together rather than copying out
-individual skill folders. Inspection is read-only; installation and repairs preview changes before
-applying an authorized operation.
+> Use `$tanaab-codex-tools-setup` to help me install a Codex plugin. Ask me for its folder or npm package, then show me the installation plan before making changes.
+
+## Skills
+
+| Skill                                                                          | Use it to                                                                                     |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [`$tanaab-codex-tools`](./skills/codex-tools/SKILL.md)                         | Choose the CLI or library, or package and verify skills for Codex Cloud.                      |
+| [`$tanaab-codex-tools-setup`](./skills/codex-tools-setup/SKILL.md)             | Preview or apply a local or npm plugin installation, then check the result.                   |
+| [`$tanaab-codex-tools-maintenance`](./skills/codex-tools-maintenance/SKILL.md) | Inspect a plugin or its cache, refresh the installed plugin, or sync its managed cache files. |

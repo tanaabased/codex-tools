@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Codex Tools'
+  short_description: 'Tanaab-based Codex Tools and Cloud packaging guidance.'
+  icon_small: './assets/icon-small.png'
+  icon_large: './assets/icon-large.png'
+  brand_color: '#00c88a'
+  default_prompt: 'Use $tanaab-codex-tools to package or verify my Codex Cloud skills.'
