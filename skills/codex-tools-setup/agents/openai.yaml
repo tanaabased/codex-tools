@@ -4,4 +4,4 @@ interface:
   icon_small: './assets/icon-small.png'
   icon_large: './assets/icon-large.png'
   brand_color: '#00c88a'
-  default_prompt: 'Use $tanaab-codex-tools-setup to install a local or npm-backed Codex plugin safely with the packaged Codex Tools CLI.'
+  default_prompt: 'Use $tanaab-codex-tools-setup to install a local or npm-backed Codex plugin safely.'

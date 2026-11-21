@@ -23,7 +23,7 @@
     "defaultPrompt": [
       "Use $tanaab-codex-tools-setup to install a Codex plugin safely.",
       "Use $tanaab-codex-tools-maintenance to inspect this plugin installation.",
-      "Use $tanaab-codex-tools-maintenance to reconcile cache drift after review."
+      "Use $tanaab-codex-tools to package or verify my Codex Cloud skills."
     ],
     "brandColor": "#00c88a",
     "composerIcon": "./assets/codex-tools.png",

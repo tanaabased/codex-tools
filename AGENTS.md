@@ -52,5 +52,6 @@
 - Keep code-comment prose lowercase, including docblocks and fenced examples; preserve literal identifiers.
 - Give each explanation one home. Delete repetition and obvious comments before adding guides.
 - Skills use namespace `tanaab` and container `codex-plugin`. Preserve their public identities.
-  Setup owns installation; maintenance owns diagnosis and repair. Both use the bundled runtime.
+  Codex Tools owns CLI and library selection and Cloud packaging. Setup owns installation, and
+  maintenance owns diagnosis and repair. Use the project CLI first and the bundled CLI as fallback.
 - Keep plugin/package versions aligned and ship every resource referenced by the skills.

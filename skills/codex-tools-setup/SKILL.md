@@ -1,6 +1,6 @@
 ---
 name: tanaab-codex-tools-setup
-description: Tanaab-based Codex plugin setup using the packaged Codex Tools CLI. Use when installing a local or npm-backed plugin, previewing its installation plan, or verifying installation readback.
+description: Tanaab-based Codex plugin setup. Use when installing a local or npm-backed plugin, previewing its installation plan, or verifying installation readback.
 license: MIT
 metadata:
   type: workflow
@@ -21,7 +21,11 @@ metadata:
 
 ## Overview
 
-Install one local or npm-backed Codex plugin through the bundled Codex Tools runtime.
+Install one local or npm-backed Codex plugin with Codex Tools.
+
+## Required Reading
+
+- **Before choosing a CLI launcher:** read [runtime selection](../codex-tools/references/runtime-selection.md).
 
 ## When to Use
 
@@ -36,15 +40,12 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 
 ## Preconditions
 
-- Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
-  executable; never substitute a checkout or global executable.
 - Require Node and npm for npm selectors.
 - Preserve the caller's home, npm configuration, and explicit marketplace and Codex-home options.
 
 ## Workflow
 
-1. Run `<plugin-root>/dist/codex-tools --version`. Stop if missing or mismatched with the plugin
-   package version.
+1. Resolve the project and select the CLI using the runtime selection rules above.
 2. Select `install <plugin-path>` or `install npm:<package>[@selector]`. Resolve relative source
    paths explicitly.
 3. Run with `--dry-run --json` and the selected options. Review source, home, marketplace, mapping,
@@ -69,7 +70,6 @@ Install one local or npm-backed Codex plugin through the bundled Codex Tools run
 ## Bundled Resources
 
 - [CLI](../../CLI.md): selectors, options, output, and failure contract.
-- `../../dist/codex-tools`: packaged Node runtime.
 
 ## Validation
 

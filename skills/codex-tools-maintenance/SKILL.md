@@ -1,6 +1,6 @@
 ---
 name: tanaab-codex-tools-maintenance
-description: Tanaab-based Codex plugin maintenance using the packaged Codex Tools CLI. Use when inspecting installation health, diagnosing drift, refreshing a plugin, or reconciling its managed cache.
+description: Tanaab-based Codex plugin maintenance. Use when inspecting installation health, diagnosing drift, refreshing a plugin, or reconciling its managed cache.
 license: MIT
 metadata:
   type: workflow
@@ -21,8 +21,11 @@ metadata:
 
 ## Overview
 
-Inspect one Codex plugin and apply the requested refresh or managed-cache repair through the bundled
-Codex Tools runtime.
+Inspect one Codex plugin and apply the requested refresh or managed-cache repair with Codex Tools.
+
+## Required Reading
+
+- **Before choosing a CLI launcher:** read [runtime selection](../codex-tools/references/runtime-selection.md).
 
 ## When to Use
 
@@ -36,15 +39,12 @@ Codex Tools runtime.
 
 ## Preconditions
 
-- Resolve `<plugin-root>` two directories above this `SKILL.md`. Use its `dist/codex-tools`
-  executable; never substitute a checkout or global executable.
 - Require Node; npm refresh also needs npm.
 - Resolve the intended source and any explicit Codex home, marketplace, or cache path.
 
 ## Workflow
 
-1. Run `<plugin-root>/dist/codex-tools --version`. Stop if missing or mismatched with the plugin
-   package version.
+1. Resolve the project and select the CLI using the runtime selection rules above.
 2. For a local source, inspect with `status --repo-root <plugin-path> --json` (`doctor` is an alias), or use
    `cache check --repo-root <plugin-path> --json` for managed payload drift.
 3. Select the repair:
@@ -65,14 +65,13 @@ Codex Tools runtime.
 
 ## Completion Criteria
 
-- Diagnosis ends without filesystem writes or child processes.
+- Diagnosis ends without changing plugin state.
 - Repair has a matching final check that demonstrates convergence or identifies remaining problems.
 - Installation, authentication, activation, and payload claims remain distinct.
 
 ## Bundled Resources
 
 - [CLI](../../CLI.md): options, precedence, and failure contract.
-- `../../dist/codex-tools`: packaged Node runtime.
 
 ## Validation
 
