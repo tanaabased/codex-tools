@@ -227,6 +227,79 @@ describe('cloud skills', () => {
     }
   });
 
+  it('accepts whole template destinations when packaging and verifying extracted skills', async () => {
+    await settings({});
+    const starter = skill + '/templates/starter.md';
+    await file(skill + '/SKILL.md', '[starter](templates/starter.md)');
+    const destinations = [
+      '{{compact}}',
+      '{{  Docs.url}}',
+      '{{docs_url\t\t}}',
+      '${\tUrl.Name }',
+      '${{ vars.docs_url\t}}',
+      '@\tid@',
+      '<%= id %>',
+      '[% id %]',
+      '{ id}',
+      '#{id }',
+      '%\tid %',
+      '[[ name\t ]]',
+      'DOCS_URL',
+    ];
+    const markdown = [
+      ...destinations.map((destination, index) => `[inline ${index}](${destination})`),
+      '',
+      ...destinations.map((_, index) => `[reference ${index}][ref-${index}]`),
+      '',
+      ...destinations.map((destination, index) => `[ref-${index}]: ${destination}`),
+      '[ref-1]: missing-fallback.md',
+      '',
+      '[See `[literal]({{ example }})`]({{ docs_url }} "title")',
+      '[real](../guide.md "A real file")',
+      '',
+      '```md',
+      '[example]({{ docs_url }})',
+      '[literal file](not-packaged.md)',
+      '[literal reference]: not-packaged.md',
+      '```',
+    ].join('\n');
+    await file(starter, markdown);
+    await file(skill + '/guide.md', '# guide');
+    track();
+
+    await pack();
+    const artifact = path.join(root, 'artifact');
+    await cp(path.join(root, 'skills'), path.join(artifact, 'skills'), { recursive: true });
+    const selected = await project();
+    const verify = () => checkCloudSkill(selected, selected.skills[0]!, artifact);
+    await verify();
+    for (const directory of [root, artifact])
+      assert.equal(await readFile(path.join(directory, starter), 'utf8'), markdown);
+
+    await rm(path.join(artifact, skill, 'guide.md'));
+    await assert.rejects(verify(), /templates\/starter\.md → \.\.\/guide\.md/);
+    await rm(path.join(root, skill, 'guide.md'));
+    track();
+    await assert.rejects(pack(), /templates\/starter\.md → \.\.\/guide\.md/);
+  });
+
+  it('keeps validating concrete and partial destinations in templates', async () => {
+    await settings({});
+    const starter = skill + '/templates/starter.md';
+    await file(skill + '/SKILL.md', '[starter](templates/starter.md)');
+    await file(starter, '# starter');
+    track();
+
+    for (const destination of ['LICENSE', '{{id}}/guide.md', '{{id}', '{{id+other}}']) {
+      await file(starter, `[placeholder]({{ docs_url }})\n[concrete](${destination})`);
+      await assert.rejects(pack(), (error: Error) =>
+        error.message.includes('templates/starter.md → ' + destination + ':'),
+      );
+    }
+    await file(skill + '/SKILL.md', '[outside template]({{docs_url}})');
+    await assert.rejects(pack(), /SKILL\.md → \{\{docs_url\}\}/);
+  });
+
   it('keeps declared icons and copied command templates valid for their own roles', async () => {
     await settings({ copy: 'templates/**' });
     await file('templates/raw.yml', 'key: value');

@@ -73,7 +73,10 @@ extracted files. Reader links must target concrete files inside the skill. Suppo
 extensions are `.c`, `.css`, `.csv`, `.h`, `.htm`, `.html`, `.js`, `.json`, `.md`, `.mjs`,
 `.py`, `.rst`, `.sh`, `.svg`, `.tsv`, `.txt`, and `.xml`. Matching ignores case.
 Markdown links are followed recursively, including in files such as `workflow.yml.md`.
-Markdown under `templates/` may use an uppercase URL placeholder such as `DOCS_URL`.
+In Markdown under `templates/`, use `[Docs]({{ docs_url }})` or put `{{ docs_url }}` in a reference
+link definition to mark a URL that readers should replace. The placeholder must be the entire
+destination. You can omit the padding or use spaces or tabs inside the delimiters. Existing uppercase
+placeholders such as `DOCS_URL` still work.
 For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
 intended output file. Every command resource listed in `runtime-files.json` must also have a
 reader-supported extension. Inline other formats into the bundle when a command needs them.
