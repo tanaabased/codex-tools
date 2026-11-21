@@ -1,20 +1,25 @@
-# Codex Tools
+<h1 align="center">Codex Tools</h1>
 
 <p align="center">
   <img src="./assets/codex-tools.png" alt="Codex Tools" width="180" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;sort=semver" alt="Latest release, including prereleases" /></a>
-  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-linter.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-linter.yml?event=pull_request&amp;label=Lint" alt="Lint" /></a>
-  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-unit-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-unit-tests.yml?event=pull_request&amp;label=Unit%20Tests" alt="Unit Tests" /></a>
-  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-examples-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-examples-tests.yml?event=pull_request&amp;label=Example%20Tests" alt="Example Tests" /></a>
-  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-release-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-release-tests.yml?event=pull_request&amp;label=Release%20Tests" alt="Release Tests" /></a>
+  Easily install and refresh Codex plugins, sync installed caches from source, and package self-contained skills for Codex Cloud. Available as a CLI, a JavaScript library, or agent skills.
 </p>
 
-Develop Codex plugins and install them with less setup. Codex Tools handles marketplace registration,
-installation, source refresh, and cache synchronization through a CLI, typed JavaScript API,
-and agent skills.
+<p align="center">
+  <a href="https://github.com/tanaabased/codex-tools/releases/latest"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?label=STABLE&amp;color=blue" alt="Latest stable release" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/releases"><img src="https://img.shields.io/github/v/release/tanaabased/codex-tools?include_prereleases&amp;sort=date&amp;label=EDGE&amp;color=blue" alt="Latest release including prereleases" /></a>
+  <a href="https://github.com/tanaabased/codex-tools/actions/workflows/pr-examples-tests.yml?query=event%3Apull_request"><img src="https://img.shields.io/github/actions/workflow/status/tanaabased/codex-tools/pr-examples-tests.yml?event=pull_request&amp;label=LEIA" alt="Leia scenario test status" /></a>
+</p>
+
+<p align="center">
+  <a href="#cli-installation"><img src="https://img.shields.io/badge/NPM-CLI-6f42c1" alt="Use the npm CLI" /></a>
+  <a href="#library-installation"><img src="https://img.shields.io/badge/NPM-library-6f42c1" alt="Use the npm library" /></a>
+  <a href="./PLUGINS.md#codex"><img src="https://img.shields.io/badge/CODEX-plugin-6f42c1" alt="Install the Codex plugin" /></a>
+  <a href="./PLUGINS.md#openclaw"><img src="https://img.shields.io/badge/OPENCLAW-plugin-6f42c1" alt="Install the OpenClaw plugin" /></a>
+</p>
 
 ## Overview
 
@@ -23,80 +28,77 @@ and agent skills.
 - **Refresh source plugins:** update the development version and reinstall changes through Codex.
 - **Sync installed caches:** copy changes from a source repository into its selected live plugin cache while preserving unmanaged files.
 - **Inspect and preview:** report installation state and drift with `status`/`doctor`, or preview changes with a dry run.
-- **Package skills for Codex Cloud:** prepare skills in a release checkout and verify the extracted npm package. See [Cloud skills](./CLI.md#cloud-skills).
+- **Package skills for Codex Cloud:** prepare skills in a release checkout and verify the extracted npm package. See [`cloud package`](./CLI.md#codex-tools-cloud-package).
 
 ## Install
 
-Requires Node `^24.15.0 || >=26.0.0`. Native plugin installation and refresh support macOS and Linux on arm64 or x64.
+See [`package.json`](./package.json) for the Node engine range and the Bun package manager version.
+The tested versions are pinned in [`.node-version`](./.node-version) and [`.bun-version`](./.bun-version).
+Native plugin installation and refresh support macOS and Linux on arm64 or x64.
+
+### CLI installation
 
 ```sh
+# install globally with npm.
 npm install --global @tanaab/codex-tools
+
+# or install globally with bun.
+bun add --global @tanaab/codex-tools
+
+# check the CLI after either install.
 codex-tools --help
 ```
 
-For library use, install locally with `npm install @tanaab/codex-tools`.
-For unpublished builds, see [local candidate installation](./CONTRIBUTING.md#install-a-local-release-candidate).
+### Library installation
+
+```sh
+# add to your project with npm.
+npm install @tanaab/codex-tools
+
+# or add to your project with bun.
+bun add @tanaab/codex-tools
+```
+
+### Agent installation
+
+```sh
+# install in codex.
+npx @tanaab/codex-tools install npm:@tanaab/codex-tools
+
+# or install in openclaw.
+openclaw plugins install npm:@tanaab/codex-tools
+```
 
 ## Usage
 
-### CLI
-
-```sh
-# preview an installation, then apply it.
-codex-tools install /path/to/plugin --dry-run --json
-codex-tools install /path/to/plugin
-
-# install a published plugin package.
-codex-tools install npm:@scope/plugin@1.2.3
-
-# inspect the installation and refresh its local source.
-codex-tools status --repo-root /path/to/plugin --json
-codex-tools refresh /path/to/plugin
-
-# report cache drift, then preview synchronization.
-codex-tools cache check --repo-root /path/to/plugin
-codex-tools cache sync --repo-root /path/to/plugin --dry-run
-```
-
-Dry runs write nothing and start no child processes. Commands refuse ambiguous targets and preserve
-unrelated state. Local refresh edits the source manifest version; review and commit that edit.
-
-See the [CLI reference](./CLI.md) for all commands, options, environment variables, and exit codes.
-
-### Library
-
-```ts
-import { runOperation, type CodexToolsOptions } from '@tanaab/codex-tools';
-
-const options: CodexToolsOptions = {
-  repoRoot: '/path/to/plugin',
-  codexHome: '/path/to/codex-home',
-};
-const result = await runOperation('status', options);
-
-if (!result.ok) console.error(result.issue);
-```
-
-The package supports ESM imports and CommonJS `require`. Import from `@tanaab/codex-tools`;
-internal paths are unsupported. The generated [API reference](./API.md) covers public functions,
-types, results, and side effects.
-
-### Use with an agent
-
-Install the Codex Tools plugin into Codex or OpenClaw, then ask:
-
-- **Setup:** “Use `$tanaab-codex-tools-setup` to preview and install the plugin at `/path/to/plugin`.”
-- **Maintenance:** “Use `$tanaab-codex-tools-maintenance` to inspect this plugin and explain any cache drift.”
-
-See [plugin installation](./PLUGINS.md) for host requirements and installation commands.
+- [CLI](./CLI.md)
+- [Library](./API.md)
+- [Agent](./PLUGINS.md)
 
 ## Advanced usage
 
-See [advanced usage](./ADVANCED.md) for marketplace and cache ownership, npm pinning, and recovery.
+See [advanced usage](./ADVANCED.md) for marketplace and cache ownership.
 
 ## Development
 
-See [CONTRIBUTING](./CONTRIBUTING.md) for source setup, generation, and validation.
+See [CONTRIBUTING](./CONTRIBUTING.md) to work on Codex Tools.
+
+## Issues, Questions and Support
+
+[Search GitHub Issues](https://github.com/tanaabased/codex-tools/issues) for existing reports and answers.
+If you don’t find what you need, [open an issue](https://github.com/tanaabased/codex-tools/issues/new/choose).
+
+## Changelog
+
+See the [changelog](./CHANGELOG.md) for what changed and [GitHub Releases](https://github.com/tanaabased/codex-tools/releases) for published versions.
+
+## Contributors
+
+<a href="https://github.com/tanaabased/codex-tools/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=tanaabased/codex-tools" alt="Codex Tools contributors" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
 
 ## License
 

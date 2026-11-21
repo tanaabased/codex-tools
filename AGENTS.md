@@ -47,6 +47,8 @@
 - README owns onboarding, CLI owns command reference, ADVANCED owns operational detail,
   CONTRIBUTING owns development, and public
   TypeScript docblocks own generated API.md. Regenerate it with `bun run docs:api`.
+- Keep the README opening description stable. Revise it for a change in core capabilities or ways
+  to use the product, or to correct an inaccurate claim.
 - Keep code-comment prose lowercase, including docblocks and fenced examples; preserve literal identifiers.
 - Give each explanation one home. Delete repetition and obvious comments before adding guides.
 - Skills use namespace `tanaab` and container `codex-plugin`. Preserve their public identities.

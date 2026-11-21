@@ -5,14 +5,22 @@ import { performInstall } from './native-install.ts';
 /**
  * installs a local or npm-backed plugin while preserving unrelated codex state.
  *
- * dry-run mode validates local inputs and returns a plan without writing or starting child
- * processes. execution can create marketplace directories, mappings, and catalog entries before
- * invoking native codex. partial effects are reported and are not automatically rolled back.
+ * dry-run mode plans the installation without writes or child processes.
  *
- * @param options source or npm selector, marketplace, codex home, and dry-run settings.
- * @param dependencies injectable environment and native/npm boundaries.
- * @returns a structured plan, completed and remaining operations, native results, and installation
- * readback.
+ * @example
+ * preview acquisition of a pinned npm release.
+ *
+ * ```js
+ * import { installPlugin } from '@tanaab/codex-tools';
+ *
+ * const { plan } = await installPlugin({
+ *   npmSelector: 'npm:@scope/plugin@1.2.3',
+ *   dryRun: true,
+ * });
+ * console.table(plan, ['operation', 'condition']);
+ * ```
+ *
+ * @returns the plan or result. on partial failure, completed steps can remain in effect.
  * @throws when selection, source metadata, paths, marketplace state, or configuration are invalid.
  */
 export async function installPlugin(

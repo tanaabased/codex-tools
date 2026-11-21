@@ -20,8 +20,17 @@ function contentEquals(leftContent: Uint8Array, rightContent: Uint8Array): boole
 /**
  * compares normalized managed-tree entry maps without reading or writing the filesystem.
  *
- * @param sourceEntries desired source snapshot.
- * @param targetEntries observed target snapshot.
+ * @example
+ * compare two snapshots and list files missing from the target.
+ *
+ * ```js
+ * import { collectEntries, diffEntries } from '@tanaab/codex-tools';
+ *
+ * const source = await collectEntries('/path/to/plugin');
+ * const target = await collectEntries('/path/to/staged-payload');
+ * console.log(diffEntries(source, target).missing);
+ * ```
+ *
  * @returns sorted changed, extra, and missing relative paths without mutating either snapshot.
  */
 export default function diffEntries(sourceEntries: EntryMap, targetEntries: EntryMap): TreeDiff {

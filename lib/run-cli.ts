@@ -25,15 +25,20 @@ export interface CLIRuntime {
 }
 
 /**
- * runs the cli against injectable environment and output streams.
+ * runs the CLI, writing output to stdout and diagnostics to stderr. the caller controls
+ * `process.exitCode`.
  *
- * the function writes successful results, help, versions, and json failures to stdout; diagnostics
- * remain on stderr. it returns the intended process exit code without assigning `process.exitCode`.
- * the selected operation may read or modify plugin, marketplace, cache, and native codex state as
- * documented by its options.
+ * @example
+ * run the CLI from a script that forwards the exit code.
  *
- * @param argv cli arguments without the executable name.
- * @param runtime optional environment and output streams; omitted values use the current process.
+ * ```js
+ * import { runCLI } from '@tanaab/codex-tools';
+ *
+ * process.exitCode = await runCLI(['status', '--repo-root', '/path/to/plugin', '--json']);
+ * ```
+ *
+ * @param argv arguments after the executable name. defaults to the current process arguments.
+ * @param runtime override the current process environment or streams.
  * @returns `0` for success, `1` for ordinary operation failure, `2` for parsing or thrown errors,
  * or a preserved native child exit code.
  */

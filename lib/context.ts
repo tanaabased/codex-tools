@@ -126,15 +126,20 @@ function marketplaceName(value: unknown): string | null {
 }
 
 /**
- * inspects one selected cache directory without inferring installation or activation state.
+ * checks a cache manifest against the expected plugin name and version. reports absence,
+ * malformed metadata, and mismatches in the result.
  *
- * the function reads the cached plugin manifest and reports absence, malformed metadata, or an
- * identity mismatch as data. other filesystem failures propagate.
+ * @example
+ * check whether a specific cache contains the expected plugin version.
  *
- * @param cachePath cache directory to inspect.
- * @param identity expected plugin name and compatibility version.
- * @returns observable cache presence, identity, compatibility, and a diagnostic issue.
- * @throws when the cache or manifest cannot be read for a reason other than ordinary absence.
+ * ```js
+ * import { inspectInstallation } from '@tanaab/codex-tools';
+ *
+ * const cache = await inspectInstallation('/path/to/cache', { name: 'my-plugin', version: '1.2.3' });
+ * if (!cache.compatible) console.error(cache.issue);
+ * ```
+ *
+ * @throws on other filesystem read failures.
  */
 export async function inspectInstallation(
   cachePath: string,
@@ -191,13 +196,21 @@ export async function inspectInstallation(
 /**
  * resolves a source plugin and at most one safe cache target without mutation.
  *
- * the plugin manifest establishes identity. an optional `package.json` supplies a fallback version.
- * explicit options override declared `codexTools` settings. ambiguous or unsupported cache layouts
- * are returned as diagnostics rather than guessed.
+ * `package.json` supplies a fallback version when the plugin manifest has none. explicit options
+ * override `codexTools` settings. the result reports ambiguous or unsupported cache layouts.
+ * @example
+ * find the matching cache for a selected marketplace.
  *
- * @param options source, codex home, marketplace, cache, selection, and absence settings.
- * @returns the validated source identity, resolved configuration, candidate caches, and selection
- * diagnostics.
+ * ```js
+ * import { resolveContext } from '@tanaab/codex-tools';
+ *
+ * const { cachePath, resolutionIssue } = await resolveContext({
+ *   repoRoot: '/path/to/plugin',
+ *   marketplace: 'personal',
+ * });
+ * console.log(cachePath ?? resolutionIssue ?? 'No matching cache found.');
+ * ```
+ *
  * @throws when source metadata or configuration is invalid, paths are unsafe, or required state
  * cannot be read.
  */

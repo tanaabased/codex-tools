@@ -46,14 +46,19 @@ export interface TreeInspection {
 }
 
 /**
- * collects a normalized snapshot of selected filesystem entries beneath one root.
+ * snapshots selected entries, recording symlinks without following them. skips missing paths and
+ * excludes `.git`, `node_modules`, and `.DS_Store`.
  *
- * the operation reads file bytes, modes, directories, and symlink targets without following
- * symlinks. missing managed leaves are omitted. the default whole-tree selection excludes `.git`,
- * `node_modules`, and `.DS_Store`.
+ * @example
+ * snapshot only the skill files before comparing trees.
  *
- * @param root root directory whose selected entries are read.
- * @param options managed paths, additional excluded basenames, and an optional stat boundary.
+ * ```js
+ * import { collectEntries } from '@tanaab/codex-tools';
+ *
+ * const entries = await collectEntries('/path/to/plugin', { managedPaths: ['skills'] });
+ * console.log([...entries.keys()]);
+ * ```
+ *
  * @returns a map keyed by relative path in deterministic traversal order.
  * @throws when the root cannot be read, a selected parent is not a real directory, or an
  * unsupported filesystem entry is encountered.
@@ -161,6 +166,19 @@ async function scopedDiff(
 /**
  * inspects two disjoint managed trees without modifying either tree.
  *
+ * @example
+ * find which files a staged payload is missing.
+ *
+ * ```js
+ * import { inspectTrees } from '@tanaab/codex-tools';
+ *
+ * const { targetRoot, diff } = await inspectTrees({
+ *   sourceRoot: '/path/to/plugin',
+ *   targetRoot: '/path/to/staged-payload',
+ * });
+ * console.log('Missing from', targetRoot, diff.missing);
+ * ```
+ *
  * @returns resolved roots, normalized snapshots, and a source-to-target diff.
  * @throws when the roots overlap, the source is not a directory, the target is not a directory,
  * or either selected tree cannot be read safely.
@@ -195,12 +213,24 @@ export async function inspectTrees({
 /**
  * synchronizes selected source entries into a disjoint target tree.
  *
- * dry-run mode returns the planned diff without writing. otherwise the function removes managed
- * extras, replaces changed entries, creates missing entries, preserves excluded content, and then
- * returns the remaining diff after verification.
+ * removes extra managed entries and preserves excluded content.
  *
- * @param options source, target, selection, and dry-run settings.
- * @returns the planned diff in dry-run mode, or the post-write convergence diff.
+ * @example
+ * review additions, replacements, and removals before syncing a staging directory.
+ *
+ * ```js
+ * import { syncEntries } from '@tanaab/codex-tools';
+ *
+ * const { missing, changed, extra } = await syncEntries({
+ *   sourceRoot: '/path/to/plugin',
+ *   targetRoot: '/path/to/staged-payload',
+ *   managedPaths: ['skills'],
+ *   dryRun: true,
+ * });
+ * console.log({ add: missing, replace: changed, remove: extra });
+ * ```
+ *
+ * @returns the planned diff in dry-run mode, or the remaining diff after applying changes.
  * @throws when inspection is unsafe, a replacement would remove excluded content, a concurrent
  * filesystem change prevents a safe write, or convergence cannot be inspected.
  */

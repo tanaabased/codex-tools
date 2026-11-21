@@ -9,7 +9,7 @@ describe('dev/lib/documentation', () => {
   it('should check local links, duplicate heading anchors, and HTML image sources', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'codex-tools-docs-'));
     try {
-      await writeFile(path.join(root, 'guide.md'), '# Usage\n\n# Usage\n');
+      await writeFile(path.join(root, 'guide.md'), '### [Usage](#usage-1)\n\n## Usage\n');
       await writeFile(path.join(root, 'icon.png'), 'fixture');
       const readme = path.join(root, 'README.md');
       await writeFile(

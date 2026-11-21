@@ -1,49 +1,129 @@
 # CLI
 
-Use this guide to run Codex Tools from a terminal or npm script. See the [README](./README.md)
-for package installation and [advanced usage](./ADVANCED.md) for marketplace and cache behavior.
+<a name="invocation"></a>
 
-## Invocation
+## Usage
 
 ```sh
-codex-tools <command> [source] [options]
-npm exec --offline -- codex-tools <command> [source] [options]
+# run an installed CLI.
+codex-tools <command> [arguments] [options]
+
+# run the npm package with npx.
+npx @tanaab/codex-tools <command> [arguments] [options]
+
+# run the npm package with bunx.
+bunx --package @tanaab/codex-tools codex-tools <command> [arguments] [options]
 ```
 
-| Command                                       | Purpose                                                                                                     |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `install [path\|npm:<selector>]`              | Install a local or published plugin; omitted path uses the current directory.                               |
-| `refresh [path\|npm:<package>]`               | Reinstall an enabled plugin; local refresh edits its manifest version, npm refresh retains its release pin. |
-| `status`                                      | Inspect identity, installation state, and payload drift without writing.                                    |
-| `doctor`                                      | Alias for `status`.                                                                                         |
-| `cache check`                                 | Report selected cache drift without writing.                                                                |
-| `cache sync`                                  | Reconcile managed content while preserving unmanaged and excluded entries.                                  |
-| `cloud package [config]`                      | Prepare selected skills in place in the release checkout.                                                   |
-| `cloud verify [config] --package <directory>` | Verify the selected skills in the extracted release.                                                        |
+See the [README](./README.md#install) to install the CLI and [Advanced usage](./ADVANCED.md) for
+marketplace setup and cache configuration.
 
-Local plugins need `.codex-plugin/plugin.json`. npm selectors accept exact versions, tags, or
-quoted ranges; omitting the version selects `latest`. npm acquisition requires npm on `PATH`.
-Read-only commands do not start Codex. See
-[refresh and recovery](./ADVANCED.md#refresh-and-recovery) for partial effects.
+| Command                                       | Description                                           |
+| --------------------------------------------- | ----------------------------------------------------- |
+| [`cache check`](#codex-tools-cache-check)     | Compare source and installed cache files.             |
+| [`cache sync`](#codex-tools-cache-sync)       | Bring selected cache files into sync with the source. |
+| [`cloud package`](#codex-tools-cloud-package) | Prepare skills for Codex Cloud in a release checkout. |
+| [`cloud verify`](#codex-tools-cloud-verify)   | Check the skills in an extracted release.             |
+| [`doctor`](#codex-tools-doctor)               | Run the same inspection as `status`.                  |
+| [`install`](#codex-tools-install)             | Install a local or npm-backed plugin.                 |
+| [`refresh`](#codex-tools-refresh)             | Reinstall an enabled plugin.                          |
+| [`status`](#codex-tools-status)               | Inspect installation state and cache drift.           |
 
-## Cloud skills
+### Global options
 
-In a fresh Git checkout, prepare the selected skills in place, then pack the release. Extract the
-tarball and check the files that will ship, using the same checkout for source expectations.
+These options apply to every command. Pass options that take a value as `--name value` or
+`--name=value`.
+
+| Option                  | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| `-h`, `--help`          | Show CLI help.                                                    |
+| `-V`, `-v`, `--version` | Show the CLI version.                                             |
+| `--json`, `--no-json`   | Write JSON to stdout. Diagnostics stay on stderr.                 |
+| `--debug`               | Show diagnostics on stderr. Use `--debug=false` to turn them off. |
+
+### `codex-tools cache check`
+
+Compare managed files in the source and selected cache without changing either one. See
+[cache ownership](./ADVANCED.md#cache-ownership) to select which files are compared.
+
+#### Options
+
+| Option                    | Default                      | Description                                                          |
+| ------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| `--repo-root <path>`      | Current directory            | Select the source plugin.                                            |
+| `--cache-path <path>`     | Discover installed cache     | Select a specific cache directory.                                   |
+| `--codex-home <path>`     | `~/.codex` unless configured | Select the Codex home to check.                                      |
+| `--marketplace <name>`    | Discover marketplace         | Disambiguate matching installations.                                 |
+| `--missing-target <mode>` | `require-installed`          | Use `create` with `--cache-path` to check an explicit raw directory. |
+| `--absent-check <mode>`   | `fail`                       | Use `neutral` if an absent installation is acceptable.               |
+
+#### Usage
+
+```text
+codex-tools cache check [options]
+```
 
 ```sh
+codex-tools cache check --repo-root /path/to/plugin --json
+```
+
+### `codex-tools cache sync`
+
+Copy new and changed managed files into the selected cache and remove extra managed files.
+Unmanaged and excluded files are preserved. To create or update a raw directory instead,
+choose it explicitly with `--cache-path` and `--missing-target create`.
+
+#### Options
+
+| Option                    | Default                      | Description                                             |
+| ------------------------- | ---------------------------- | ------------------------------------------------------- |
+| `--repo-root <path>`      | Current directory            | Select the source plugin.                               |
+| `--cache-path <path>`     | Discover installed cache     | Select a cache or an explicit raw target.               |
+| `--codex-home <path>`     | `~/.codex` unless configured | Select the Codex home to sync.                          |
+| `--marketplace <name>`    | Discover marketplace         | Disambiguate matching installations.                    |
+| `--missing-target <mode>` | `require-installed`          | Use `create` with `--cache-path` to allow a raw target. |
+| `--dry-run`               | Off                          | Show the planned file changes without applying them.    |
+
+#### Usage
+
+```text
+codex-tools cache sync [options]
+```
+
+```sh
+# review changes, then sync the installed cache.
+codex-tools cache sync --repo-root /path/to/plugin --dry-run
+codex-tools cache sync --repo-root /path/to/plugin
+```
+
+### `codex-tools cloud package`
+
+Prepare selected skills in place in a fresh Git checkout. This command materializes tracked
+relative symlinks, copies shared files, and bundles configured commands. Command bundling needs
+Bun on `PATH`. If packaging fails after changing files, start again from a fresh checkout.
+
+#### Options
+
+| Option or argument | Default                                               | Description                                                                                                                                         |
+| ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<config>`         | Discover from the current directory and its ancestors | Select a JavaScript config. Discovery prefers `build.config.js` beside a tracked `SKILL.md`, then the nearest `cloud.config.js` up to the Git root. |
+
+#### Usage
+
+```text
+codex-tools cloud package [<config>] [options]
+```
+
+```sh
+# prepare every skill selected by cloud.config.js.
 codex-tools cloud package
-tarball=$(npm pack --silent)
-mkdir -p unpacked
-tar -xzf "$tarball" -C unpacked
-codex-tools cloud verify --package ./unpacked/package
+
+# prepare one skill.
+codex-tools cloud package skills/writer/build.config.js
 ```
 
-Both commands take one optional config path. From inside a skill, they look for the closest
-`build.config.js` beside a tracked `SKILL.md` in the current directory or its ancestors.
-Otherwise they use the nearest `cloud.config.js` up to the Git root. An explicit JavaScript
-config may have a custom name. A default export with `skills` selects from the repository.
-A build config belongs beside the skill’s `SKILL.md`.
+Use `cloud.config.js` to select tracked skills from the repository. Add `build.config.js` next
+to each `SKILL.md` you want to prepare.
 
 ```js
 // cloud.config.js
@@ -55,166 +135,160 @@ export default { skills: 'skills/*/SKILL.md' };
 export default { entrypoints: 'scripts/*.js', copy: ['references/**', '!references/private/**'] };
 ```
 
-Selectors take a glob or an array of globs over tracked paths, including dotfiles. Exclusions win. Skill discovery and
-copies use repository-relative paths. Entrypoints must be skill-relative `.js` or `.mjs` files.
-They can import TypeScript or CommonJS modules. Packaging skips skills
-without a build config. An empty config (`export default {}`) materializes tracked relative links.
-Set `symlinks: false` for a skill that ships without symlinks. Copies fill missing paths after
-link materialization.
+| Config key    | Description                                                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skills`      | Repository-relative globs for tracked `SKILL.md` files.                                                                                                                          |
+| `entrypoints` | Skill-relative globs for `.js` or `.mjs` commands. Imports can include TypeScript or CommonJS.                                                                                   |
+| `copy`        | Repository-relative globs for shared files. Copies fill missing paths and preserve skill-local files.                                                                            |
+| `symlinks`    | Defaults to `true`. Use `false` to reject symlinks in the skill.                                                                                                                 |
+| `guidance`    | Defaults to `'auto'`. Add `<!-- packaged-execution -->` to insert command instructions. Use `'on'` to require a command and exactly one marker, or `'off'` to remove the marker. |
 
-Put Bun on `PATH` to bundle commands. Each command keeps its path; its length, SHA-256 and emitted
-assets appear in the skill’s `runtime-files.json`. The default `guidance: 'auto'` inserts execution
-instructions at `<!-- packaged-execution -->` when there are commands. Use `'on'` to require
-both a command and exactly one marker, or `'off'` to remove the marker. Start again from a fresh
-checkout if packaging fails after making changes.
+Globs select tracked files, including dotfiles. `!` exclusions win. An empty build config
+(`export default {}`) materializes tracked relative symlinks without bundling commands.
 
-Verification is read-only. It checks all discovered skills, including plain prose, against the
-extracted files. Reader links must target concrete files inside the skill. Supported final
-extensions are `.c`, `.css`, `.csv`, `.h`, `.htm`, `.html`, `.js`, `.json`, `.md`, `.mjs`,
-`.py`, `.rst`, `.sh`, `.svg`, `.tsv`, `.txt`, and `.xml`. Matching ignores case.
-Markdown links are followed recursively, including in files such as `workflow.yml.md`.
-In Markdown under `templates/`, use `[Docs]({{ docs_url }})` or put `{{ docs_url }}` in a reference
-link definition to mark a URL that readers should replace. The placeholder must be the entire
-destination. You can omit the padding or use spaces or tabs inside the delimiters. Existing uppercase
-placeholders such as `DOCS_URL` still work.
-For a raw starter such as a workflow YAML, link an annotated Markdown example that names the
-intended output file. Every command resource listed in `runtime-files.json` must also have a
-reader-supported extension. Inline other formats into the bundle when a command needs them.
+### `codex-tools cloud verify`
 
-## Options
+Check the selected skills against the source checkout after extracting the release. Verification
+is read-only and also checks skills without commands. Run it from the source checkout or pass that
+checkout’s config path.
 
-Flags override `CODEX_TOOLS_*` environment defaults, then repository `package.json#codexTools`
-settings where applicable. Use `--name value` or `--name=value`. Switches normally take no value.
-Unknown or repeated flags, extra arguments, and invalid values fail before filesystem effects.
-A positional install/refresh source replaces the environment source; combining it with an explicit
-`--repo-root` is an error.
+#### Options
 
-### `--repo-root`
+| Option or argument      | Default                                                         | Description                                           |
+| ----------------------- | --------------------------------------------------------------- | ----------------------------------------------------- |
+| `<config>`              | Same discovery as [`cloud package`](#codex-tools-cloud-package) | Select the source config used to prepare the release. |
+| `--package <directory>` | Required                                                        | Point to the extracted package directory.             |
 
-| Field       | Value                      |
-| ----------- | -------------------------- |
-| Environment | `CODEX_TOOLS_REPO_ROOT`    |
-| Default     | current directory          |
-| Values      | local path                 |
-| Description | Selects the plugin source. |
+#### Usage
 
-### `--cache-path`
+```text
+codex-tools cloud verify [<config>] --package <directory> [options]
+```
 
-| Field       | Value                                              |
-| ----------- | -------------------------------------------------- |
-| Environment | `CODEX_TOOLS_CACHE_PATH`                           |
-| Default     | discovered installed cache                         |
-| Values      | local path                                         |
-| Description | Selects an installed cache or explicit raw target. |
+```sh
+# after cloud package, pack and verify from the same source checkout.
+tarball=$(npm pack --silent)
+mkdir -p unpacked
+tar -xzf "$tarball" -C unpacked
+codex-tools cloud verify --package ./unpacked/package
+```
 
-### `--codex-home`
+Link to concrete files inside each skill, including from linked Markdown. Use one of these
+case-insensitive extensions for links and bundled command resources. `.c`, `.css`, `.csv`,
+`.h`, `.htm`, `.html`, `.js`, `.json`, `.md`, `.mjs`, `.py`, `.rst`, `.sh`, `.svg`, `.tsv`,
+`.txt`, and `.xml` are supported. For a YAML starter, link to a Markdown example such as
+`workflow.yml.md` that names the expected output file. Inline unsupported command resources
+into the bundle.
 
-| Field       | Value                                        |
-| ----------- | -------------------------------------------- |
-| Environment | `CODEX_TOOLS_CODEX_HOME`                     |
-| Default     | `CODEX_HOME` or `~/.codex`                   |
-| Values      | local path                                   |
-| Description | Selects Codex configuration and cache state. |
+In Markdown under `templates/`, a placeholder such as `{{ docs_url }}` or `DOCS_URL` can
+replace the entire link destination, including in a reference definition.
 
-### `--marketplace`
+### `codex-tools doctor`
 
-| Field       | Value                                                           |
-| ----------- | --------------------------------------------------------------- |
-| Environment | `CODEX_TOOLS_MARKETPLACE`                                       |
-| Default     | discovered marketplace; `personal` for a new local installation |
-| Values      | marketplace name                                                |
-| Description | Selects a marketplace or disambiguates matching caches.         |
+Alias for [`status`](#codex-tools-status), with the same options and read-only behavior.
 
-### `--marketplace-path`
+#### Usage
 
-| Field       | Value                                                            |
-| ----------- | ---------------------------------------------------------------- |
-| Environment | `CODEX_TOOLS_MARKETPLACE_PATH`                                   |
-| Default     | selected catalog                                                 |
-| Values      | local catalog file                                               |
-| Description | Selects a local marketplace catalog for install or refresh only. |
+```text
+codex-tools doctor [options]
+```
 
-See [marketplace ownership](./ADVANCED.md#marketplace-ownership) for catalog locations and preservation.
+```sh
+codex-tools doctor --repo-root /path/to/plugin --marketplace personal
+```
 
-### `--missing-target`
+### `codex-tools install`
 
-| Field       | Value                                                          |
-| ----------- | -------------------------------------------------------------- |
-| Environment | `CODEX_TOOLS_MISSING_TARGET`                                   |
-| Default     | `require-installed`                                            |
-| Values      | `require-installed`, `create`                                  |
-| Description | Controls whether cache sync may create an explicit raw target. |
+Install from a directory containing `.codex-plugin/plugin.json` or from a published npm package.
+npm selectors require npm on `PATH` and accept exact versions, tags, and quoted ranges. Omit the
+version to use `latest`. To change the installed npm version, run `install` with the new selector.
 
-See [cache ownership](./ADVANCED.md#cache-ownership) for repository settings and raw-target behavior.
+For a private registry, use an HTTPS URL without embedded credentials, a query, or a fragment.
+Configure access in your user `.npmrc` or npm environment so credentials are available outside the
+project directory.
 
-### `--absent-check`
+#### Options
 
-| Field       | Value                                                         |
-| ----------- | ------------------------------------------------------------- |
-| Environment | `CODEX_TOOLS_ABSENT_CHECK`                                    |
-| Default     | `fail`                                                        |
-| Values      | `fail`, `neutral`                                             |
-| Description | Controls whether missing installations fail read-only checks. |
+| Option or argument           | Default                      | Description                                                      |
+| ---------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `<path>` or `npm:<selector>` | Current directory            | Choose a local source or npm package.                            |
+| `--repo-root <path>`         | Current directory            | Choose a local source when you omit the positional argument.     |
+| `--codex-home <path>`        | `~/.codex` unless configured | Select Codex configuration and cache state.                      |
+| `--marketplace <name>`       | Selected catalog name        | Choose a marketplace. A new default catalog is named `personal`. |
+| `--marketplace-path <file>`  | Selected catalog             | Choose a local `.agents/plugins/marketplace.json` file.          |
+| `--dry-run`                  | Off                          | Preview the installation without writes or child processes.      |
 
-### `--dry-run`
+#### Usage
 
-| Field       | Value                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| Environment | `CODEX_TOOLS_DRY_RUN`                                                    |
-| Default     | off                                                                      |
-| Values      | value-free flag                                                          |
-| Description | Plans install, refresh, or cache sync without writes or child processes. |
+```text
+codex-tools install [<path> | npm:<selector>] [options]
+```
 
-npm and native checks may remain unresolved in the plan.
+```sh
+# preview a local install, then apply it.
+codex-tools install /path/to/plugin --dry-run --json
+codex-tools install /path/to/plugin
 
-### `--json`
+# install a specific npm release.
+codex-tools install npm:@scope/plugin@1.2.3
+```
 
-| Field       | Value                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| Environment | `CODEX_TOOLS_JSON`                                                       |
-| Default     | off                                                                      |
-| Values      | value-free flag                                                          |
-| Description | Writes one undecorated JSON value to stdout; diagnostics stay on stderr. |
+### `codex-tools refresh`
 
-### `--debug`
+Reinstall an enabled plugin. A local refresh updates the source manifest version and requires a
+payload with regular files in place of symlinks. An npm refresh reinstalls the pinned release.
 
-| Field       | Value                                  |
-| ----------- | -------------------------------------- |
-| Environment | `CODEX_TOOLS_DEBUG`                    |
-| Default     | off unless `RUNNER_DEBUG=1` enables it |
-| Values      | value-free flag                        |
-| Description | Enables diagnostics on stderr.         |
+If refresh stops partway through, check the completed and remaining steps in `--json` output.
+The manifest edit and completed steps can remain in effect. For a local plugin, use
+[`status`](#codex-tools-status) to inspect the installation before retrying.
 
-### `--version`
+#### Options
 
-| Field       | Value                                |
-| ----------- | ------------------------------------ |
-| Alias       | `-V`, `-v`                           |
-| Values      | value-free flag                      |
-| Description | Shows the installed package version. |
+| Option or argument          | Default                      | Description                                                  |
+| --------------------------- | ---------------------------- | ------------------------------------------------------------ |
+| `<path>` or `npm:<package>` | Current directory            | Choose the existing local source or pinned npm package.      |
+| `--repo-root <path>`        | Current directory            | Choose a local source when you omit the positional argument. |
+| `--codex-home <path>`       | `~/.codex` unless configured | Select Codex configuration and cache state.                  |
+| `--marketplace <name>`      | Selected catalog name        | Choose the marketplace where the plugin is installed.        |
+| `--marketplace-path <file>` | Selected catalog             | Select the local catalog used for the installation.          |
+| `--dry-run`                 | Off                          | Preview the refresh without writes or child processes.       |
 
-### `--help`
+#### Usage
 
-| Field       | Value                                            |
-| ----------- | ------------------------------------------------ |
-| Alias       | `-h`                                             |
-| Values      | value-free flag                                  |
-| Description | Shows usage, options, and environment variables. |
+```text
+codex-tools refresh [<path> | npm:<package>] [options]
+```
 
-## Environment defaults
+```sh
+# reinstall a local plugin after changing its files.
+codex-tools refresh /path/to/plugin
 
-Empty path and selection environment values are unset. Boolean values must be `1`, `true`, `0`,
-or `false`; an empty boolean value is invalid.
-Explicit flags override their environment values, including invalid ones. `CODEX_TOOLS_CODEX_HOME`
-precedes `CODEX_HOME`; otherwise Codex Tools uses `~/.codex`. Repository settings apply only to
-cache ownership and absence behavior, as described in [advanced usage](./ADVANCED.md#cache-ownership).
+# reinstall the recorded npm release.
+codex-tools refresh npm:@scope/plugin
+```
 
-## Exit codes
+### `codex-tools status`
 
-| Exit | Meaning                                                                                |
-| ---- | -------------------------------------------------------------------------------------- |
-| `0`  | Current, synchronized, valid plan, help/version, or explicitly neutral absence.        |
-| `1`  | Drift, unavailable/incompatible installation, ambiguous target, or failed convergence. |
-| `2`  | Invalid arguments, source/configuration errors, or filesystem failure.                 |
+Report the selected plugin’s installation, registration, enablement, and cache drift without
+writing files or starting Codex.
 
-A failing native child retains its own exit code.
+#### Options
+
+| Option                    | Default                      | Description                                                                                          |
+| ------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `--repo-root <path>`      | Current directory            | Select the source plugin.                                                                            |
+| `--cache-path <path>`     | Discover installed cache     | Select a specific cache directory.                                                                   |
+| `--codex-home <path>`     | `~/.codex` unless configured | Select Codex configuration and cache state.                                                          |
+| `--marketplace <name>`    | Discover marketplace         | Disambiguate matching installations.                                                                 |
+| `--missing-target <mode>` | `require-installed`          | Use `create` with `--cache-path` to inspect a raw directory. The check reads it without creating it. |
+| `--absent-check <mode>`   | `fail`                       | Use `neutral` if an absent installation is acceptable.                                               |
+
+#### Usage
+
+```text
+codex-tools status [options]
+```
+
+```sh
+codex-tools status --repo-root /path/to/plugin --json
+```

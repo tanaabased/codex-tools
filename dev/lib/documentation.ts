@@ -8,6 +8,7 @@ function anchor(value: string): string {
   return value
     .trim()
     .toLowerCase()
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/<[^>]+>/g, '')
     .replace(/[`*_~]/g, '')
     .replace(/[^\p{L}\p{N}\s-]/gu, '')

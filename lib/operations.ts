@@ -44,24 +44,24 @@ export type OperationResult = CacheOperationResult | InstallationResult;
 /**
  * runs one supported operation without rendering output or changing process exit state.
  *
- * status, doctor, and check are read-only. sync writes only when `dryRun` is false. install and
- * refresh can update source, marketplace, cache, and native codex state; partial failures are
- * reported in their structured result and are not automatically rolled back.
+ * `status`, `doctor`, and `check` are read-only. use `dryRun` to preview `sync`, `install`, or
+ * `refresh`. completed install or refresh steps can remain in effect after failure.
  *
  * @example
- * ```js
- * const { runOperation } = require('@tanaab/codex-tools');
+ * review the files that would change before deciding whether to sync.
  *
- * runOperation('install', {
- *   npmSelector: 'npm:@scope/plugin@1.2.3',
- *   dryRun: true,
- * }).then((result) => console.log(result.status));
+ * ```js
+ * import { runOperation } from '@tanaab/codex-tools';
+ *
+ * const result = await runOperation('check', { repoRoot: '/path/to/plugin' });
+ * if (!result.diff) throw new Error(result.issue ?? 'No cache could be compared.');
+ *
+ * const { changed, extra, missing } = result.diff;
+ * console.log({ changed, extra, missing });
  * ```
- * @param command supported operation name. cli `cache check` and `cache sync` map to `check` and
- * `sync` here.
- * @param options source selection, codex state, output-independent behavior, and dry-run settings.
- * @param runtime injectable environment and native/npm process boundaries for install or refresh.
- * @returns the normalized cache or installation result used by json output.
+ *
+ * @param command use `check` for `cache check` and `sync` for `cache sync`.
+ * @returns the result the CLI reports with `--json`.
  * @throws when the command, source, configuration, filesystem, or operation preconditions are
  * invalid. native operational failures are ordinarily returned as structured results.
  */
