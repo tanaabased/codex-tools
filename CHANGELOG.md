@@ -1,5 +1,7 @@
 ## {{ UNRELEASED_VERSION }} - [{{ UNRELEASED_DATE }}]({{ UNRELEASED_LINK }})
 
+## v1.1.0 - [November 21, 2026](https://github.com/tanaabased/codex-tools/releases/tag/v1.1.0)
+
 ### New features
 
 - Added `cloud package` to prepare skills in place for Codex Cloud and `cloud verify` to check an extracted release against its source checkout. [#43](https://github.com/tanaabased/codex-tools/issues/43) [#44](https://github.com/tanaabased/codex-tools/pull/44)
